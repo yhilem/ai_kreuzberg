@@ -1,0 +1,33 @@
+from pathlib import Path
+
+import pytest
+
+
+@pytest.fixture(scope="session")
+def searchable_pdf() -> Path:
+    return Path(__file__).parent / "source" / "searchable.pdf"
+
+
+@pytest.fixture(scope="session")
+def scanned_pdf() -> Path:
+    return Path(__file__).parent / "source" / "scanned.pdf"
+
+
+@pytest.fixture(scope="session")
+def non_searchable_pdf() -> Path:
+    return Path(__file__).parent / "source" / "non-searchable.pdf"
+
+
+@pytest.fixture(scope="session")
+def ocr_image() -> Path:
+    return Path(__file__).parent / "source" / "ocr-image.jpg"
+
+
+@pytest.fixture(scope="session")
+def docx_document() -> Path:
+    return Path(__file__).parent / "source" / "document.docx"
+
+
+@pytest.fixture(scope="session")
+def markdown_document() -> Path:
+    return Path(__file__).parent / "source" / "markdown.md"

@@ -8,6 +8,7 @@
 .DS_store
 .coverage
 .dist/
+*.egg-info/
 .env
 .idea/
 .mypy_cache

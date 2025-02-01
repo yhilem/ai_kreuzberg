@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from contextlib import suppress
+
 from charset_normalizer import detect
 
 
@@ -16,20 +18,18 @@ def safe_decode(byte_data: bytes, encoding: str | None = None) -> str:
     if not byte_data:
         return ""
 
-    if encoding:
-        try:
-            return byte_data.decode(encoding, errors="ignore")
-        except UnicodeDecodeError:  # pragma: no cover
-            pass
-
     encodings = ["utf-8", "latin-1"]
+
+    if encoding:
+        with suppress(UnicodeDecodeError):
+            return byte_data.decode(encoding, errors="ignore")
+
     if encoding := detect(byte_data).get("encoding"):
         encodings.append(encoding)
 
     for encoding in encodings:
-        try:
+        with suppress(UnicodeDecodeError):
             return byte_data.decode(encoding, errors="ignore")
-        except UnicodeDecodeError:  # pragma: no cover  # noqa: PERF203
-            pass
 
+    # TODO: add test case
     return byte_data.decode("latin-1", errors="replace")

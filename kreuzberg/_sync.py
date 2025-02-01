@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, TypeVar, cast
 from anyio.to_thread import run_sync as any_io_run_sync
 from typing_extensions import ParamSpec
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Callable
 
 T = TypeVar("T")

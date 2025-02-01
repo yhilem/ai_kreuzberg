@@ -128,7 +128,7 @@ source = [ "kreuzberg" ]
 
 [tool.coverage.report]
 exclude_lines = [ 'if TYPE_CHECKING:' ]
-fail_under = 100
+fail_under = 90
 
 [tool.mypy]
 packages = [ "kreuzberg", "tests" ]

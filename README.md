@@ -14,7 +14,7 @@ Hence, this library.
 
 ## Features
 
-- Extract text from PDFs, images, and office documents
+- Extract text from PDFs, images, office documents and more (see supported formats below)
 - Use modern Python with async (via `anyio`) and proper type hints
 - Extensive error handling for easy debugging
 
@@ -141,8 +141,8 @@ Kreuzberg raises two exception types:
 Raised when there are issues with input validation:
 
 - Unsupported mime types
-- Non-existent files
 - Undetectable mime types
+- Path doesn't point at an exist file
 
 #### ParsingError
 
@@ -186,8 +186,8 @@ except ParsingError as e:
 
 All extraction functions return an ExtractionResult named tuple containing:
 
-- content: The extracted text as a string
-- mime_type: The mime type of the output (either "text/plain" or, if pandoc is used- "text/markdown")
+- `content`: The extracted text as a string
+- `mime_type`: The mime type of the output (either "text/plain" or, if pandoc is used- "text/markdown")
 
 ```python
 from kreuzberg import ExtractionResult

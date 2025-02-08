@@ -152,17 +152,28 @@ SupportedLanguages = Literal[
 class PSMMode(Enum):
     """Enum for Tesseract Page Segmentation Modes (PSM) with human-readable values."""
 
-    OSD_ONLY = 0  # Orientation and script detection only.
-    AUTO_OSD = 1  # Automatic page segmentation with orientation and script detection.
-    AUTO_ONLY = 2  # Automatic page segmentation without OSD.
-    AUTO = 3  # Fully automatic page segmentation (default).
-    SINGLE_COLUMN = 4  # Assume a single column of text.
-    SINGLE_BLOCK_VERTICAL = 5  # Assume a single uniform block of vertically aligned text.
-    SINGLE_BLOCK = 6  # Assume a single uniform block of text.
-    SINGLE_LINE = 7  # Treat the image as a single text line.
-    SINGLE_WORD = 8  # Treat the image as a single word.
-    CIRCLE_WORD = 9  # Treat the image as a single word in a circle.
-    SINGLE_CHAR = 10  # Treat the image as a single character.
+    OSD_ONLY = 0
+    """Orientation and script detection only."""
+    AUTO_OSD = 1
+    """Automatic page segmentation with orientation and script detection."""
+    AUTO_ONLY = 2
+    """Automatic page segmentation without OSD."""
+    AUTO = 3
+    """Fully automatic page segmentation (default)."""
+    SINGLE_COLUMN = 4
+    """Assume a single column of text."""
+    SINGLE_BLOCK_VERTICAL = 5
+    """Assume a single uniform block of vertically aligned text."""
+    SINGLE_BLOCK = 6
+    """Assume a single uniform block of text."""
+    SINGLE_LINE = 7
+    """Treat the image as a single text line."""
+    SINGLE_WORD = 8
+    """Treat the image as a single word."""
+    CIRCLE_WORD = 9
+    """Treat the image as a single word in a circle."""
+    SINGLE_CHAR = 10
+    """Treat the image as a single character."""
 
 
 async def validate_tesseract_version() -> None:
@@ -203,9 +214,8 @@ async def process_file(
         str: Extracted text from the image.
     """
     with NamedTemporaryFile(suffix=".txt") as output_file:
-        output_file_name = output_file.name.replace(
-            ".txt", ""
-        )  # this is needed because tesseract adds .txt to the output file
+        # this is needed because tesseract adds .txt to the output file
+        output_file_name = output_file.name.replace(".txt", "")
         try:
             command = [
                 "tesseract",

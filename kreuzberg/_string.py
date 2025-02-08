@@ -4,7 +4,7 @@ from contextlib import suppress
 
 from charset_normalizer import detect
 
-from kreuzberg import ParsingError
+from kreuzberg.exceptions import ParsingError
 
 
 def safe_decode(byte_data: bytes, encoding: str | None = None) -> str:

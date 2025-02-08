@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from asyncio import gather
 from dataclasses import dataclass
 from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Any, Final, Literal, TypedDict, cast
@@ -335,25 +336,7 @@ async def extract_metadata(input_file: str | PathLike[str], *, mime_type: str) -
             raise ParsingError("Failed to extract file data", context={"file": str(input_file)}) from e
 
 
-async def process_file(
-    input_file: str | PathLike[str], *, mime_type: str, extra_args: list[str] | None = None
-) -> PandocResult:
-    """Process a single file using Pandoc and convert to markdown.
-
-    Args:
-        input_file: The path to the file to process.
-        mime_type: The mime type of the file.
-        extra_args: Additional Pandoc command line arguments.
-
-    Raises:
-        ParsingError: If Pandoc fails to process the file.
-
-    Returns:
-        PandocResult containing processed content and metadata.
-    """
-    await validate_pandoc_version()
-
-    metadata = await extract_metadata(input_file, mime_type=mime_type)
+async def _extract_file(input_file: str | PathLike[str], *, mime_type: str, extra_args: list[str] | None = None) -> str:
     extension = _get_extension_from_mime_type(mime_type)
 
     with NamedTemporaryFile(suffix=".md") as output_file:
@@ -379,16 +362,40 @@ async def process_file(
         )
 
         if result.returncode != 0:
-            # todo: add a test case
             raise ParsingError(
                 "Failed to extract file data", context={"file": str(input_file), "error": result.stderr.decode()}
             )
 
-        content = normalize_spaces(await AsyncPath(output_file.name).read_text())
-        return PandocResult(
-            content=content,
-            metadata=metadata,
-        )
+        text = await AsyncPath(output_file.name).read_text()
+
+        return normalize_spaces(text)
+
+
+async def process_file(
+    input_file: str | PathLike[str], *, mime_type: str, extra_args: list[str] | None = None
+) -> PandocResult:
+    """Process a single file using Pandoc and convert to markdown.
+
+    Args:
+        input_file: The path to the file to process.
+        mime_type: The mime type of the file.
+        extra_args: Additional Pandoc command line arguments.
+
+    Returns:
+        PandocResult containing processed content and metadata.
+    """
+    await validate_pandoc_version()
+
+    metadata, content = await gather(
+        *[
+            extract_metadata(input_file, mime_type=mime_type),
+            _extract_file(input_file, mime_type=mime_type, extra_args=extra_args),
+        ]
+    )
+    return PandocResult(
+        content=content,  # type: ignore[arg-type]
+        metadata=metadata,  # type: ignore[arg-type]
+    )
 
 
 async def process_content(content: bytes, *, mime_type: str, extra_args: list[str] | None = None) -> PandocResult:

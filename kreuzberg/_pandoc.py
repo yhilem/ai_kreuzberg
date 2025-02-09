@@ -13,7 +13,7 @@ from kreuzberg._string import normalize_spaces
 from kreuzberg._sync import run_sync
 from kreuzberg.exceptions import MissingDependencyError, ParsingError, ValidationError
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Mapping
     from os import PathLike
 

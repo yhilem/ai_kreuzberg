@@ -38,7 +38,8 @@ async def convert_pdf_to_images(file_path: Path) -> list[Image]:
         A list of Pillow Images.
     """
     try:
-        pdf = await run_sync(pypdfium2.PdfDocument, str(file_path))
+        resolved_path = str(await AsyncPath(file_path).resolve())
+        pdf = await run_sync(pypdfium2.PdfDocument, resolved_path)
         return [page.render(scale=2.0).to_pil() for page in pdf]
     except pypdfium2.PdfiumError as e:
         raise ParsingError(
@@ -73,7 +74,8 @@ async def extract_pdf_with_pdfium2(file_path: Path) -> str:
         The extracted text.
     """
     try:
-        document = await run_sync(pypdfium2.PdfDocument, file_path)
+        resolved_path = str(await AsyncPath(file_path).resolve())
+        document = await run_sync(pypdfium2.PdfDocument, resolved_path)
         text = "\n".join(page.get_textpage().get_text_bounded() for page in document)
         return normalize_spaces(text)
     except pypdfium2.PdfiumError as e:
@@ -122,7 +124,8 @@ async def extract_file_with_pandoc(file_path: Path | str, mime_type: str) -> str
     Returns:
         The extracted text.
     """
-    result = await process_file(file_path, mime_type=mime_type)
+    resolved_path = str(await AsyncPath(file_path).resolve())
+    result = await process_file(resolved_path, mime_type=mime_type)
     return normalize_spaces(result.content)
 
 
@@ -215,7 +218,7 @@ async def extract_xlsx_file(file_path_or_contents: Path | bytes) -> str:
                 xlsx_file.flush()
                 xlsx_path = xlsx_file.name
             else:
-                xlsx_path = str(file_path_or_contents)
+                xlsx_path = str(await AsyncPath(file_path_or_contents).resolve())
 
             await run_sync(Xlsx2csv(xlsx_path).convert, csv_file.name)
             result = await process_file(csv_file.name, mime_type="text/csv")

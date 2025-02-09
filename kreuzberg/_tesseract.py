@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import platform
 import re
 import subprocess
 from asyncio import gather
@@ -186,7 +187,8 @@ async def validate_tesseract_version() -> None:
         if version_ref["checked"]:
             return
 
-        result = await run_sync(subprocess.run, ["tesseract", "--version"], capture_output=True)
+        command = ["tesseract.exe" if platform.system() == "Windows" else "tesseract", "--version"]
+        result = await run_sync(subprocess.run, command, capture_output=True)
         version_match = re.search(r"tesseract\s+(\d+)", result.stdout.decode())
         if not version_match or int(version_match.group(1)) < 5:
             raise MissingDependencyError("Tesseract version 5 or above is required.")
@@ -218,7 +220,7 @@ async def process_file(
         output_file_name = output_file.name.replace(".txt", "")
         try:
             command = [
-                "tesseract",
+                "tesseract.exe" if platform.system() == "Windows" else "tesseract",
                 str(input_file),
                 output_file_name,
                 "-l",

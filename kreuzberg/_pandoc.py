@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import platform
 import subprocess
 from asyncio import gather
 from dataclasses import dataclass
@@ -305,7 +306,8 @@ async def _validate_pandoc_version() -> None:
         if version_ref["checked"]:
             return
 
-        result = await run_sync(subprocess.run, ["pandoc", "--version"], capture_output=True)
+        command = ["pandoc.exe" if platform.system() == "Windows" else "pandoc", "--version"]
+        result = await run_sync(subprocess.run, command, capture_output=True)
         version = result.stdout.decode().split("\n")[0].split()[1]
         if not version.startswith("3."):
             raise MissingDependencyError("Pandoc version 3 or above is required.")
@@ -322,7 +324,7 @@ async def _handle_extract_metadata(input_file: str | PathLike[str], *, mime_type
     with NamedTemporaryFile(suffix=".json") as metadata_file:
         try:
             command = [
-                "pandoc",
+                "pandoc.exe" if platform.system() == "Windows" else "pandoc",
                 str(input_file),
                 f"--from={pandoc_type}",
                 "--to=json",
@@ -357,7 +359,7 @@ async def _handle_extract_file(
 
     with NamedTemporaryFile(suffix=".md") as output_file:
         command = [
-            "pandoc",
+            "pandoc.exe" if platform.system() == "Windows" else "pandoc",
             str(input_file),
             f"--from={pandoc_type}",
             "--to=markdown",

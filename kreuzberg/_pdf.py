@@ -137,6 +137,16 @@ async def extract_pdf_file(
 async def extract_pdf_content(
     content: bytes, *, config: Config | None = None, force_ocr: bool = False
 ) -> ExtractionResult:
+    """Extract text from a PDF file content.
+
+    Args:
+        content: The PDF file content.
+        config: Optional configuration for text extraction.
+        force_ocr: Whether to force OCR on the PDF file.
+
+    Returns:
+        The extracted text.
+    """
     with NamedTemporaryFile(suffix=".pdf") as pdf_file:
         pdf_file.write(content)
         file_path = Path(pdf_file.name)

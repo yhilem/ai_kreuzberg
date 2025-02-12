@@ -10,20 +10,22 @@ Kreuzberg is a modern Python library for text extraction from documents, designe
 - **Format Support**: Comprehensive support for documents, images, and text formats
 - **Modern Python**: Built with async/await, type hints, and current best practices
 
-Kreuzberg was created to solve text extraction needs in RAG (Retrieval Augmented Generation) applications, but it's suitable for any text extraction use case. Unlike many commercial solutions that require API calls or complex setups, Kreuzberg focuses on local processing with minimal dependencies.
+Kreuzberg was created to solve text extraction needs in RAG (Retrieval Augmented Generation) applications.
+Unlike many commercial solutions that require API calls or complex setups, Kreuzberg focuses on local processing with minimal dependencies.
 
 ## Features
 
 - **Universal Text Extraction**: Extract text from PDFs (both searchable and scanned), images, office documents, and more
 - **Smart Processing**: Automatic OCR for scanned documents, encoding detection for text files
 - **Modern Python Design**:
-  - Async-first API using `anyio`
-  - Comprehensive type hints for better IDE support
+  - Async-first API using `anyio` for multi-loop compatibility
+  - Comprehensive type hints and full API documentation
   - Detailed error handling with context information
 - **Production Ready**:
   - Robust error handling
   - Detailed debugging information
   - Memory efficient processing
+  - Extensive test coverage
 
 ## Installation
 
@@ -170,7 +172,7 @@ async def process_upload(file_content: bytes, mime_type: str) -> ExtractionResul
     return await extract_bytes(file_content, mime_type=mime_type, config=config)
 
 # Example usage with different file types
-async def handle_uploads():
+async def handle_uploads(docx_bytes: bytes, pdf_bytes: bytes, image_bytes: bytes):
     # Process PDF upload
     pdf_result = await process_upload(pdf_bytes, mime_type="application/pdf")
     print(f"PDF content: {pdf_result.content}")

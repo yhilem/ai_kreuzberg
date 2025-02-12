@@ -7,6 +7,7 @@ from unittest.mock import Mock
 import pytest
 from PIL import Image
 
+from kreuzberg import ExtractionResult
 from kreuzberg._tesseract import (
     PSMMode,
     batch_process_images,
@@ -78,14 +79,14 @@ async def test_validate_tesseract_version_missing(mock_subprocess_run_error: Moc
 
 async def test_process_file(mock_subprocess_run: Mock, ocr_image: Path) -> None:
     result = await process_file(ocr_image, language="eng", psm=PSMMode.AUTO)
-    assert isinstance(result, str)
-    assert result.strip() == "Sample OCR text"
+    assert isinstance(result, ExtractionResult)
+    assert result.content.strip() == "Sample OCR text"
 
 
 async def test_process_file_with_options(mock_subprocess_run: Mock, ocr_image: Path) -> None:
     result = await process_file(ocr_image, language="eng", psm=PSMMode.AUTO, tessedit_char_whitelist="0123456789")
-    assert isinstance(result, str)
-    assert result.strip() == "Sample OCR text"
+    assert isinstance(result, ExtractionResult)
+    assert result.content.strip() == "Sample OCR text"
 
 
 async def test_process_file_error(mock_subprocess_run: Mock, ocr_image: Path) -> None:
@@ -104,21 +105,21 @@ async def test_process_file_runtime_error(mock_subprocess_run: Mock, ocr_image: 
 async def test_process_image(mock_subprocess_run: Mock) -> None:
     image = Image.new("RGB", (100, 100))
     result = await process_image(image, language="eng", psm=PSMMode.AUTO)
-    assert isinstance(result, str)
-    assert result.strip() == "Sample OCR text"
+    assert isinstance(result, ExtractionResult)
+    assert result.content.strip() == "Sample OCR text"
 
 
 async def test_process_image_with_tesseract_pillow(mock_subprocess_run: Mock) -> None:
     image = Image.new("RGB", (100, 100))
     result = await process_image_with_tesseract(image)
-    assert isinstance(result, str)
-    assert result.strip() == "Sample OCR text"
+    assert isinstance(result, ExtractionResult)
+    assert result.content.strip() == "Sample OCR text"
 
 
 async def test_process_image_with_tesseract_path(mock_subprocess_run: Mock, ocr_image: Path) -> None:
     result = await process_image_with_tesseract(ocr_image)
-    assert isinstance(result, str)
-    assert result.strip() == "Sample OCR text"
+    assert isinstance(result, ExtractionResult)
+    assert result.content.strip() == "Sample OCR text"
 
 
 async def test_process_image_with_tesseract_invalid_input() -> None:
@@ -130,16 +131,16 @@ async def test_batch_process_images_pillow(mock_subprocess_run: Mock) -> None:
     images = [Image.new("RGB", (100, 100)) for _ in range(3)]
     results = await batch_process_images(images, config=default_config)
     assert isinstance(results, list)
-    assert all(isinstance(result, str) for result in results)
-    assert all(result.strip() == "Sample OCR text" for result in results)
+    assert all(isinstance(result, ExtractionResult) for result in results)
+    assert all(result.content.strip() == "Sample OCR text" for result in results)
 
 
 async def test_batch_process_images_paths(mock_subprocess_run: Mock, ocr_image: Path) -> None:
     images = [str(ocr_image)] * 3
     results = await batch_process_images(images, config=default_config)
     assert isinstance(results, list)
-    assert all(isinstance(result, str) for result in results)
-    assert all(result.strip() == "Sample OCR text" for result in results)
+    assert all(isinstance(result, ExtractionResult) for result in results)
+    assert all(result.content.strip() == "Sample OCR text" for result in results)
 
 
 async def test_batch_process_images_mixed(mock_subprocess_run: Mock, ocr_image: Path) -> None:
@@ -150,8 +151,8 @@ async def test_batch_process_images_mixed(mock_subprocess_run: Mock, ocr_image: 
     ]
     results = await batch_process_images(images, config=default_config)
     assert isinstance(results, list)
-    assert all(isinstance(result, str) for result in results)
-    assert all(result.strip() == "Sample OCR text" for result in results)
+    assert all(isinstance(result, ExtractionResult) for result in results)
+    assert all(result.content.strip() == "Sample OCR text" for result in results)
 
 
 async def test_integration_validate_tesseract_version() -> None:
@@ -160,36 +161,36 @@ async def test_integration_validate_tesseract_version() -> None:
 
 async def test_integration_process_file(ocr_image: Path) -> None:
     result = await process_file(ocr_image, language="eng", psm=PSMMode.AUTO)
-    assert isinstance(result, str)
-    assert result.strip()
+    assert isinstance(result, ExtractionResult)
+    assert result.content.strip()
 
 
 async def test_integration_process_file_with_options(ocr_image: Path) -> None:
     result = await process_file(ocr_image, language="eng", psm=PSMMode.AUTO, tessedit_char_whitelist="0123456789")
-    assert isinstance(result, str)
-    assert result.strip()
+    assert isinstance(result, ExtractionResult)
+    assert result.content.strip()
 
 
 async def test_integration_process_image(ocr_image: Path) -> None:
     image = Image.open(ocr_image)
     with image:
         result = await process_image(image, language="eng", psm=PSMMode.AUTO)
-        assert isinstance(result, str)
-        assert result.strip()
+        assert isinstance(result, ExtractionResult)
+        assert result.content.strip()
 
 
 async def test_integration_process_image_with_tesseract_pillow(ocr_image: Path) -> None:
     image = Image.open(ocr_image)
     with image:
         result = await process_image_with_tesseract(image)
-        assert isinstance(result, str)
-        assert result.strip()
+        assert isinstance(result, ExtractionResult)
+        assert result.content.strip()
 
 
 async def test_integration_process_image_with_tesseract_path(ocr_image: Path) -> None:
     result = await process_image_with_tesseract(ocr_image)
-    assert isinstance(result, str)
-    assert result.strip()
+    assert isinstance(result, ExtractionResult)
+    assert result.content.strip()
 
 
 async def test_integration_batch_process_images_pillow(ocr_image: Path) -> None:
@@ -199,8 +200,8 @@ async def test_integration_batch_process_images_pillow(ocr_image: Path) -> None:
         results = await batch_process_images(images, config=default_config)
         assert isinstance(results, list)
         assert len(results) == 3
-        assert all(isinstance(result, str) for result in results)
-        assert all(result.strip() for result in results)
+        assert all(isinstance(result, ExtractionResult) for result in results)
+        assert all(result.content.strip() for result in results)
 
 
 async def test_integration_batch_process_images_paths(ocr_image: Path) -> None:
@@ -208,8 +209,8 @@ async def test_integration_batch_process_images_paths(ocr_image: Path) -> None:
     results = await batch_process_images(images, config=default_config)
     assert isinstance(results, list)
     assert len(results) == 3
-    assert all(isinstance(result, str) for result in results)
-    assert all(result.strip() for result in results)
+    assert all(isinstance(result, ExtractionResult) for result in results)
+    assert all(result.content.strip() for result in results)
 
 
 async def test_integration_batch_process_images_mixed(ocr_image: Path) -> None:
@@ -219,5 +220,5 @@ async def test_integration_batch_process_images_mixed(ocr_image: Path) -> None:
         results = await batch_process_images(images, config=default_config)
         assert isinstance(results, list)
         assert len(results) == 3
-        assert all(isinstance(result, str) for result in results)
-        assert all(result.strip() for result in results)
+        assert all(isinstance(result, ExtractionResult) for result in results)
+        assert all(result.content.strip() for result in results)

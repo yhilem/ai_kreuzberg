@@ -3,28 +3,25 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
-from dataclasses import dataclass
 from tempfile import NamedTemporaryFile
-from typing import TYPE_CHECKING, Any, Final, Literal, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Final, Literal, cast
 
 from anyio import Path as AsyncPath
 from anyio import create_task_group
 
+from kreuzberg._mime_types import MARKDOWN_MIME_TYPE
 from kreuzberg._string import normalize_spaces
 from kreuzberg._sync import run_sync
+from kreuzberg._types import ExtractionResult, Metadata
 from kreuzberg.exceptions import MissingDependencyError, ParsingError, ValidationError
 
 if TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Mapping
     from os import PathLike
 
-try:  # pragma: no cover
-    from typing import NotRequired  # type: ignore[attr-defined]
-except ImportError:  # pragma: no cover
-    from typing_extensions import NotRequired
-
 if sys.version_info < (3, 11):
     from exceptiongroup import ExceptionGroup
+
 
 version_ref: Final[dict[str, bool]] = {"checked": False}
 
@@ -147,65 +144,6 @@ MIMETYPE_TO_FILE_EXTENSION_MAPPING: Final[Mapping[str, str]] = {
     "text/x-pod": "pod",
     "text/x-rst": "rst",
 }
-
-
-class Metadata(TypedDict, total=False):
-    """Document metadata extracted from Pandoc document.
-
-    All fields are optional but will only be included if they contain non-empty values.
-    Any field that would be empty or None is omitted from the dictionary.
-    """
-
-    title: NotRequired[str]
-    """Document title."""
-    subtitle: NotRequired[str]
-    """Document subtitle."""
-    abstract: NotRequired[str | list[str]]
-    """Document abstract, summary or description."""
-    authors: NotRequired[list[str]]
-    """List of document authors."""
-    date: NotRequired[str]
-    """Document date as string to preserve original format."""
-    subject: NotRequired[str]
-    """Document subject or topic."""
-    description: NotRequired[str]
-    """Extended description."""
-    keywords: NotRequired[list[str]]
-    """Keywords or tags."""
-    categories: NotRequired[list[str]]
-    """Categories or classifications."""
-    version: NotRequired[str]
-    """Version identifier."""
-    language: NotRequired[str]
-    """Document language code."""
-    references: NotRequired[list[str]]
-    """Reference entries."""
-    citations: NotRequired[list[str]]
-    """Citation identifiers."""
-    copyright: NotRequired[str]
-    """Copyright information."""
-    license: NotRequired[str]
-    """License information."""
-    identifier: NotRequired[str]
-    """Document identifier."""
-    publisher: NotRequired[str]
-    """Publisher name."""
-    contributors: NotRequired[list[str]]
-    """Additional contributors."""
-    creator: NotRequired[str]
-    """Document creator."""
-    institute: NotRequired[str | list[str]]
-    """Institute or organization."""
-
-
-@dataclass
-class PandocResult:
-    """Result of a pandoc conversion including content and metadata."""
-
-    content: str
-    """The processed markdown content."""
-    metadata: Metadata
-    """Document metadata extracted from the source."""
 
 
 def _extract_inline_text(node: dict[str, Any]) -> str | None:
@@ -392,9 +330,9 @@ async def _handle_extract_file(
         return normalize_spaces(text)
 
 
-async def process_file(
+async def process_file_with_pandoc(
     input_file: str | PathLike[str], *, mime_type: str, extra_args: list[str] | None = None
-) -> PandocResult:
+) -> ExtractionResult:
     """Process a single file using Pandoc and convert to markdown.
 
     Args:
@@ -406,14 +344,14 @@ async def process_file(
         ParsingError: If the file data could not be extracted.
 
     Returns:
-        PandocResult containing processed content and metadata.
+        ExtractionResult
     """
     await _validate_pandoc_version()
 
     _get_pandoc_type_from_mime_type(mime_type)
 
-    metadata = None
-    content = None
+    metadata: Metadata = {}
+    content: str = ""
 
     try:
         async with create_task_group() as tg:
@@ -431,13 +369,16 @@ async def process_file(
     except ExceptionGroup as eg:
         raise ParsingError("Failed to extract file data", context={"file": str(input_file)}) from eg.exceptions[0]
 
-    return PandocResult(
-        content=content,  # type: ignore[arg-type]
-        metadata=metadata,  # type: ignore[arg-type]
+    return ExtractionResult(
+        content=normalize_spaces(content),
+        metadata=metadata,
+        mime_type=MARKDOWN_MIME_TYPE,
     )
 
 
-async def process_content(content: bytes, *, mime_type: str, extra_args: list[str] | None = None) -> PandocResult:
+async def process_content_with_pandoc(
+    content: bytes, *, mime_type: str, extra_args: list[str] | None = None
+) -> ExtractionResult:
     """Process content using Pandoc and convert to markdown.
 
     Args:
@@ -446,10 +387,10 @@ async def process_content(content: bytes, *, mime_type: str, extra_args: list[st
         extra_args: Additional Pandoc command line arguments.
 
     Returns:
-        PandocResult containing processed content and metadata.
+        ExtractionResult
     """
     extension = MIMETYPE_TO_FILE_EXTENSION_MAPPING.get(mime_type) or "md"
 
     with NamedTemporaryFile(suffix=f".{extension}") as input_file:
         await AsyncPath(input_file.name).write_bytes(content)
-        return await process_file(input_file.name, mime_type=mime_type, extra_args=extra_args)
+        return await process_file_with_pandoc(input_file.name, mime_type=mime_type, extra_args=extra_args)

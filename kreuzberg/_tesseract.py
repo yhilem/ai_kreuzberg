@@ -12,8 +12,10 @@ from anyio import Path as AsyncPath
 from anyio import Semaphore, create_task_group
 from PIL.Image import Image
 
-from kreuzberg import ParsingError
+from kreuzberg import ExtractionResult, ParsingError
+from kreuzberg._mime_types import PLAIN_TEXT_MIME_TYPE
 from kreuzberg._ref import Ref
+from kreuzberg._string import normalize_spaces
 from kreuzberg._sync import run_sync
 from kreuzberg.exceptions import MissingDependencyError, OCRError
 
@@ -210,7 +212,7 @@ async def validate_tesseract_version() -> None:
 
 async def process_file(
     input_file: str | PathLike[str], *, language: SupportedLanguages, psm: PSMMode, **kwargs: Any
-) -> str:
+) -> ExtractionResult:
     """Process a single image file using Tesseract OCR.
 
     Args:
@@ -252,12 +254,12 @@ async def process_file(
                 raise OCRError("OCR failed with a non-0 return code.")
 
             output = await AsyncPath(output_file.name).read_text()
-            return output.strip()
+            return ExtractionResult(content=normalize_spaces(output), mime_type=PLAIN_TEXT_MIME_TYPE, metadata={})
         except (RuntimeError, OSError) as e:
             raise OCRError("Failed to OCR using tesseract") from e
 
 
-async def process_image(image: Image, *, language: SupportedLanguages, psm: PSMMode, **kwargs: Any) -> str:
+async def process_image(image: Image, *, language: SupportedLanguages, psm: PSMMode, **kwargs: Any) -> ExtractionResult:
     """Process a single Pillow Image using Tesseract OCR.
 
     Args:
@@ -280,7 +282,7 @@ async def process_image_with_tesseract(
     language: SupportedLanguages = "eng",
     psm: PSMMode = PSMMode.AUTO,
     **kwargs: Any,
-) -> str:
+) -> ExtractionResult:
     """Run Tesseract OCR asynchronously on a single Pillow Image or a list of Pillow Images.
 
     Args:
@@ -313,7 +315,7 @@ async def batch_process_images(
     language: SupportedLanguages = "eng",
     psm: PSMMode = PSMMode.AUTO,
     **kwargs: Any,
-) -> list[str]:
+) -> list[ExtractionResult]:
     """Run Tesseract OCR asynchronously on multiple images with controlled concurrency.
 
     Args:
@@ -334,7 +336,7 @@ async def batch_process_images(
     The concurrency limit can be configured via the global config object.
     """
     await validate_tesseract_version()
-    results = cast(list[str], list(range(len(images))))
+    results = cast(list[ExtractionResult], list(range(len(images))))
 
     async def _process_image(index: int, image: T) -> None:
         if not semaphore_ref.value:

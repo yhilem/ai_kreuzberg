@@ -7,14 +7,14 @@ from unittest.mock import Mock
 
 import pytest
 
+from kreuzberg import ExtractionResult
 from kreuzberg._pandoc import (
     MIMETYPE_TO_PANDOC_TYPE_MAPPING,
-    PandocResult,
     _get_pandoc_type_from_mime_type,
     _handle_extract_metadata,
     _validate_pandoc_version,
-    process_content,
-    process_file,
+    process_content_with_pandoc,
+    process_file_with_pandoc,
 )
 from kreuzberg.exceptions import MissingDependencyError, ParsingError, ValidationError
 
@@ -97,20 +97,20 @@ async def test_get_pandoc_type_from_mime_type_invalid() -> None:
 
 
 async def test_process_file_success(mock_subprocess_run: Mock, docx_document: Path) -> None:
-    result = await process_file(
+    result = await process_file_with_pandoc(
         docx_document, mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
-    assert isinstance(result, PandocResult)
+    assert isinstance(result, ExtractionResult)
     assert result.content.strip() == "Sample processed content"
 
 
 async def test_process_file_with_extra_args(mock_subprocess_run: Mock, docx_document: Path) -> None:
-    result = await process_file(
+    result = await process_file_with_pandoc(
         docx_document,
         mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         extra_args=["--strip-comments"],
     )
-    assert isinstance(result, PandocResult)
+    assert isinstance(result, ExtractionResult)
     assert result.content.strip() == "Sample processed content"
     assert "--strip-comments" in mock_subprocess_run.call_args[0][0]
 
@@ -120,26 +120,26 @@ async def test_process_file_error(mock_subprocess_run: Mock, docx_document: Path
     mock_subprocess_run.return_value.stderr = b"Error processing file"
 
     with pytest.raises(ParsingError, match="Failed to extract file data"):
-        await process_file(
+        await process_file_with_pandoc(
             docx_document, mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
 
 
 async def test_process_content_success(mock_subprocess_run: Mock) -> None:
-    result = await process_content(
+    result = await process_content_with_pandoc(
         b"test content", mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
-    assert isinstance(result, PandocResult)
+    assert isinstance(result, ExtractionResult)
     assert result.content.strip() == "Sample processed content"
 
 
 async def test_process_content_with_extra_args(mock_subprocess_run: Mock) -> None:
-    result = await process_content(
+    result = await process_content_with_pandoc(
         b"test content",
         mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         extra_args=["--strip-comments"],
     )
-    assert isinstance(result, PandocResult)
+    assert isinstance(result, ExtractionResult)
     assert result.content.strip() == "Sample processed content"
     assert "--strip-comments" in mock_subprocess_run.call_args[0][0]
 
@@ -168,16 +168,16 @@ async def test_integration_validate_pandoc_version() -> None:
 
 
 async def test_integration_process_file(markdown_document: Path) -> None:
-    result = await process_file(markdown_document, mime_type="text/x-markdown")
-    assert isinstance(result, PandocResult)
+    result = await process_file_with_pandoc(markdown_document, mime_type="text/x-markdown")
+    assert isinstance(result, ExtractionResult)
     assert isinstance(result.content, str)
     assert result.content.strip()
 
 
 async def test_integration_process_content() -> None:
     content = b"# Test\nThis is a test file."
-    result = await process_content(content, mime_type="text/x-markdown")
-    assert isinstance(result, PandocResult)
+    result = await process_content_with_pandoc(content, mime_type="text/x-markdown")
+    assert isinstance(result, ExtractionResult)
     assert isinstance(result.content, str)
     assert result.content.strip()
 
@@ -196,7 +196,7 @@ async def test_process_file_runtime_error(mock_subprocess_run: Mock, docx_docume
 
     mock_subprocess_run.side_effect = side_effect
     with pytest.raises(ParsingError, match="Failed to extract file data"):
-        await process_file(
+        await process_file_with_pandoc(
             docx_document, mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
 
@@ -215,19 +215,19 @@ async def test_process_content_empty_result(mock_subprocess_run: Mock) -> None:
         return cast(Mock, mock_subprocess_run.return_value)
 
     mock_subprocess_run.side_effect = side_effect
-    result = await process_content(
+    result = await process_content_with_pandoc(
         b"content", mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
-    assert isinstance(result, PandocResult)
+    assert isinstance(result, ExtractionResult)
     assert result.content == ""
     assert result.metadata == {}
 
 
 async def test_process_file_invalid_mime_type(mock_subprocess_run: Mock, docx_document: Path) -> None:
     with pytest.raises(ValidationError, match="Unsupported mime type"):
-        await process_file(docx_document, mime_type="invalid/mime-type")
+        await process_file_with_pandoc(docx_document, mime_type="invalid/mime-type")
 
 
 async def test_process_content_invalid_mime_type(mock_subprocess_run: Mock) -> None:
     with pytest.raises(ValidationError, match="Unsupported mime type"):
-        await process_content(b"content", mime_type="invalid/mime-type")
+        await process_content_with_pandoc(b"content", mime_type="invalid/mime-type")

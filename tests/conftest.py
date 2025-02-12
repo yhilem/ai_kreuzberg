@@ -34,6 +34,11 @@ def non_ascii_pdf() -> Path:
 
 
 @pytest.fixture(scope="session")
+def test_artile() -> Path:
+    return Path(__file__).parent / "source" / "test-article.pdf"
+
+
+@pytest.fixture(scope="session")
 def ocr_image() -> Path:
     return Path(__file__).parent / "source" / "ocr-image.jpg"
 

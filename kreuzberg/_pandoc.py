@@ -269,7 +269,7 @@ async def _handle_extract_metadata(input_file: str | PathLike[str], *, mime_type
     try:
         # Create a temporary file for metadata output
         metadata_file = await run_sync(NamedTemporaryFile, suffix=".json", delete=False)
-        await run_sync(metadata_file.close)  # Close the file before pandoc uses it
+        await run_sync(metadata_file.close)
 
         command = [
             "pandoc",
@@ -309,7 +309,7 @@ async def _handle_extract_file(
     try:
         # Create a temporary file for pandoc output
         output_file = await run_sync(NamedTemporaryFile, suffix=".md", delete=False)
-        await run_sync(output_file.close)  # Close the file before pandoc uses it
+        await run_sync(output_file.close)
 
         command = [
             "pandoc",
@@ -411,7 +411,7 @@ async def process_content_with_pandoc(
         # Create a temporary file for input content
         input_file = await run_sync(NamedTemporaryFile, suffix=f".{extension}", delete=False)
         await AsyncPath(input_file.name).write_bytes(content)
-        await run_sync(input_file.close)  # Close the file before pandoc uses it
+        await run_sync(input_file.close)
 
         return await process_file_with_pandoc(input_file.name, mime_type=mime_type, extra_args=extra_args)
     finally:

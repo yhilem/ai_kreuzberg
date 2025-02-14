@@ -235,7 +235,7 @@ async def process_file(
         # Create a temporary file for tesseract output
         output_file = await run_sync(NamedTemporaryFile, suffix=".txt", delete=False)
         output_file_name = output_file.name.replace(".txt", "")
-        await run_sync(output_file.close)  # Close the file before tesseract uses it
+        await run_sync(output_file.close)
 
         command = [
             "tesseract",
@@ -289,7 +289,7 @@ async def process_image(
         # Create a temporary file for the image
         image_file = await run_sync(NamedTemporaryFile, suffix=".png", delete=False)
         await run_sync(image.save, image_file.name, format="PNG")
-        await run_sync(image_file.close)  # Close the file before tesseract uses it
+        await run_sync(image_file.close)
 
         return await process_file(
             image_file.name, language=language, psm=psm, max_tesseract_concurrency=max_tesseract_concurrency

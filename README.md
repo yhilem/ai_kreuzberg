@@ -29,7 +29,31 @@ Kreuzberg requires two system level dependencies:
 - [Pandoc](https://pandoc.org/installing.html) - For document format conversion
 - [Tesseract OCR](https://tesseract-ocr.github.io/) - For image and PDF OCR
 
-Please install these using their respective installation guides.
+You can install these with:
+
+#### Linux (Ubuntu)
+
+```shell
+sudo apt-get install pandoc tesseract-ocr
+```
+
+#### MacOS
+
+```shell
+# MacOS
+brew install tesseract pandoc
+```
+
+#### Windows
+
+```shell
+choco install -y tesseract pandoc
+```
+
+Notes:
+
+- in most distributions the tesseract-ocr package is split into multiple packages, you may need to install any language models you need aside from English separately.
+- please consult the official documentation for these libraries for the most up-to-date installation instructions for your platform.
 
 ## Architecture
 
@@ -117,18 +141,26 @@ All extraction functions accept the following optional parameters for configurin
 
 #### OCR Configuration
 
-- `language` (default: "eng"): Specifies the language model for Tesseract OCR. This affects text recognition accuracy for non-English documents. Examples:
-  - "eng" for English
-  - "deu" for German
-  - "fra" for French
+- `force_ocr`(default: `False`): Forces OCR processing even for searchable PDFs.
+- `language` (default: `eng`): Specifies the language model for Tesseract OCR. This affects text recognition accuracy for documents in different languages. Examples:
 
-Consult the [Tesseract documentation](https://tesseract-ocr.github.io/tessdoc/) for more information.
+  - `eng` for English
+  - `deu` for German
+  - `eng+deu` for English and German
 
-- `psm` (Page Segmentation Mode, default: PSM.AUTO): Controls how Tesseract analyzes page layout. In most cases you do not need to change this to a different value.
+  Notes: - the order of languages effect processing time, the first language is the primary language and the second language is the secondary language etc.
 
-#### Performance Configuration
+- `psm` (Page Segmentation Mode, default: `PSM.AUTO`): Controls how Tesseract analyzes page layout. In most cases you do not need to change this to a different value.
 
-- `max_processes` (default: CPU count / 2): Maximum number of concurrent processes for Tesseract and Pandoc. Higher values can lead to performance improvements, but may cause resource exhaustion and deadlocks (especially for tesseract).
+Consult the [Tesseract documentation](https://tesseract-ocr.github.io/tessdoc/) for more information on both options.
+
+#### Processing Configuration
+
+- `max_processes` (default: CPU count / 2): Maximum number of concurrent processes for Tesseract and Pandoc.
+
+  Notes:
+
+  - Higher values can lead to performance improvements when batch processing especially with OCR, but may cause resource exhaustion and deadlocks (especially for tesseract).
 
 ### Quick Start
 
@@ -136,7 +168,7 @@ Consult the [Tesseract documentation](https://tesseract-ocr.github.io/tessdoc/) 
 from pathlib import Path
 from kreuzberg import extract_file
 from kreuzberg.extraction import ExtractionResult
-from kreuzberg._tesseract import PSMMode, SupportedLanguage
+from kreuzberg._tesseract import PSMMode
 
 
 # Basic file extraction
@@ -158,7 +190,7 @@ async def extract_document():
     docx_result = await extract_file(Path("document.docx"))
     if docx_result.metadata:
         print(f"Title: {docx_result.metadata.get('title')}")
-        print(f"Author: {docx_result.metadata.get('author')}")
+        print(f"Author: {docx_result.metadata.get('creator')}")
 ```
 
 ### Extracting Bytes
@@ -201,7 +233,7 @@ Kreuzberg supports efficient batch processing of multiple files or byte contents
 
 ```python
 from pathlib import Path
-from kreuzberg import batch_extract_file, batch_extract_bytes
+from kreuzberg import batch_extract_file, batch_extract_bytes, batch_extract_file_sync
 
 
 # Process multiple files concurrently

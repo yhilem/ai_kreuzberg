@@ -293,9 +293,7 @@ async def _handle_extract_metadata(input_file: str | PathLike[str], *, mime_type
         await unlink()
 
 
-async def _handle_extract_file(
-    input_file: str | PathLike[str], *, mime_type: str, extra_args: list[str] | None = None
-) -> str:
+async def _handle_extract_file(input_file: str | PathLike[str], *, mime_type: str) -> str:
     pandoc_type = _get_pandoc_type_from_mime_type(mime_type)
     output_path, unlink = await create_temp_file(".md")
     try:
@@ -308,9 +306,6 @@ async def _handle_extract_file(
             "--wrap=preserve",
             "--quiet",
         ]
-
-        if extra_args:
-            command.extend(extra_args)
 
         command.extend(["--output", str(output_path)])
 
@@ -332,15 +327,12 @@ async def _handle_extract_file(
         await unlink()
 
 
-async def process_file_with_pandoc(
-    input_file: str | PathLike[str], *, mime_type: str, extra_args: list[str] | None = None
-) -> ExtractionResult:
+async def process_file_with_pandoc(input_file: str | PathLike[str], *, mime_type: str) -> ExtractionResult:
     """Process a single file using Pandoc and convert to markdown.
 
     Args:
         input_file: The path to the file to process.
         mime_type: The mime type of the file.
-        extra_args: Additional Pandoc command line arguments.
 
     Raises:
         ParsingError: If the file data could not be extracted.
@@ -364,7 +356,7 @@ async def process_file_with_pandoc(
 
             async def _get_content() -> None:
                 nonlocal content
-                content = await _handle_extract_file(input_file, mime_type=mime_type, extra_args=extra_args)
+                content = await _handle_extract_file(input_file, mime_type=mime_type)
 
             tg.start_soon(_get_metadata)
             tg.start_soon(_get_content)
@@ -378,15 +370,12 @@ async def process_file_with_pandoc(
     )
 
 
-async def process_content_with_pandoc(
-    content: bytes, *, mime_type: str, extra_args: list[str] | None = None
-) -> ExtractionResult:
+async def process_content_with_pandoc(content: bytes, *, mime_type: str) -> ExtractionResult:
     """Process content using Pandoc and convert to markdown.
 
     Args:
         content: The content to process.
         mime_type: The mime type of the content.
-        extra_args: Additional Pandoc command line arguments.
 
     Returns:
         ExtractionResult
@@ -395,7 +384,7 @@ async def process_content_with_pandoc(
     input_file, unlink = await create_temp_file(f".{extension}")
 
     await AsyncPath(input_file).write_bytes(content)
-    result = await process_file_with_pandoc(input_file, mime_type=mime_type, extra_args=extra_args)
+    result = await process_file_with_pandoc(input_file, mime_type=mime_type)
 
     await unlink()
     return result

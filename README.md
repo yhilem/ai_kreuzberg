@@ -167,8 +167,8 @@ Consult the [Tesseract documentation](https://tesseract-ocr.github.io/tessdoc/) 
 ```python
 from pathlib import Path
 from kreuzberg import extract_file
-from kreuzberg.extraction import ExtractionResult
-from kreuzberg._tesseract import PSMMode
+from kreuzberg import ExtractionResult
+from kreuzberg import PSMMode
 
 
 # Basic file extraction
@@ -197,7 +197,7 @@ async def extract_document():
 
 ```python
 from kreuzberg import extract_bytes
-from kreuzberg.extraction import ExtractionResult
+from kreuzberg import ExtractionResult
 
 
 async def process_upload(file_content: bytes, mime_type: str) -> ExtractionResult:
@@ -343,8 +343,8 @@ async def process_document(path: str) -> tuple[str, str, Metadata]:
 Kreuzberg provides comprehensive error handling through several exception types, all inheriting from `KreuzbergError`. Each exception includes helpful context information for debugging.
 
 ```python
-from kreuzberg import extract_file
-from kreuzberg.exceptions import (
+from kreuzberg import (
+    extract_file,
     ValidationError,
     ParsingError,
     OCRError,

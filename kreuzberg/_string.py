@@ -22,7 +22,7 @@ def safe_decode(byte_data: bytes, encoding: str | None = None) -> str:
     encodings = [encoding, detect(byte_data).get("encoding", ""), "utf-8"]
 
     for enc in [e for e in encodings if e]:  # pragma: no cover
-        with suppress(UnicodeDecodeError):
+        with suppress(UnicodeDecodeError, LookupError):
             return byte_data.decode(enc)
 
     # If all encodings fail, fall back to latin-1 which can handle any byte

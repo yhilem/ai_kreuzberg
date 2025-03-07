@@ -1,29 +1,37 @@
+"""This module provides functions to extract textual content from files.
+
+It includes vendored code:
+
+- The extract PPTX logic is based on code vendored from `markitdown` to extract text from PPTX files.
+    See: https://github.com/microsoft/markitdown/blob/main/src/markitdown/_markitdown.py
+    Refer to the markitdown repository for it's license (MIT).
+"""
+
 from __future__ import annotations
 
 import re
 from contextlib import suppress
 from html import escape
 from io import BytesIO
-from typing import TYPE_CHECKING
+from pathlib import Path
+from typing import TYPE_CHECKING, ClassVar
 
 import pptx
 from anyio import Path as AsyncPath
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 
 from kreuzberg import ExtractionResult
-from kreuzberg._base import BaseExtractor
-from kreuzberg._mime_types import MARKDOWN_MIME_TYPE
-from kreuzberg._string import normalize_spaces
+from kreuzberg._extractors._base import Extractor
+from kreuzberg._mime_types import MARKDOWN_MIME_TYPE, POWER_POINT_MIME_TYPE
+from kreuzberg._utils._string import normalize_spaces
 
 if TYPE_CHECKING:  # pragma: no cover
-    from pathlib import Path
-
     from pptx.presentation import Presentation
 
     from kreuzberg._types import Metadata
 
 
-class PPTXExtractor(BaseExtractor):
+class PresentationExtractor(Extractor):
     """Extractor for PowerPoint (.pptx) files.
 
     This extractor processes PowerPoint presentations and converts their content into Markdown format.
@@ -33,6 +41,8 @@ class PPTXExtractor(BaseExtractor):
     The extractor provides both synchronous and asynchronous methods for processing files either
     from disk or from bytes in memory.
     """
+
+    SUPPORTED_MIME_TYPES: ClassVar[set[str]] = {POWER_POINT_MIME_TYPE}
 
     async def extract_bytes_async(self, content: bytes) -> ExtractionResult:
         """Asynchronously extract content from PowerPoint file bytes.
@@ -116,9 +126,17 @@ class PPTXExtractor(BaseExtractor):
         for index, slide in enumerate(presentation.slides):
             md_content += f"\n\n<!-- Slide number: {index + 1} -->\n"
 
-            title = slide.shapes.title
+            # Handle the case where slide.shapes is a list (in tests) or a proper SlideShapes object
+            title = None
+            if hasattr(slide.shapes, "title"):
+                title = slide.shapes.title
 
+            # Process all shapes in the slide
             for shape in slide.shapes:
+                # Skip if not a proper shape (could be a mock in tests)
+                if not hasattr(shape, "shape_type"):
+                    continue
+
                 if shape.shape_type == MSO_SHAPE_TYPE.PICTURE or (
                     shape.shape_type == MSO_SHAPE_TYPE.PLACEHOLDER and hasattr(shape, "image")
                 ):
@@ -193,7 +211,7 @@ class PPTXExtractor(BaseExtractor):
             ("version", "version"),
         ]:
             if core_property := getattr(presentation.core_properties, core_property_key, None):
-                metadata[metadata_key] = core_property
+                metadata[metadata_key] = core_property  # type: ignore[literal-required]
 
         if presentation.core_properties.language:
             metadata["languages"] = [presentation.core_properties.language]
@@ -204,11 +222,14 @@ class PPTXExtractor(BaseExtractor):
         fonts = set()
         for slide in presentation.slides:
             for shape in slide.shapes:
-                if hasattr(shape, "text_frame"):
-                    for paragraph in shape.text_frame.paragraphs:
-                        for run in paragraph.runs:
-                            if hasattr(run, "font") and run.font.name:
-                                fonts.add(run.font.name)
+                # Skip shapes that don't have proper attributes (like in tests)
+                if not hasattr(shape, "text_frame"):
+                    continue
+
+                for paragraph in shape.text_frame.paragraphs:
+                    for run in paragraph.runs:
+                        if hasattr(run, "font") and run.font.name:
+                            fonts.add(run.font.name)
 
         if fonts:
             metadata["fonts"] = list(fonts)

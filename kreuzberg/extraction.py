@@ -1,52 +1,74 @@
-"""This module provides functions to extract textual content from files.
-
-It includes vendored code:
-
-- The extract PPTX logic is based on code vendored from `markitdown` to extract text from PPTX files.
-    See: https://github.com/microsoft/markitdown/blob/main/src/markitdown/_markitdown.py
-    Refer to the markitdown repository for it's license (MIT).
-"""
-
 from __future__ import annotations
 
-from functools import partial
-from io import BytesIO
+from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, cast
 
 import anyio
-from anyio import Path as AsyncPath
-from PIL.Image import open as open_image
 
 from kreuzberg import ExtractionResult
-from kreuzberg._base import ExtractionConfig
-from kreuzberg._html import extract_html_string
+from kreuzberg._extractors._base import ExtractionConfig, Extractor
+from kreuzberg._extractors._html import HTMLExtractor
+from kreuzberg._extractors._image import ImageExtractor
+from kreuzberg._extractors._pandoc import (
+    BibliographyExtractor,
+    EbookExtractor,
+    LaTeXExtractor,
+    MarkdownExtractor,
+    MiscFormatExtractor,
+    OfficeDocumentExtractor,
+    StructuredTextExtractor,
+    TabularDataExtractor,
+    XMLBasedExtractor,
+)
+from kreuzberg._extractors._pdf import PDFExtractor
+from kreuzberg._extractors._presentation import PresentationExtractor
+from kreuzberg._extractors._spread_sheet import SpreadSheetExtractor
 from kreuzberg._mime_types import (
-    EXCEL_MIME_TYPE,
-    HTML_MIME_TYPE,
-    IMAGE_MIME_TYPES,
-    PANDOC_SUPPORTED_MIME_TYPES,
-    PDF_MIME_TYPE,
-    POWER_POINT_MIME_TYPE,
-    SUPPORTED_MIME_TYPES,
     validate_mime_type,
 )
-from kreuzberg._pandoc import process_content_with_pandoc, process_file_with_pandoc
-from kreuzberg._pdf import (
-    extract_pdf_content,
-    extract_pdf_file,
-)
-from kreuzberg._pptx import PPTXExtractor
-from kreuzberg._string import safe_decode
-from kreuzberg._tesseract import process_image_with_tesseract
-from kreuzberg._xlsx import extract_xlsx_content, extract_xlsx_file
-from kreuzberg.exceptions import ValidationError
+from kreuzberg._utils._string import safe_decode
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from os import PathLike
 
 DEFAULT_CONFIG: Final[ExtractionConfig] = ExtractionConfig()
+
+
+@lru_cache
+def get_extractor(mime_type: str | None, config: ExtractionConfig) -> Extractor | None:
+    """Gets the extractor for the mimetype.
+
+    Args:
+        mime_type: The mime type of the content.
+        config: Extraction options object, defaults to the default object.
+
+    Returns:
+        The extractor
+    """
+    if mime_type:
+        for extractor in [
+            # order by how likely the mimetype is to match first.
+            PDFExtractor,
+            OfficeDocumentExtractor,
+            PresentationExtractor,
+            SpreadSheetExtractor,
+            HTMLExtractor,
+            MarkdownExtractor,
+            ImageExtractor,
+            BibliographyExtractor,
+            EbookExtractor,
+            LaTeXExtractor,
+            MiscFormatExtractor,
+            StructuredTextExtractor,
+            TabularDataExtractor,
+            XMLBasedExtractor,
+        ]:
+            if extractor.supports_mimetype(mime_type):
+                return extractor(mime_type=mime_type, config=config)  # type: ignore[abstract]
+
+    return None
 
 
 async def extract_bytes(content: bytes, mime_type: str, config: ExtractionConfig = DEFAULT_CONFIG) -> ExtractionResult:
@@ -57,45 +79,13 @@ async def extract_bytes(content: bytes, mime_type: str, config: ExtractionConfig
         mime_type: The mime type of the content.
         config: Extraction options object, defaults to the default object.
 
-    Raises:
-        ValidationError: If the mime type is not supported.
 
     Returns:
         The extracted content and the mime type of the content.
     """
-    if mime_type not in SUPPORTED_MIME_TYPES or not any(mime_type.startswith(value) for value in SUPPORTED_MIME_TYPES):
-        raise ValidationError(
-            f"Unsupported mime type: {mime_type}",
-            context={"mime_type": mime_type, "supported_mimetypes": ",".join(sorted(SUPPORTED_MIME_TYPES))},
-        )
-
-    if mime_type == PDF_MIME_TYPE or mime_type.startswith(PDF_MIME_TYPE):
-        return await extract_pdf_content(
-            content,
-            force_ocr=config.force_ocr,
-            max_processes=config.max_processes,
-            psm=config.psm,
-            language=config.language,
-        )
-
-    if mime_type == EXCEL_MIME_TYPE or mime_type.startswith(EXCEL_MIME_TYPE):
-        return await extract_xlsx_content(content)
-
-    if mime_type in IMAGE_MIME_TYPES or any(mime_type.startswith(value) for value in IMAGE_MIME_TYPES):
-        return await process_image_with_tesseract(
-            open_image(BytesIO(content)), psm=config.psm, language=config.language
-        )
-
-    if mime_type in PANDOC_SUPPORTED_MIME_TYPES or any(
-        mime_type.startswith(value) for value in PANDOC_SUPPORTED_MIME_TYPES
-    ):
-        return await process_content_with_pandoc(content=content, mime_type=mime_type)
-
-    if mime_type == POWER_POINT_MIME_TYPE or mime_type.startswith(POWER_POINT_MIME_TYPE):
-        return await PPTXExtractor(config).extract_bytes_async(content)
-
-    if mime_type == HTML_MIME_TYPE or mime_type.startswith(HTML_MIME_TYPE):
-        return await extract_html_string(content)
+    mime_type = validate_mime_type(mime_type=mime_type)
+    if extractor := get_extractor(mime_type=mime_type, config=config):
+        return await extractor.extract_bytes_async(content)
 
     return ExtractionResult(
         content=safe_decode(content),
@@ -114,46 +104,16 @@ async def extract_file(
         mime_type: The mime type of the content.
         config: Extraction options object, defaults to the default object.
 
-    Raises:
-        ValidationError: If the mime type is not supported.
-
     Returns:
         The extracted content and the mime type of the content.
     """
-    input_file = await AsyncPath(file_path).resolve()
+    mime_type = validate_mime_type(file_path=file_path, mime_type=mime_type)
+    if extractor := get_extractor(mime_type=mime_type, config=config):
+        return await extractor.extract_path_async(Path(file_path))
 
-    mime_type = validate_mime_type(input_file, mime_type)
-
-    if not await input_file.exists():
-        raise ValidationError("The file does not exist.", context={"input_file": str(input_file)})
-
-    if mime_type == PDF_MIME_TYPE or mime_type.startswith(PDF_MIME_TYPE):
-        return await extract_pdf_file(
-            Path(input_file),
-            force_ocr=config.force_ocr,
-            max_processes=config.max_processes,
-            psm=config.psm,
-            language=config.language,
-        )
-
-    if mime_type == EXCEL_MIME_TYPE or mime_type.startswith(EXCEL_MIME_TYPE):
-        return await extract_xlsx_file(Path(input_file))
-
-    if mime_type in IMAGE_MIME_TYPES or any(mime_type.startswith(value) for value in IMAGE_MIME_TYPES):
-        return await process_image_with_tesseract(input_file, psm=config.psm, language=config.language)
-
-    if mime_type in PANDOC_SUPPORTED_MIME_TYPES or any(
-        mime_type.startswith(value) for value in PANDOC_SUPPORTED_MIME_TYPES
-    ):
-        return await process_file_with_pandoc(input_file=input_file, mime_type=mime_type)
-
-    if mime_type == POWER_POINT_MIME_TYPE or mime_type.startswith(POWER_POINT_MIME_TYPE):
-        return await PPTXExtractor(config).extract_path_async(input_file)
-
-    if mime_type == HTML_MIME_TYPE or mime_type.startswith(HTML_MIME_TYPE):
-        return await extract_html_string(Path(input_file))
-
-    return ExtractionResult(content=safe_decode(await input_file.read_bytes()), mime_type=mime_type, metadata={})
+    return ExtractionResult(
+        content=safe_decode(await anyio.Path(file_path).read_bytes()), mime_type=mime_type, metadata={}
+    )
 
 
 async def batch_extract_file(
@@ -224,16 +184,15 @@ def extract_bytes_sync(content: bytes, mime_type: str, config: ExtractionConfig 
     Returns:
         The extracted content and the mime type of the content.
     """
-    handler = partial(
-        extract_bytes,
-        content,
-        mime_type,
-        max_processes=config.max_processes,
-        force_ocr=config.force_ocr,
-        language=config.language,
-        psm=config.psm,
+    mime_type = validate_mime_type(mime_type=mime_type)
+    if extractor := get_extractor(mime_type=mime_type, config=config):
+        return extractor.extract_bytes_sync(content)
+
+    return ExtractionResult(
+        content=safe_decode(content),
+        mime_type=mime_type,
+        metadata={},
     )
-    return anyio.run(handler)
 
 
 def extract_file_sync(
@@ -249,16 +208,15 @@ def extract_file_sync(
     Returns:
         The extracted content and the mime type of the content.
     """
-    handler = partial(
-        extract_file,
-        file_path,
-        mime_type,
-        max_processes=config.max_processes,
-        force_ocr=config.force_ocr,
-        language=config.language,
-        psm=config.psm,
+    mime_type = validate_mime_type(file_path=file_path, mime_type=mime_type)
+    if extractor := get_extractor(mime_type=mime_type, config=config):
+        return extractor.extract_path_sync(Path(file_path))
+
+    return ExtractionResult(
+        content=Path(file_path).read_text(),
+        mime_type=mime_type,
+        metadata={},
     )
-    return anyio.run(handler)
 
 
 def batch_extract_file_sync(
@@ -273,15 +231,7 @@ def batch_extract_file_sync(
     Returns:
         A list of extraction results in the same order as the input paths.
     """
-    handler = partial(
-        batch_extract_file,
-        file_paths,
-        force_ocr=config.force_ocr,
-        max_processes=config.max_processes,
-        language=config.language,
-        psm=config.psm,
-    )
-    return anyio.run(handler)
+    return [extract_file_sync(file_path=Path(file_path), mime_type=None, config=config) for file_path in file_paths]
 
 
 def batch_extract_bytes_sync(
@@ -296,12 +246,4 @@ def batch_extract_bytes_sync(
     Returns:
         A list of extraction results in the same order as the input contents.
     """
-    handler = partial(
-        batch_extract_bytes,
-        contents,
-        force_ocr=config.force_ocr,
-        max_processes=config.max_processes,
-        language=config.language,
-        psm=config.psm,
-    )
-    return anyio.run(handler)
+    return [extract_bytes_sync(content=content, mime_type=mime_type, config=config) for content, mime_type in contents]

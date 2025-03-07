@@ -1,4 +1,5 @@
-from ._tesseract import PSMMode
+from kreuzberg._ocr._tesseract import PSMMode
+
 from ._types import ExtractionResult, Metadata
 from .exceptions import KreuzbergError, MissingDependencyError, OCRError, ParsingError, ValidationError
 from .extraction import (

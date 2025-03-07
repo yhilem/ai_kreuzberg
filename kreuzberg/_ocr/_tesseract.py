@@ -12,10 +12,10 @@ from PIL.Image import Image
 
 from kreuzberg._constants import DEFAULT_MAX_PROCESSES, MINIMAL_SUPPORTED_TESSERACT_VERSION
 from kreuzberg._mime_types import PLAIN_TEXT_MIME_TYPE
-from kreuzberg._string import normalize_spaces
-from kreuzberg._sync import run_sync, run_taskgroup_batched
-from kreuzberg._tmp import create_temp_file
 from kreuzberg._types import ExtractionResult
+from kreuzberg._utils._string import normalize_spaces
+from kreuzberg._utils._sync import run_sync, run_taskgroup_batched
+from kreuzberg._utils._tmp import create_temp_file
 from kreuzberg.exceptions import MissingDependencyError, OCRError, ParsingError
 
 if sys.version_info < (3, 11):  # pragma: no cover
@@ -167,9 +167,10 @@ async def process_image(
     """
     image_path, unlink = await create_temp_file(".png")
     await run_sync(image.save, str(image_path), format="PNG")
-    result = await process_file(image_path, language=language, psm=psm)
-    await unlink()
-    return result
+    try:
+        return await process_file(image_path, language=language, psm=psm)
+    finally:
+        await unlink()
 
 
 async def process_image_with_tesseract(

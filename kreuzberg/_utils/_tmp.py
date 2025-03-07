@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Callable
 
 from anyio import Path as AsyncPath
 
-from kreuzberg._sync import run_sync
+from kreuzberg._utils._sync import run_sync
 
 if TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Coroutine

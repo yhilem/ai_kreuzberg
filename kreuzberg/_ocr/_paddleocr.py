@@ -11,9 +11,10 @@ from PIL import Image
 from kreuzberg._mime_types import PLAIN_TEXT_MIME_TYPE
 from kreuzberg._ocr._base import OCRBackend
 from kreuzberg._types import ExtractionResult, Metadata
+from kreuzberg._utils._language import to_paddle
 from kreuzberg._utils._string import normalize_spaces
 from kreuzberg._utils._sync import run_sync
-from kreuzberg.exceptions import MissingDependencyError, OCRError
+from kreuzberg.exceptions import OCRError
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -35,18 +36,10 @@ class PaddleConfig(TypedDict):
     This TypedDict provides type hints and documentation for all PaddleOCR parameters.
     """
 
-    cls: NotRequired[bool]
-    """Enable text orientation classification when using the ocr() function. Default: False"""
-    cls_batch_num: NotRequired[int]
-    """Batch size for classification processing. Default: 30"""
     cls_image_shape: NotRequired[str]
     """Image shape for classification algorithm in format 'channels,height,width'. Default: '3,48,192'"""
-    cls_model_dir: NotRequired[str]
-    """Text classification model directory. If None, auto-downloads to ~/.paddleocr/cls"""
     crop_res_save_dir: NotRequired[str]
     """Directory to save cropped text images. Default: './output'"""
-    det: NotRequired[bool]
-    """Enable text detection when using the ocr() function. Default: True"""
     det_algorithm: NotRequired[Literal["DB", "EAST", "SAST", "PSE", "FCE", "PAN", "CT", "DB++", "Layout"]]
     """Detection algorithm. Default: 'DB'"""
     det_db_box_thresh: NotRequired[float]
@@ -63,31 +56,16 @@ class PaddleConfig(TypedDict):
     """Binarization threshold for EAST output map. Default: 0.8"""
     det_max_side_len: NotRequired[int]
     """Maximum size of image long side. Images exceeding this will be proportionally resized. Default: 960"""
-    det_model_dir: NotRequired[str]
-    """Text detection model directory. If None, auto-downloads to ~/.paddleocr/det"""
-    draw_img_save_dir: NotRequired[str]
-    """Directory to save visualization results. Default: './inference_results'"""
     drop_score: NotRequired[float]
     """Filter recognition results by confidence score. Results below this are discarded. Default: 0.5"""
     enable_mkldnn: NotRequired[bool]
     """Whether to enable MKL-DNN acceleration (Intel CPU only). Default: False"""
     gpu_mem: NotRequired[int]
     """GPU memory size (in MB) to use for initialization. Default: 8000"""
-    image_dir: NotRequired[str]
-    """The images path or folder path for batch prediction."""
-    label_list: NotRequired[list[str]]
-    """Label list for classification algorithm. Default: ['0','180']"""
-    language: NotRequired[Literal["ch", "en", "french", "german", "korean", "japan"]]
-    layout: NotRequired[bool]
-    """Whether to enable layout analysis. Default: False"""
-    layout_dict_path: NotRequired[str]
-    """Path to the layout dictionary file. Default: './ppocr/utils/dict/layout_dict/layout_cdla_dict.txt'"""
-    layout_model_dir: NotRequired[str]
-    """Layout analysis model directory. If None, auto-downloads to ~/.paddleocr/layout"""
+    language: NotRequired[str]
+    """Language to use for OCR."""
     max_text_length: NotRequired[int]
     """Maximum text length that the recognition algorithm can recognize. Default: 25"""
-    precision: NotRequired[str]
-    """Inference precision, options: 'fp32', 'fp16', 'int8'. Default: 'fp32'"""
     rec: NotRequired[bool]
     """Enable text recognition when using the ocr() function. Default: True"""
     rec_algorithm: NotRequired[
@@ -108,51 +86,22 @@ class PaddleConfig(TypedDict):
         ]
     ]
     """Recognition algorithm. Default: 'CRNN'"""
-    rec_batch_num: NotRequired[int]
-    """Batch size for recognition processing. Default: 30"""
-    rec_char_dict_path: NotRequired[str]
-    """Path to the alphabet file/character dictionary. Default: './ppocr/utils/ppocr_keys_v1.txt'"""
     rec_image_shape: NotRequired[str]
     """Image shape for recognition algorithm in format 'channels,height,width'. Default: '3,32,320'"""
-    rec_model_dir: NotRequired[str]
-    """Text recognition model directory. If None, auto-downloads to ~/.paddleocr/rec"""
-    save_crop_res: NotRequired[bool]
-    """Whether to save cropped text images. Default: False"""
     table: NotRequired[bool]
-    """Whether to enable table recognition. Default: False"""
-    table_model_dir: NotRequired[str]
-    """Table recognition model directory. If None, auto-downloads to ~/.paddleocr/table"""
+    """Whether to enable table recognition. Default: True"""
     use_angle_cls: NotRequired[bool]
-    """Whether to use text orientation classification model. Default: False"""
+    """Whether to use text orientation classification model. Default: True"""
     use_gpu: NotRequired[bool]
-    """Whether to use GPU for inference. Default: False"""
+    """Whether to use GPU for inference. Requires installing the paddlepaddle-gpu package"""
     use_space_char: NotRequired[bool]
     """Whether to recognize spaces. Default: True"""
     use_zero_copy_run: NotRequired[bool]
     """Whether to enable zero_copy_run for inference optimization. Default: False"""
-    visual_output: NotRequired[bool]
-    """Whether to generate visualization output. Default: True"""
 
 
 class PaddleBackend(OCRBackend[PaddleConfig]):
     _paddle_ocr: ClassVar[Any] = None
-    _LANGUAGE_MAP: ClassVar[dict[str, str]] = {
-        "eng": "en",
-        "en": "en",
-        "chi": "ch",
-        "zho": "ch",
-        "zh": "ch",
-        "chs": "ch",
-        "fra": "french",
-        "fr": "french",
-        "deu": "german",
-        "de": "german",
-        "kor": "korean",
-        "ko": "korean",
-        "jpn": "japan",
-        "ja": "japan",
-    }
-    _SUPPORTED_LANGUAGES: ClassVar[set[str]] = {"ch", "en", "french", "german", "korean", "japan"}
 
     async def process_image(self, image: Image.Image, **kwargs: Unpack[PaddleConfig]) -> ExtractionResult:
         """Asynchronously process an image and extract its text and metadata using PaddleOCR.
@@ -261,25 +210,6 @@ class PaddleBackend(OCRBackend[PaddleConfig]):
         )
 
     @classmethod
-    def _normalize_language(cls, language: str) -> str:
-        """Normalize language code to PaddleOCR format.
-
-        Args:
-            language: ISO language code or language name.
-
-        Returns:
-            str: Normalized language code compatible with PaddleOCR.
-        """
-        lang_lower = language.lower()
-        if lang_lower in cls._LANGUAGE_MAP:
-            return cls._LANGUAGE_MAP[lang_lower]
-
-        if lang_lower in cls._SUPPORTED_LANGUAGES:
-            return lang_lower
-
-        return "en"
-
-    @classmethod
     def _is_mkldnn_supported(cls) -> bool:
         """Check if the current architecture supports MKL-DNN optimization.
 
@@ -292,6 +222,7 @@ class PaddleBackend(OCRBackend[PaddleConfig]):
 
         if system in ("linux", "windows"):
             return "intel" in processor or "x86" in machine or "amd64" in machine or "x86_64" in machine
+
         if system == "darwin":
             return machine == "x86_64"
 
@@ -312,7 +243,7 @@ class PaddleBackend(OCRBackend[PaddleConfig]):
             return
 
         try:
-            language = cls._normalize_language(kwargs.pop("language", "en"))
+            language = to_paddle(kwargs.pop("language", "en"))
             has_gpu_package = bool(find_spec("paddlepaddle_gpu"))
             kwargs.setdefault("use_angle_cls", True)
             kwargs.setdefault("use_gpu", has_gpu_package)
@@ -326,9 +257,5 @@ class PaddleBackend(OCRBackend[PaddleConfig]):
                 lang=language,
                 show_log=False,
             )
-        except ImportError as e:
-            raise MissingDependencyError(
-                "PaddleOCR is not installed. Please install paddleocr and its dependencies."
-            ) from e
         except Exception as e:
             raise OCRError(f"Failed to initialize PaddleOCR: {e}") from e

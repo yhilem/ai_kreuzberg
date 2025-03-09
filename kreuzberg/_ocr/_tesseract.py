@@ -10,6 +10,7 @@ from anyio import run_process
 from kreuzberg._mime_types import PLAIN_TEXT_MIME_TYPE
 from kreuzberg._ocr._base import OCRBackend
 from kreuzberg._types import ExtractionResult, PSMMode
+from kreuzberg._utils._language import to_tesseract
 from kreuzberg._utils._string import normalize_spaces
 from kreuzberg._utils._sync import run_sync
 from kreuzberg._utils._tmp import create_temp_file
@@ -61,7 +62,7 @@ class TesseractBackend(OCRBackend[TesseractConfig]):
     ) -> ExtractionResult:
         await self._validate_tesseract_version()
         output_path, unlink = await create_temp_file(".txt")
-        language = kwargs.get("language", "eng")
+        language = to_tesseract(kwargs.get("language", "eng"))
         psm = kwargs.get("psm", PSMMode.AUTO)
         try:
             output_base = str(output_path).replace(".txt", "")

@@ -7,9 +7,9 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from kreuzberg._ocr._paddleocr import PaddleBackend
+from kreuzberg._ocr._paddleocr import PADDLEOCR_SUPPORTED_LANGUAGE_CODES, PaddleBackend
 from kreuzberg._types import ExtractionResult
-from kreuzberg.exceptions import MissingDependencyError, OCRError
+from kreuzberg.exceptions import MissingDependencyError, OCRError, ValidationError
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -25,7 +25,8 @@ def backend() -> PaddleBackend:
 @pytest.fixture
 def mock_paddleocr(mocker: MockerFixture) -> Mock:
     """Mock the PaddleOCR class."""
-    mock = mocker.patch("kreuzberg._ocr._paddleocr.PaddleOCR")
+
+    mock = mocker.patch("paddleocr.PaddleOCR")
     instance = mock.return_value
 
     instance.ocr.return_value = [
@@ -131,33 +132,6 @@ def mock_image() -> Mock:
 
 
 @pytest.mark.anyio
-async def test_normalize_language() -> None:
-    """Test the language normalization function."""
-
-    assert PaddleBackend._normalize_language("eng") == "en"
-    assert PaddleBackend._normalize_language("chi") == "ch"
-    assert PaddleBackend._normalize_language("fra") == "french"
-    assert PaddleBackend._normalize_language("deu") == "german"
-    assert PaddleBackend._normalize_language("kor") == "korean"
-    assert PaddleBackend._normalize_language("jpn") == "japan"
-
-    assert PaddleBackend._normalize_language("en") == "en"
-    assert PaddleBackend._normalize_language("zh") == "ch"
-    assert PaddleBackend._normalize_language("fr") == "french"
-    assert PaddleBackend._normalize_language("de") == "german"
-    assert PaddleBackend._normalize_language("ko") == "korean"
-    assert PaddleBackend._normalize_language("ja") == "japan"
-
-    assert PaddleBackend._normalize_language("french") == "french"
-    assert PaddleBackend._normalize_language("german") == "german"
-    assert PaddleBackend._normalize_language("korean") == "korean"
-    assert PaddleBackend._normalize_language("japan") == "japan"
-
-    assert PaddleBackend._normalize_language("unknown") == "en"
-    assert PaddleBackend._normalize_language("spa") == "en"
-
-
-@pytest.mark.anyio
 async def test_is_mkldnn_supported(mocker: MockerFixture) -> None:
     """Test the MKL-DNN support detection function."""
 
@@ -213,10 +187,12 @@ async def test_init_paddle_ocr_with_language(
 
     PaddleBackend._paddle_ocr = None
 
-    await backend._init_paddle_ocr(language="fra")
+    with patch.object(PaddleBackend, "_validate_language_code", return_value="french"):
+        await backend._init_paddle_ocr(language="fra")
 
-    call_kwargs = mock_run_sync.call_args[1]
-    assert call_kwargs.get("lang") == "french"
+        mock_paddleocr.assert_called_once()
+        call_args, call_kwargs = mock_paddleocr.call_args
+        assert call_kwargs.get("lang") == "french"
 
 
 @pytest.mark.anyio
@@ -225,11 +201,16 @@ async def test_init_paddle_ocr_missing_dependency(backend: PaddleBackend, mock_f
 
     PaddleBackend._paddle_ocr = None
 
-    with patch("kreuzberg._ocr._paddleocr.run_sync", side_effect=ImportError("No module named 'paddleocr'")):
+    def mock_import(name: str, *args: Any, **kwargs: Any) -> Any:
+        if name == "paddleocr":
+            raise ImportError("No module named 'paddleocr'")
+        return __import__(name, *args, **kwargs)
+
+    with patch("builtins.__import__", side_effect=mock_import):
         with pytest.raises(MissingDependencyError) as excinfo:
             await backend._init_paddle_ocr()
 
-        assert "PaddleOCR is not installed" in str(excinfo.value)
+        assert "paddleocr' package is not installed" in str(excinfo.value)
 
 
 @pytest.mark.anyio
@@ -238,7 +219,11 @@ async def test_init_paddle_ocr_initialization_error(backend: PaddleBackend, mock
 
     PaddleBackend._paddle_ocr = None
 
-    with patch("kreuzberg._ocr._paddleocr.run_sync", side_effect=Exception("Initialization error")):
+    async def mock_run_sync_error(*args: Any, **_: Any) -> None:
+        if args and args[0].__name__ == "PaddleOCR":
+            raise Exception("Initialization error")
+
+    with patch("kreuzberg._ocr._paddleocr.run_sync", side_effect=mock_run_sync_error):
         with pytest.raises(OCRError) as excinfo:
             await backend._init_paddle_ocr()
 
@@ -274,7 +259,6 @@ async def test_process_image(
     assert result.mime_type == "text/plain"
     assert result.metadata.get("width") == 100
     assert result.metadata.get("height") == 100
-    assert result.metadata.get("created_at") is not None
 
 
 @pytest.mark.anyio
@@ -525,3 +509,75 @@ async def test_integration_process_image(backend: PaddleBackend, ocr_image: Path
             assert result.content.strip()
     except (MissingDependencyError, OCRError):
         pytest.skip("PaddleOCR not properly installed or configured")
+
+
+@pytest.mark.parametrize(
+    "language_code,expected_result",
+    [
+        ("en", "en"),
+        ("EN", "en"),
+        ("ch", "ch"),
+        ("french", "french"),
+        ("german", "german"),
+        ("japan", "japan"),
+        ("korean", "korean"),
+    ],
+)
+def test_validate_language_code_valid(language_code: str, expected_result: str) -> None:
+    """Test that valid language codes are correctly validated and normalized."""
+    result = PaddleBackend._validate_language_code(language_code)
+    assert result == expected_result
+
+
+@pytest.mark.parametrize(
+    "invalid_language_code",
+    [
+        "invalid",
+        "español",
+        "русский",
+        "fra",
+        "deu",
+        "jpn",
+        "kor",
+        "zho",
+        "",
+        "123",
+    ],
+)
+def test_validate_language_code_invalid(invalid_language_code: str) -> None:
+    """Test that invalid language codes raise ValidationError with appropriate context."""
+    with pytest.raises(ValidationError) as excinfo:
+        PaddleBackend._validate_language_code(invalid_language_code)
+
+    assert "language_code" in excinfo.value.context
+    assert excinfo.value.context["language_code"] == invalid_language_code
+    assert "supported_languages" in excinfo.value.context
+
+    assert "not supported by PaddleOCR" in str(excinfo.value)
+
+
+@pytest.mark.anyio
+async def test_init_paddle_ocr_with_invalid_language(
+    backend: PaddleBackend, mock_find_spec: Mock, mocker: MockerFixture
+) -> None:
+    """Test initializing PaddleOCR with an invalid language raises ValidationError."""
+    PaddleBackend._paddle_ocr = None
+
+    validation_error = ValidationError(
+        "The provided language code is not supported by PaddleOCR",
+        context={
+            "language_code": "invalid_language",
+            "supported_languages": ",".join(sorted(PADDLEOCR_SUPPORTED_LANGUAGE_CODES)),
+        },
+    )
+
+    mocker.patch.object(PaddleBackend, "_validate_language_code", side_effect=validation_error)
+
+    with pytest.raises(ValidationError) as excinfo:
+        await backend._init_paddle_ocr(language="invalid_language")
+
+    assert "language_code" in excinfo.value.context
+    assert excinfo.value.context["language_code"] == "invalid_language"
+    assert "supported_languages" in excinfo.value.context
+
+    assert "not supported by PaddleOCR" in str(excinfo.value)

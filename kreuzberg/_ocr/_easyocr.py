@@ -1,18 +1,17 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypedDict
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypedDict
 
 import numpy as np
-from easyocr import easyocr
 from PIL import Image
 
+from kreuzberg import ValidationError
 from kreuzberg._mime_types import PLAIN_TEXT_MIME_TYPE
 from kreuzberg._ocr._base import OCRBackend
 from kreuzberg._types import ExtractionResult, Metadata
-from kreuzberg._utils._language import to_easyocr
 from kreuzberg._utils._string import normalize_spaces
 from kreuzberg._utils._sync import run_sync
-from kreuzberg.exceptions import OCRError
+from kreuzberg.exceptions import MissingDependencyError, OCRError
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -26,6 +25,92 @@ try:  # pragma: no cover
     from typing import Unpack  # type: ignore[attr-defined]
 except ImportError:  # pragma: no cover
     from typing_extensions import Unpack
+
+EASYOCR_SUPPORTED_LANGUAGE_CODES: Final[set[str]] = {
+    "abq",
+    "ady",
+    "af",
+    "ang",
+    "ar",
+    "as",
+    "ava",
+    "az",
+    "be",
+    "bg",
+    "bh",
+    "bho",
+    "bn",
+    "bs",
+    "ch_sim",
+    "ch_tra",
+    "che",
+    "cs",
+    "cy",
+    "da",
+    "dar",
+    "de",
+    "en",
+    "es",
+    "et",
+    "fa",
+    "fr",
+    "ga",
+    "gom",
+    "hi",
+    "hr",
+    "hu",
+    "id",
+    "inh",  # codespell:ignore
+    "is",
+    "it",
+    "ja",
+    "kbd",
+    "kn",
+    "ko",
+    "ku",
+    "la",
+    "lbe",
+    "lez",
+    "lt",
+    "lv",
+    "mah",
+    "mai",
+    "mi",
+    "mn",
+    "mr",
+    "ms",
+    "mt",
+    "ne",
+    "new",
+    "nl",
+    "no",
+    "oc",
+    "pi",
+    "pl",
+    "pt",
+    "ro",
+    "ru",
+    "rs_cyrillic",
+    "rs_latin",
+    "sck",
+    "sk",
+    "sl",
+    "sq",
+    "sv",
+    "sw",
+    "ta",
+    "tab",
+    "te",  # codespell:ignore
+    "th",
+    "tjk",
+    "tl",
+    "tr",
+    "ug",
+    "uk",
+    "ur",
+    "uz",
+    "vi",
+}
 
 
 class EasyOCRConfig(TypedDict):
@@ -155,7 +240,9 @@ class EasyOCRBackend(OCRBackend[EasyOCRConfig]):
                 metadata=Metadata(width=image.width, height=image.height),
             )
 
-        if all(len(item) == 2 for item in result):
+        expected_tuple_length = 2
+
+        if all(len(item) == expected_tuple_length for item in result):
             text_content = ""
             confidence_sum = 0
             confidence_count = 0
@@ -255,15 +342,21 @@ class EasyOCRBackend(OCRBackend[EasyOCRConfig]):
             return
 
         try:
-            languages = to_easyocr(kwargs.pop("language", "en"))
-            has_gpu = cls._is_gpu_available()
+            import easyocr
+        except ImportError as e:
+            raise MissingDependencyError(
+                "The 'easyocr' package is not installed. Please install it to use EasyOCR as an OCR backend."
+            ) from e
 
-            kwargs.setdefault("gpu", has_gpu)
-            kwargs.setdefault("detector", True)
-            kwargs.setdefault("recognizer", True)
-            kwargs.setdefault("download_enabled", True)
-            kwargs.setdefault("recog_network", "standard")
+        languages = cls._validate_language_code(kwargs.pop("language", "en"))
+        has_gpu = cls._is_gpu_available()
+        kwargs.setdefault("gpu", has_gpu)
+        kwargs.setdefault("detector", True)
+        kwargs.setdefault("recognizer", True)
+        kwargs.setdefault("download_enabled", True)
+        kwargs.setdefault("recog_network", "standard")
 
+        try:
             cls._reader = await run_sync(
                 easyocr.Reader,
                 languages,
@@ -272,3 +365,27 @@ class EasyOCRBackend(OCRBackend[EasyOCRConfig]):
             )
         except Exception as e:
             raise OCRError(f"Failed to initialize EasyOCR: {e}") from e
+
+    @staticmethod
+    def _validate_language_code(lang_code: str) -> list[str]:
+        """Validate and normalize a provided language code.
+
+        Args:
+            lang_code: The language code string.
+
+        Raises:
+            ValidationError: If the language is not supported by EasyOCR
+
+        Returns:
+            A list with the normalized language code.
+        """
+        if lang_code.lower() in EASYOCR_SUPPORTED_LANGUAGE_CODES:
+            return [lang_code.lower()]
+
+        raise ValidationError(
+            "The provided language code is not supported by EasyOCR",
+            context={
+                "language_code": lang_code,
+                "supported_languages": ",".join(sorted(EASYOCR_SUPPORTED_LANGUAGE_CODES)),
+            },
+        )

@@ -125,6 +125,8 @@ max_supported_python = "3.13"
 [tool.pytest.ini_options]
 filterwarnings = [
   "ignore:Exception ignored in:pytest.PytestUnraisableExceptionWarning",
+  "ignore:pkg_resources is deprecated as an API:DeprecationWarning",
+  "ignore:ast.Num is deprecated and will be removed in Python 3.14:DeprecationWarning",
 ]
 
 [tool.coverage.run]

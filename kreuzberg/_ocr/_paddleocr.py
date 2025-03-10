@@ -2,19 +2,18 @@ from __future__ import annotations
 
 import platform
 from importlib.util import find_spec
-from typing import TYPE_CHECKING, Any, ClassVar, TypedDict
+from typing import TYPE_CHECKING, Any, ClassVar, Final, TypedDict
 
 import numpy as np
-from paddleocr import PaddleOCR
 from PIL import Image
 
+from kreuzberg import MissingDependencyError
 from kreuzberg._mime_types import PLAIN_TEXT_MIME_TYPE
 from kreuzberg._ocr._base import OCRBackend
 from kreuzberg._types import ExtractionResult, Metadata
-from kreuzberg._utils._language import to_paddle
 from kreuzberg._utils._string import normalize_spaces
 from kreuzberg._utils._sync import run_sync
-from kreuzberg.exceptions import OCRError
+from kreuzberg.exceptions import OCRError, ValidationError
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -28,6 +27,9 @@ try:  # pragma: no cover
     from typing import Unpack  # type: ignore[attr-defined]
 except ImportError:  # pragma: no cover
     from typing_extensions import Unpack
+
+
+PADDLEOCR_SUPPORTED_LANGUAGE_CODES: Final[set[str]] = {"ch", "en", "french", "german", "japan", "korean"}
 
 
 class PaddleConfig(TypedDict):
@@ -243,19 +245,47 @@ class PaddleBackend(OCRBackend[PaddleConfig]):
             return
 
         try:
-            language = to_paddle(kwargs.pop("language", "en"))
-            has_gpu_package = bool(find_spec("paddlepaddle_gpu"))
-            kwargs.setdefault("use_angle_cls", True)
-            kwargs.setdefault("use_gpu", has_gpu_package)
-            kwargs.setdefault("enable_mkldnn", cls._is_mkldnn_supported() and not has_gpu_package)
-            kwargs.setdefault("det_db_thresh", 0.3)
-            kwargs.setdefault("det_db_box_thresh", 0.5)
-            kwargs.setdefault("det_db_unclip_ratio", 1.6)
+            from paddleocr import PaddleOCR
+        except ImportError as e:
+            raise MissingDependencyError(
+                "The 'paddleocr' package is not installed. Please install it to use PaddleOCR as an OCR backend."
+            ) from e
 
-            cls._paddle_ocr = await run_sync(
-                PaddleOCR,
-                lang=language,
-                show_log=False,
-            )
+        language = cls._validate_language_code(kwargs.pop("language", "en"))
+        has_gpu_package = bool(find_spec("paddlepaddle_gpu"))
+        kwargs.setdefault("use_angle_cls", True)
+        kwargs.setdefault("use_gpu", has_gpu_package)
+        kwargs.setdefault("enable_mkldnn", cls._is_mkldnn_supported() and not has_gpu_package)
+        kwargs.setdefault("det_db_thresh", 0.3)
+        kwargs.setdefault("det_db_box_thresh", 0.5)
+        kwargs.setdefault("det_db_unclip_ratio", 1.6)
+
+        try:
+            cls._paddle_ocr = await run_sync(PaddleOCR, lang=language, show_log=False, **kwargs)
         except Exception as e:
             raise OCRError(f"Failed to initialize PaddleOCR: {e}") from e
+
+    @staticmethod
+    def _validate_language_code(lang_code: str) -> str:
+        """Convert a language code to PaddleOCR format.
+
+        Args:
+            lang_code: ISO language code or language name
+
+        Raises:
+            ValidationError: If the language is not supported by PaddleOCR
+
+        Returns:
+            Language code compatible with PaddleOCR
+        """
+        normalized = lang_code.lower()
+        if normalized in PADDLEOCR_SUPPORTED_LANGUAGE_CODES:
+            return normalized
+
+        raise ValidationError(
+            "The provided language code is not supported by PaddleOCR",
+            context={
+                "language_code": lang_code,
+                "supported_languages": ",".join(sorted(PADDLEOCR_SUPPORTED_LANGUAGE_CODES)),
+            },
+        )

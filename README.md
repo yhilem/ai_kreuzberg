@@ -129,6 +129,7 @@ Kreuzberg provides both async and sync APIs for text extraction, including batch
   - `extract_bytes_sync()`: Synchronous version of `extract_bytes()`
 
 - Batch Processing:
+
   - `batch_extract_file()`: Async function to extract text from multiple files concurrently
   - `batch_extract_bytes()`: Async function to extract text from multiple byte contents concurrently
   - `batch_extract_file_sync()`: Synchronous version of `batch_extract_file()`
@@ -140,16 +141,45 @@ All extraction functions accept the following optional parameters for configurin
 
 #### OCR Configuration
 
-- `force_ocr`(default: `False`): Forces OCR processing even for searchable PDFs.
+- `force_ocr` (default: `False`): Forces OCR processing even for searchable PDFs.
+
 - `language` (default: `eng`): Specifies the language model for Tesseract OCR. This affects text recognition accuracy for documents in different languages. Examples:
 
   - `eng` for English
   - `deu` for German
-  - `eng+deu` for English and German
+  - `fra` for French
+  - `spa` for Spanish
+  - `ita` for Italian
+  - `jpn` for Japanese
+  - `kor` for Korean
+  - `chi_sim` for Simplified Chinese
+  - `chi_tra` for Traditional Chinese
+  - `rus` for Russian
+  - `ara` for Arabic
+  - `hin` for Hindi
+  - `eng+deu` for English and German (multi-language)
 
-  Notes: - the order of languages effect processing time, the first language is the primary language and the second language is the secondary language etc.
+  Notes:
 
-- `psm` (Page Segmentation Mode, default: `PSM.AUTO`): Controls how Tesseract analyzes page layout. In most cases you do not need to change this to a different value.
+  - The order of languages affects processing time and accuracy. The first language is treated as the primary language.
+  - For PaddleOCR, the supported language codes are different: `ch` (Chinese), `en` (English), `french`, `german`, `japan`, and `korean`.
+  - Installing additional language models may be required. For Tesseract, install language packs for your OS (e.g., `tesseract-ocr-deu` for German on Ubuntu).
+
+- `psm` (Page Segmentation Mode, default: `PSM.AUTO`): Controls how Tesseract analyzes page layout. Options include:
+
+  - `PSM.AUTO` (Default): Automatic page segmentation with orientation detection
+  - `PSM.SINGLE_BLOCK`: Treat the image as a single text block
+  - `PSM.SINGLE_LINE`: Treat the image as a single text line
+  - `PSM.SINGLE_WORD`: Treat the image as a single word
+  - `PSM.SINGLE_CHAR`: Treat the image as a single character
+  - `PSM.SPARSE_TEXT`: Find as much text as possible without assuming a particular structure
+  - `PSM.SPARSE_TEXT_OSD`: Like SPARSE_TEXT but with orientation and script detection
+
+  When to use different PSM modes:
+
+  - Use `PSM.SINGLE_BLOCK` for documents with simple layouts or when you want to preserve paragraph structure
+  - Use `PSM.SINGLE_LINE` for receipts, labels, or single-line text
+  - Use `PSM.SPARSE_TEXT` for documents with scattered text elements like forms or tables
 
 Consult the [Tesseract documentation](https://tesseract-ocr.github.io/tessdoc/) for more information on both options.
 
@@ -179,6 +209,14 @@ async def extract_document():
         max_processes=4  # Limit concurrent processes
     )
     print(f"Image text: {img_result.content}")
+
+    # Extract from a multi-language document (English + Spanish)
+    multi_lang_result = await extract_file(
+        "multilingual.pdf",
+        language="eng+spa",  # English and Spanish language models
+        force_ocr=True  # Force OCR even if searchable text exists
+    )
+    print(f"Multilingual content: {multi_lang_result.content}")
 
     # Extract from Word document with metadata
     docx_result = await extract_file(Path("document.docx"))
@@ -267,14 +305,14 @@ Kreuzberg employs a smart approach to PDF text extraction:
 
 1. **Searchable Text Detection**: First attempts to extract text directly from searchable PDFs using `pdfium2`.
 
-2. **Text Validation**: Extracted text is validated for corruption by checking for:
+1. **Text Validation**: Extracted text is validated for corruption by checking for:
 
    - Control and non-printable characters
    - Unicode replacement characters (�)
    - Zero-width spaces and other invisible characters
    - Empty or whitespace-only content
 
-3. **Automatic OCR Fallback**: If the extracted text appears corrupted or if the PDF is image-based, automatically falls back to OCR using Tesseract.
+1. **Automatic OCR Fallback**: If the extracted text appears corrupted or if the PDF is image-based, automatically falls back to OCR using Tesseract.
 
 This approach works well for searchable PDFs and standard text documents. For complex OCR (e.g., handwriting, photographs), use a specialized tool.
 
@@ -283,7 +321,7 @@ This approach works well for searchable PDFs and standard text documents. For co
 You can control PDF processing behavior using optional parameters:
 
 ```python
-from kreuzberg import extract_file
+from kreuzberg import extract_file, PSMMode
 
 
 async def process_pdf():
@@ -307,6 +345,23 @@ async def process_pdf():
 
   # Process a scanned PDF (automatically uses OCR)
   result = await extract_file("scanned.pdf")
+  print(result.content)
+
+  # Process a PDF with custom OCR settings
+  result = await extract_file(
+    "invoice.pdf",
+    language="eng",  # English language model
+    psm=PSMMode.SPARSE_TEXT,  # Better for forms and invoices
+    force_ocr=True  # Force OCR processing
+  )
+  print(result.content)
+
+  # Process a PDF with multiple languages
+  result = await extract_file(
+    "international_document.pdf",
+    language="eng+fra+deu",  # English, French, and German
+    max_processes=2  # Balance between speed and resource usage
+  )
   print(result.content)
 ```
 
@@ -387,6 +442,37 @@ All exceptions include:
 - String representation
 - Exception chaining
 
+## OCR Best Practices
+
+Kreuzberg provides flexible OCR capabilities through Tesseract and PaddleOCR. Here are some best practices for optimal results:
+
+### Language Selection
+
+- **Match document language**: Always specify the correct language model for your documents. Using the wrong language model significantly reduces accuracy.
+- **Multi-language documents**: For documents with multiple languages, list them in order of prevalence (e.g., `eng+deu` for primarily English with some German).
+- **Language model installation**: Ensure you have the required language models installed for Tesseract. Most distributions only include English by default.
+
+### Page Segmentation Mode (PSM)
+
+- **Default setting**: For most documents, the default `PSM.AUTO` works well.
+- **Specific document types**:
+  - Use `PSM.SINGLE_BLOCK` for simple layouts with continuous text
+  - Use `PSM.SINGLE_LINE` for receipts or single lines of text
+  - Use `PSM.SPARSE_TEXT` for forms, tables, or scattered text elements
+  - Use `PSM.SINGLE_WORD` or `PSM.SINGLE_CHAR` only for specialized applications
+
+### Performance Optimization
+
+- **Concurrency**: Set `max_processes` based on your system's capabilities. Start with a low value (2-4) and increase if needed.
+- **Memory usage**: OCR can be memory-intensive. For large documents, consider processing in batches.
+- **Image quality**: Better results come from higher quality images. Consider preprocessing images (contrast enhancement, deskewing) before OCR.
+
+### Troubleshooting
+
+- **Poor OCR results**: Try different PSM modes or language combinations.
+- **Slow processing**: Reduce the number of languages or limit `max_processes`.
+- **Missing text**: Try `force_ocr=True` for PDFs with embedded but poorly recognized text.
+
 ## Contribution
 
 This library is open to contribution. Feel free to open issues or submit PRs. Its better to discuss issues before
@@ -395,15 +481,18 @@ submitting PRs to avoid disappointment.
 ### Local Development
 
 1. Clone the repo
-2. Install the system dependencies
-3. Install the full dependencies with `uv sync`
-4. Install the pre-commit hooks with:
+
+1. Install the system dependencies
+
+1. Install the full dependencies with `uv sync`
+
+1. Install the pre-commit hooks with:
 
    ```shell
    pre-commit install && pre-commit install --hook-type commit-msg
    ```
 
-5. Make your changes and submit a PR
+1. Make your changes and submit a PR
 
 ## License
 

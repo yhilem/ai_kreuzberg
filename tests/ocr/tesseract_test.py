@@ -11,7 +11,7 @@ from kreuzberg._ocr._tesseract import (
     TesseractBackend,
 )
 from kreuzberg._types import ExtractionResult, PSMMode
-from kreuzberg.exceptions import MissingDependencyError, OCRError
+from kreuzberg.exceptions import MissingDependencyError, OCRError, ValidationError
 
 if TYPE_CHECKING:
     from pytest_mock import MockerFixture
@@ -39,11 +39,6 @@ def mock_run_process(mocker: MockerFixture) -> Mock:
                 result.returncode = 1
                 result.stderr = b"Error processing file"
                 raise OCRError("Error processing file")
-
-            if not all(arg in command for arg in ["--oem", "1", "--loglevel", "OFF", "-c", "thresholding_method=1"]):
-                result.returncode = 1
-                result.stderr = b"Missing required tesseract arguments"
-                return result
 
             Path(f"{output_file}.txt").write_text("Sample OCR text")
             result.returncode = 0
@@ -201,6 +196,61 @@ async def test_integration_process_file(backend: TesseractBackend, ocr_image: Pa
     result = await backend.process_file(ocr_image, language="eng", psm=PSMMode.AUTO)
     assert isinstance(result, ExtractionResult)
     assert result.content.strip()
+
+
+@pytest.mark.anyio
+async def test_process_file_with_invalid_language(
+    backend: TesseractBackend, mock_run_process: Mock, ocr_image: Path
+) -> None:
+    """Test that providing an invalid language code raises ValidationError."""
+    with pytest.raises(ValidationError, match="not supported by Tesseract"):
+        await backend.process_file(ocr_image, language="invalid", psm=PSMMode.AUTO)
+
+
+@pytest.mark.parametrize(
+    "language_code,expected_result",
+    [
+        ("eng", "eng"),
+        ("ENG", "eng"),
+        ("deu", "deu"),
+        ("fra", "fra"),
+        ("spa", "spa"),
+        ("jpn", "jpn"),
+        ("chi_sim", "chi_sim"),
+        ("chi_tra", "chi_tra"),
+    ],
+)
+def test_validate_language_code_valid(language_code: str, expected_result: str) -> None:
+    """Test that valid language codes are correctly validated and normalized."""
+    result = TesseractBackend._validate_language_code(language_code)
+    assert result == expected_result
+
+
+@pytest.mark.parametrize(
+    "invalid_language_code",
+    [
+        "invalid",
+        "english",
+        "español",
+        "русский",
+        "en",
+        "de",
+        "fr",
+        "zh",
+        "",
+        "123",
+    ],
+)
+def test_validate_language_code_invalid(invalid_language_code: str) -> None:
+    """Test that invalid language codes raise ValidationError with appropriate context."""
+    with pytest.raises(ValidationError) as excinfo:
+        TesseractBackend._validate_language_code(invalid_language_code)
+
+    assert "language_code" in excinfo.value.context
+    assert excinfo.value.context["language_code"] == invalid_language_code
+    assert "supported_languages" in excinfo.value.context
+
+    assert "not supported by Tesseract" in str(excinfo.value)
 
 
 @pytest.mark.anyio

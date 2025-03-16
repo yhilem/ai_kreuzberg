@@ -48,9 +48,7 @@ class SpreadSheetExtractor(Extractor):
                 results: list[str] = await run_taskgroup(*tasks)
 
                 return ExtractionResult(
-                    content="\n\n".join(results),
-                    mime_type=MARKDOWN_MIME_TYPE,
-                    metadata={},
+                    content="\n\n".join(results), mime_type=MARKDOWN_MIME_TYPE, metadata={}, chunks=[]
                 )
             except ExceptionGroup as eg:
                 raise ParsingError(

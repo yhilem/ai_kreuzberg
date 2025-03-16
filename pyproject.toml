@@ -46,6 +46,9 @@ dependencies = [
   "typing-extensions>=4.12.2; python_version<'3.12'",
 ]
 
+optional-dependencies.chunking = [
+  "semantic-text-splitter>=0.24.1",
+]
 optional-dependencies.easyocr = [
   "easyocr>=1.7.2",
 ]

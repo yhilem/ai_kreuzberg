@@ -27,7 +27,7 @@ class HTMLExtractor(Extractor):
 
     def extract_bytes_sync(self, content: bytes) -> ExtractionResult:
         result = html_to_markdown.convert_to_markdown(safe_decode(content))
-        return ExtractionResult(content=normalize_spaces(result), mime_type=MARKDOWN_MIME_TYPE, metadata={})
+        return ExtractionResult(content=normalize_spaces(result), mime_type=MARKDOWN_MIME_TYPE, metadata={}, chunks=[])
 
     def extract_path_sync(self, path: Path) -> ExtractionResult:
         content = path.read_bytes()

@@ -42,10 +42,10 @@ class PDFExtractor(Extractor):
         if not self.config.force_ocr:
             content = await self._extract_pdf_searchable_text(path)
             if self._validate_extracted_text(content):
-                return ExtractionResult(content=content, mime_type=PLAIN_TEXT_MIME_TYPE, metadata={})
+                return ExtractionResult(content=content, mime_type=PLAIN_TEXT_MIME_TYPE, metadata={}, chunks=[])
         if self.config.ocr_backend is not None:
             return await self._extract_pdf_text_with_ocr(path, self.config.ocr_backend)
-        return ExtractionResult(content="", mime_type=PLAIN_TEXT_MIME_TYPE, metadata={})
+        return ExtractionResult(content="", mime_type=PLAIN_TEXT_MIME_TYPE, metadata={}, chunks=[])
 
     def extract_bytes_sync(self, content: bytes) -> ExtractionResult:
         return anyio.run(self.extract_bytes_async, content)
@@ -120,7 +120,7 @@ class PDFExtractor(Extractor):
             batch_size=cpu_count(),
         )
         return ExtractionResult(
-            content="\n".join([v.content for v in ocr_results]), mime_type=PLAIN_TEXT_MIME_TYPE, metadata={}
+            content="\n".join([v.content for v in ocr_results]), mime_type=PLAIN_TEXT_MIME_TYPE, metadata={}, chunks=[]
         )
 
     @staticmethod

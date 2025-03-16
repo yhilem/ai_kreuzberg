@@ -21,7 +21,7 @@ class MockExtractor(Extractor):
 
     def _create_extraction_result(self, content: str, mime_type: str) -> ExtractionResult:
         """Create an extraction result."""
-        return ExtractionResult(content=content, mime_type=mime_type, metadata={})
+        return ExtractionResult(content=content, mime_type=mime_type, metadata={}, chunks=[])
 
     @classmethod
     def supports_mimetype(cls, mime_type: str) -> bool:
@@ -111,7 +111,7 @@ def test_extractor_order_precedence(default_config: ExtractionConfig) -> None:
     class CustomPDFExtractor(Extractor):
         def _create_extraction_result(self, content: str, mime_type: str) -> ExtractionResult:
             """Create an extraction result."""
-            return ExtractionResult(content=content, mime_type=mime_type, metadata={})
+            return ExtractionResult(content=content, mime_type=mime_type, metadata={}, chunks=[])
 
         @classmethod
         def supports_mimetype(cls, mime_type: str) -> bool:
@@ -164,7 +164,7 @@ def test_multiple_extractors_same_mime_type(default_config: ExtractionConfig) ->
     class FirstExtractor(Extractor):
         def _create_extraction_result(self, content: str, mime_type: str) -> ExtractionResult:
             """Create an extraction result."""
-            return ExtractionResult(content=content, mime_type=mime_type, metadata={})
+            return ExtractionResult(content=content, mime_type=mime_type, metadata={}, chunks=[])
 
         @classmethod
         def supports_mimetype(cls, mime_type: str) -> bool:
@@ -185,7 +185,7 @@ def test_multiple_extractors_same_mime_type(default_config: ExtractionConfig) ->
     class SecondExtractor(Extractor):
         def _create_extraction_result(self, content: str, mime_type: str) -> ExtractionResult:
             """Create an extraction result."""
-            return ExtractionResult(content=content, mime_type=mime_type, metadata={})
+            return ExtractionResult(content=content, mime_type=mime_type, metadata={}, chunks=[])
 
         @classmethod
         def supports_mimetype(cls, mime_type: str) -> bool:

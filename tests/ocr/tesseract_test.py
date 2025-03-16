@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest.mock import Mock
@@ -98,7 +99,12 @@ def reset_version_ref(mocker: MockerFixture) -> None:
 async def test_validate_tesseract_version_invalid(
     backend: TesseractBackend, mock_run_process_invalid: Mock, reset_version_ref: None
 ) -> None:
-    with pytest.raises(MissingDependencyError, match="Tesseract version 5 or above is required"):
+    with pytest.raises(
+        MissingDependencyError,
+        match=re.escape(
+            "MissingDependencyError: Tesseract version 5 is a required system dependency. Please install it on your system and make sure its available in $PATH."
+        ),
+    ):
         await backend._validate_tesseract_version()
 
 
@@ -106,7 +112,12 @@ async def test_validate_tesseract_version_invalid(
 async def test_validate_tesseract_version_missing(
     backend: TesseractBackend, mock_run_process_error: Mock, reset_version_ref: None
 ) -> None:
-    with pytest.raises(MissingDependencyError, match="Tesseract is not installed"):
+    with pytest.raises(
+        MissingDependencyError,
+        match=re.escape(
+            "MissingDependencyError: Tesseract version 5 is a required system dependency. Please install it on your system and make sure its available in $PATH."
+        ),
+    ):
         await backend._validate_tesseract_version()
 
 

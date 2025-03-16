@@ -26,18 +26,14 @@ async def async_validation_hook(result: ExtractionResult) -> None:
 def sync_post_processing_hook(result: ExtractionResult) -> ExtractionResult:
     """A synchronous post-processing hook that modifies the result."""
     return ExtractionResult(
-        content=result.content.upper(),
-        mime_type=result.mime_type,
-        metadata=result.metadata,
+        content=result.content.upper(), mime_type=result.mime_type, metadata=result.metadata, chunks=[]
     )
 
 
 async def async_post_processing_hook(result: ExtractionResult) -> ExtractionResult:
     """An asynchronous post-processing hook that modifies the result."""
     return ExtractionResult(
-        content=result.content.upper(),
-        mime_type=result.mime_type,
-        metadata=result.metadata,
+        content=result.content.upper(), mime_type=result.mime_type, metadata=result.metadata, chunks=[]
     )
 
 
@@ -103,9 +99,7 @@ async def test_multiple_async_post_processing_hooks() -> None:
 
     async def second_post_processor(result: ExtractionResult) -> ExtractionResult:
         return ExtractionResult(
-            content=f"Processed: {result.content}",
-            mime_type=result.mime_type,
-            metadata=result.metadata,
+            content=f"Processed: {result.content}", mime_type=result.mime_type, metadata=result.metadata, chunks=[]
         )
 
     config = ExtractionConfig(post_processing_hooks=[async_post_processing_hook, second_post_processor])
@@ -178,9 +172,7 @@ def test_multiple_sync_post_processing_hooks() -> None:
 
     def second_post_processor(result: ExtractionResult) -> ExtractionResult:
         return ExtractionResult(
-            content=f"Processed: {result.content}",
-            mime_type=result.mime_type,
-            metadata=result.metadata,
+            content=f"Processed: {result.content}", mime_type=result.mime_type, metadata=result.metadata, chunks=[]
         )
 
     config = ExtractionConfig(post_processing_hooks=[sync_post_processing_hook, second_post_processor])

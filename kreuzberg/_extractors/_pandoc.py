@@ -188,9 +188,7 @@ class PandocExtractor(Extractor):
             metadata, content = cast("tuple[Metadata, str]", results)
 
             return ExtractionResult(
-                content=normalize_spaces(content),
-                metadata=metadata,
-                mime_type=MARKDOWN_MIME_TYPE,
+                content=normalize_spaces(content), metadata=metadata, mime_type=MARKDOWN_MIME_TYPE, chunks=[]
             )
         except ExceptionGroup as eg:
             raise ParsingError("Failed to process file", context={"file": str(path), "errors": eg.exceptions}) from eg
@@ -232,12 +230,16 @@ class PandocExtractor(Extractor):
 
             version_match = re.search(r"pandoc\s+v?(\d+)\.\d+\.\d+", result.stdout.decode())
             if not version_match or int(version_match.group(1)) < MINIMAL_SUPPORTED_PANDOC_VERSION:
-                raise MissingDependencyError("Pandoc version 2 or above is required")
+                raise MissingDependencyError(
+                    "Pandoc version 2 or above is a required system dependency. Please install it on your system and make sure its available in $PATH."
+                )
 
             self._checked_version = True
 
         except FileNotFoundError as e:
-            raise MissingDependencyError("Pandoc is not installed") from e
+            raise MissingDependencyError(
+                "Pandoc version 2 or above is a required system dependency. Please install it on your system and make sure its available in $PATH."
+            ) from e
 
     @staticmethod
     def _get_pandoc_key(key: str) -> str | None:

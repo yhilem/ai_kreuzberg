@@ -276,7 +276,9 @@ class TesseractBackend(OCRBackend[TesseractConfig]):
                 )
 
             output = await AsyncPath(output_path).read_text("utf-8")
-            return ExtractionResult(content=normalize_spaces(output), mime_type=PLAIN_TEXT_MIME_TYPE, metadata={})
+            return ExtractionResult(
+                content=normalize_spaces(output), mime_type=PLAIN_TEXT_MIME_TYPE, metadata={}, chunks=[]
+            )
         except (RuntimeError, OSError) as e:
             raise OCRError(f"Failed to OCR using tesseract: {e}") from e
         finally:
@@ -297,12 +299,14 @@ class TesseractBackend(OCRBackend[TesseractConfig]):
             result = await run_process(command)
             version_match = re.search(r"tesseract\s+v?(\d+)\.\d+\.\d+", result.stdout.decode())
             if not version_match or int(version_match.group(1)) < MINIMAL_SUPPORTED_TESSERACT_VERSION:
-                raise MissingDependencyError("Tesseract version 5 or above is required.")
+                raise MissingDependencyError(
+                    "Tesseract version 5 is a required system dependency. Please install it on your system and make sure its available in $PATH."
+                )
 
             cls._version_checked = True
         except FileNotFoundError as e:
             raise MissingDependencyError(
-                "Tesseract is not installed or not in path. Please install tesseract 5 and above on your system."
+                "Tesseract version 5 is a required system dependency. Please install it on your system and make sure its available in $PATH."
             ) from e
 
     @staticmethod

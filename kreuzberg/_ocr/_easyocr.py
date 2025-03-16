@@ -221,6 +221,7 @@ class EasyOCRBackend(OCRBackend[EasyOCRConfig]):
                 content="",
                 mime_type=PLAIN_TEXT_MIME_TYPE,
                 metadata=Metadata(width=image.width, height=image.height),
+                chunks=[],
             )
 
         expected_tuple_length = 2
@@ -242,9 +243,7 @@ class EasyOCRBackend(OCRBackend[EasyOCRConfig]):
             )
 
             return ExtractionResult(
-                content=normalize_spaces(text_content),
-                mime_type=PLAIN_TEXT_MIME_TYPE,
-                metadata=metadata,
+                content=normalize_spaces(text_content), mime_type=PLAIN_TEXT_MIME_TYPE, metadata=metadata, chunks=[]
             )
 
         sorted_results = sorted(result, key=lambda x: x[0][0][1] + x[0][2][1])
@@ -291,9 +290,7 @@ class EasyOCRBackend(OCRBackend[EasyOCRConfig]):
         )
 
         return ExtractionResult(
-            content=normalize_spaces(text_content),
-            mime_type=PLAIN_TEXT_MIME_TYPE,
-            metadata=metadata,
+            content=normalize_spaces(text_content), mime_type=PLAIN_TEXT_MIME_TYPE, metadata=metadata, chunks=[]
         )
 
     @classmethod
@@ -327,8 +324,8 @@ class EasyOCRBackend(OCRBackend[EasyOCRConfig]):
         try:
             import easyocr
         except ImportError as e:
-            raise MissingDependencyError(
-                "The 'easyocr' package is not installed. Please install it to use EasyOCR as an OCR backend."
+            raise MissingDependencyError.create_for_package(
+                dependency_group="easyocr", functionality="EasyOCR as an OCR backend", package_name="easyocr"
             ) from e
 
         languages = cls._validate_language_code(kwargs.pop("language", "en"))

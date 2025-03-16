@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -221,7 +222,12 @@ async def test_validate_pandoc_version_file_not_found(mocker: MockerFixture, tes
     mock_run = mocker.patch("kreuzberg._extractors._pandoc.run_process")
     mock_run.side_effect = FileNotFoundError()
 
-    with pytest.raises(MissingDependencyError, match="Pandoc is not installed"):
+    with pytest.raises(
+        MissingDependencyError,
+        match=re.escape(
+            "MissingDependencyError: Pandoc version 2 or above is a required system dependency. Please install it on your system and make sure its available in $PATH."
+        ),
+    ):
         await extractor._validate_pandoc_version()
 
 
@@ -232,7 +238,12 @@ async def test_validate_pandoc_version_invalid_output(mocker: MockerFixture, tes
     mock_run = mocker.patch("kreuzberg._extractors._pandoc.run_process")
     mock_run.return_value.stdout = b"invalid version output"
 
-    with pytest.raises(MissingDependencyError, match="MissingDependencyError: Pandoc version 2 or above is required"):
+    with pytest.raises(
+        MissingDependencyError,
+        match=re.escape(
+            "MissingDependencyError: Pandoc version 2 or above is a required system dependency. Please install it on your system and make sure its available in $PATH."
+        ),
+    ):
         await extractor._validate_pandoc_version()
 
 
@@ -243,7 +254,12 @@ async def test_validate_pandoc_version_parse_error(mocker: MockerFixture, test_c
     mock_run = mocker.patch("kreuzberg._extractors._pandoc.run_process")
     mock_run.return_value.stdout = b"pandoc abc"
 
-    with pytest.raises(MissingDependencyError, match="Pandoc version 2 or above is required"):
+    with pytest.raises(
+        MissingDependencyError,
+        match=re.escape(
+            "MissingDependencyError: Pandoc version 2 or above is a required system dependency. Please install it on your system and make sure its available in $PATH."
+        ),
+    ):
         await extractor._validate_pandoc_version()
 
 

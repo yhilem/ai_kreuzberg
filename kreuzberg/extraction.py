@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Final, cast
 import anyio
 
 from kreuzberg import ExtractionResult
+from kreuzberg._chunker import get_chunker
 from kreuzberg._mime_types import (
     validate_mime_type,
 )
@@ -26,6 +27,13 @@ async def _validate_and_post_process_async(result: ExtractionResult, config: Ext
     for validator in config.validators or []:
         await run_maybe_sync(validator, result)
 
+    if config.chunk_content:
+        result.chunks = _handle_chunk_content(
+            mime_type=result.mime_type,
+            config=config,
+            content=result.content,
+        )
+
     for post_processor in config.post_processing_hooks or []:
         result = await run_maybe_sync(post_processor, result)
 
@@ -36,10 +44,26 @@ def _validate_and_post_process_sync(result: ExtractionResult, config: Extraction
     for validator in config.validators or []:
         run_maybe_async(validator, result)
 
+    if config.chunk_content:
+        result.chunks = _handle_chunk_content(
+            mime_type=result.mime_type,
+            config=config,
+            content=result.content,
+        )
+
     for post_processor in config.post_processing_hooks or []:
         result = run_maybe_async(post_processor, result)
 
     return result
+
+
+def _handle_chunk_content(
+    mime_type: str,
+    config: ExtractionConfig,
+    content: str,
+) -> list[str]:
+    chunker = get_chunker(mime_type=mime_type, max_characters=config.max_chars, overlap_characters=config.max_overlap)
+    return chunker.chunks(content)
 
 
 async def extract_bytes(content: bytes, mime_type: str, config: ExtractionConfig = DEFAULT_CONFIG) -> ExtractionResult:
@@ -60,6 +84,7 @@ async def extract_bytes(content: bytes, mime_type: str, config: ExtractionConfig
     else:
         result = ExtractionResult(
             content=safe_decode(content),
+            chunks=[],
             mime_type=mime_type,
             metadata={},
         )
@@ -85,7 +110,7 @@ async def extract_file(
         result = await extractor.extract_path_async(Path(file_path))
     else:
         result = ExtractionResult(
-            content=safe_decode(await anyio.Path(file_path).read_bytes()), mime_type=mime_type, metadata={}
+            content=safe_decode(await anyio.Path(file_path).read_bytes()), chunks=[], mime_type=mime_type, metadata={}
         )
 
     return await _validate_and_post_process_async(result=result, config=config)
@@ -162,6 +187,7 @@ def extract_bytes_sync(content: bytes, mime_type: str, config: ExtractionConfig 
     else:
         result = ExtractionResult(
             content=safe_decode(content),
+            chunks=[],
             mime_type=mime_type,
             metadata={},
         )
@@ -188,6 +214,7 @@ def extract_file_sync(
     else:
         result = ExtractionResult(
             content=Path(file_path).read_text(),
+            chunks=[],
             mime_type=mime_type,
             metadata={},
         )

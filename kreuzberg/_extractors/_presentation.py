@@ -178,6 +178,7 @@ class PresentationExtractor(Extractor):
             content=normalize_spaces(md_content),
             mime_type=MARKDOWN_MIME_TYPE,
             metadata=self._extract_presentation_metadata(presentation),
+            chunks=[],
         )
 
     @staticmethod

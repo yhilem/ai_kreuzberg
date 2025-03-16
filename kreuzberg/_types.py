@@ -3,8 +3,9 @@ from __future__ import annotations
 import sys
 from collections.abc import Awaitable
 from dataclasses import asdict, dataclass
-from typing import TYPE_CHECKING, Any, Callable, Literal, NamedTuple, TypedDict, Union
+from typing import TYPE_CHECKING, Any, Callable, Literal, TypedDict, Union
 
+from kreuzberg._constants import DEFAULT_MAX_CHARACTERS, DEFAULT_MAX_OVERLAP
 from kreuzberg.exceptions import ValidationError
 
 if sys.version_info < (3, 11):  # pragma: no cover
@@ -81,13 +82,16 @@ class Metadata(TypedDict, total=False):
     """Width of the document page/slide/image, if applicable."""
 
 
-class ExtractionResult(NamedTuple):
+@dataclass
+class ExtractionResult:
     """The result of a file extraction."""
 
     content: str
     """The extracted content."""
+    chunks: list[str]
+    """The extracted content chunks. This is an empty list if 'chunk_content' is not set to True in the ExtractionConfig."""
     mime_type: str
-    """The mime type of the content."""
+    """The mime type of the extracted content. Is either text/plain or text/markdown."""
     metadata: Metadata
     """The metadata of the content."""
 
@@ -108,6 +112,12 @@ class ExtractionConfig:
 
     force_ocr: bool = False
     """Whether to force OCR."""
+    chunk_content: bool = False
+    """Whether to chunk the content into smaller chunks."""
+    max_chars: int = DEFAULT_MAX_CHARACTERS
+    """The size of each chunk in characters."""
+    max_overlap: int = DEFAULT_MAX_OVERLAP
+    """The overlap between chunks in characters."""
     ocr_backend: OcrBackendType | None = "tesseract"
     """The OCR backend to use."""
     ocr_config: TesseractConfig | PaddleOCRConfig | EasyOCRConfig | None = None

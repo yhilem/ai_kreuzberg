@@ -19,6 +19,9 @@
 .run/
 .venv/
 .vscode/
+.windsurf
+.cursorrules
+CLAUDE.md
 __pycache__/
 coverage.xml
 prompt_template.egg-info/

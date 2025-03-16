@@ -200,9 +200,7 @@ class PaddleBackend(OCRBackend[PaddleOCRConfig]):
         )
 
         return ExtractionResult(
-            content=normalize_spaces(text_content),
-            mime_type=PLAIN_TEXT_MIME_TYPE,
-            metadata=metadata,
+            content=normalize_spaces(text_content), mime_type=PLAIN_TEXT_MIME_TYPE, metadata=metadata, chunks=[]
         )
 
     @classmethod
@@ -241,8 +239,8 @@ class PaddleBackend(OCRBackend[PaddleOCRConfig]):
         try:
             from paddleocr import PaddleOCR
         except ImportError as e:
-            raise MissingDependencyError(
-                "The 'paddleocr' package is not installed. Please install it to use PaddleOCR as an OCR backend."
+            raise MissingDependencyError.create_for_package(
+                dependency_group="paddleocr", functionality="PaddleOCR as an OCR backend", package_name="paddleocr"
             ) from e
 
         language = cls._validate_language_code(kwargs.pop("language", "en"))

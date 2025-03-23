@@ -102,25 +102,10 @@ async def test_extract_pdf_metadata_error_handling() -> None:
 
     from kreuzberg.exceptions import ParsingError
 
-    with patch("playa.parse", side_effect=ValueError("Test error")), pytest.raises(ParsingError):
+    with patch("kreuzberg._playa.parse", side_effect=ValueError("Test error")), pytest.raises(ParsingError):
         await extract_pdf_metadata(b"test content")
 
     result = await extract_pdf_metadata(b"not a valid PDF")
     assert isinstance(result, dict)
 
     assert "summary" in result
-
-
-@pytest.mark.anyio
-async def test_decode_pdf_string() -> None:
-    from kreuzberg._playa import _decode_pdf_string
-
-    utf16be_string = b"\xfe\xff\x00H\x00e\x00l\x00l\x00o"
-    assert _decode_pdf_string(utf16be_string) == "Hello"
-
-    assert _decode_pdf_string("Hello") == "Hello"
-
-    assert _decode_pdf_string("\ufeffHello") == "Hello"
-
-    assert _decode_pdf_string(b"") == ""
-    assert _decode_pdf_string("") == ""

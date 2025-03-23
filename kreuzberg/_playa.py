@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from contextlib import suppress
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, cast
 
-import playa
-from playa.pdftypes import ObjRef, PSLiteral
+from playa import asobj, parse
+from playa.utils import decode_text
 
-from kreuzberg._utils._string import safe_decode
 from kreuzberg.exceptions import ParsingError
 
 if TYPE_CHECKING:
@@ -39,11 +37,11 @@ async def extract_pdf_metadata(pdf_content: bytes) -> Metadata:
         A dictionary of metadata extracted from the PDF.
     """
     try:
-        document = playa.parse(pdf_content, max_workers=1)
+        document = parse(pdf_content, max_workers=1)
         metadata: Metadata = {}
 
         for raw_info in document.info:
-            pdf_info = _normalize_to_dict(raw_info)
+            pdf_info = {k.lower(): v for k, v in asobj(raw_info).items()}
             _extract_basic_metadata(pdf_info, metadata)
             _extract_author_metadata(pdf_info, metadata)
             _extract_keyword_metadata(pdf_info, metadata)
@@ -67,72 +65,39 @@ async def extract_pdf_metadata(pdf_content: bytes) -> Metadata:
         raise ParsingError(f"Failed to extract PDF metadata: {e!s}") from e
 
 
-def _normalize_to_dict(value: Any) -> dict[str, Any]:
-    if not isinstance(value, dict):
-        return {}
-
-    normalized_items = [(k.lower(), v.resolve() if isinstance(v, ObjRef) else v) for k, v in value.items()]
-
-    ret: dict[str, Any] = {}
-    for k, v in normalized_items:
-        if isinstance(v, dict):
-            ret[k] = _normalize_to_dict(v)
-        elif isinstance(v, list):
-            ret[k] = [_normalize_to_dict(item) for item in v]
-        elif isinstance(v, PSLiteral):
-            ret[k] = _parse_to_string(v)
-        else:
-            ret[k] = v
-    return ret
-
-
-def _parse_to_string(value: Any) -> str:
-    return f"/{value.name}" if isinstance(value, PSLiteral) else str(value)
-
-
-def _decode_pdf_string(value: Any) -> str:
-    if isinstance(value, bytes):
-        if len(value) >= len(UTF16BE_BOM) and value[: len(UTF16BE_BOM)] == UTF16BE_BOM:
-            with suppress(UnicodeDecodeError):
-                return value.decode(UTF16BE_ENCODING).removeprefix(BOM_CHAR)
-
-        return safe_decode(value).removeprefix(BOM_CHAR)
-    return str(value).removeprefix(BOM_CHAR)
-
-
 def _extract_basic_metadata(pdf_info: dict[str, Any], result: Metadata) -> None:
     if "title" not in result and (title := pdf_info.get("title")):
-        result["title"] = _decode_pdf_string(title)
+        result["title"] = decode_text(title)
 
     if "subject" not in result and (subject := pdf_info.get("subject")):
-        result["subject"] = _decode_pdf_string(subject)
+        result["subject"] = decode_text(subject)
 
-    if "publisher" not in result and (publisher := pdf_info.get("publisher")):
-        result["publisher"] = _decode_pdf_string(publisher)
+    if "publisher" not in result and (publisher := pdf_info.get("Publisher", pdf_info.get("publisher"))):
+        result["publisher"] = decode_text(publisher)
 
     if "copyright" not in result and (copyright_info := pdf_info.get("copyright") or pdf_info.get("rights")):
-        result["copyright"] = _decode_pdf_string(copyright_info)
+        result["copyright"] = decode_text(copyright_info)
 
     if "comments" not in result and (comments := pdf_info.get("comments")):
-        result["comments"] = _decode_pdf_string(comments)
+        result["comments"] = decode_text(comments)
 
     if "identifier" not in result and (identifier := pdf_info.get("identifier") or pdf_info.get("id")):
-        result["identifier"] = _decode_pdf_string(identifier)
+        result["identifier"] = decode_text(identifier)
 
     if "license" not in result and (license_info := pdf_info.get("license")):
-        result["license"] = _decode_pdf_string(license_info)
+        result["license"] = decode_text(license_info)
 
     if "modified_by" not in result and (modified_by := pdf_info.get("modifiedby") or pdf_info.get("last_modified_by")):
-        result["modified_by"] = _decode_pdf_string(modified_by)
+        result["modified_by"] = decode_text(modified_by)
 
     if "version" not in result and (version := pdf_info.get("version")):
-        result["version"] = _decode_pdf_string(version)
+        result["version"] = decode_text(version)
 
 
 def _extract_author_metadata(pdf_info: dict[str, Any], result: Metadata) -> None:
     if author := pdf_info.get("author"):
         if isinstance(author, (str, bytes)):
-            author_str = _decode_pdf_string(author)
+            author_str = decode_text(author)
             author_str = author_str.replace(" and ", ", ")
 
             authors = []
@@ -142,28 +107,28 @@ def _extract_author_metadata(pdf_info: dict[str, Any], result: Metadata) -> None
                 )
             result["authors"] = authors
         elif isinstance(author, list):
-            result["authors"] = [_decode_pdf_string(a) for a in author]
+            result["authors"] = [decode_text(a) for a in author]
 
 
 def _extract_keyword_metadata(pdf_info: dict[str, Any], result: Metadata) -> None:
     if keywords := pdf_info.get("keywords"):
         if isinstance(keywords, (str, bytes)):
-            kw_str = _decode_pdf_string(keywords)
+            kw_str = decode_text(keywords)
             kw_list = [k.strip() for k in kw_str.split(",")]
             kw_list = [k.strip() for k in " ".join(kw_list).split(";")]
             result["keywords"] = [k for k in kw_list if k]
         elif isinstance(keywords, list):
-            result["keywords"] = [_decode_pdf_string(k) for k in keywords]
+            result["keywords"] = [decode_text(k) for k in keywords]
 
 
 def _extract_category_metadata(pdf_info: dict[str, Any], result: Metadata) -> None:
     if categories := pdf_info.get("categories") or pdf_info.get("category"):
         if isinstance(categories, (str, bytes)):
-            cat_str = _decode_pdf_string(categories)
+            cat_str = decode_text(categories)
             cat_list = [c.strip() for c in cat_str.split(",")]
             result["categories"] = [c for c in cat_list if c]
         elif isinstance(categories, list):
-            result["categories"] = [_decode_pdf_string(c) for c in categories]
+            result["categories"] = [decode_text(c) for c in categories]
 
 
 def _parse_date_string(date_str: str) -> str:
@@ -185,25 +150,25 @@ def _parse_date_string(date_str: str) -> str:
 def _extract_date_metadata(pdf_info: dict[str, Any], result: Metadata) -> None:
     if created := pdf_info.get("creationdate") or pdf_info.get("createdate"):
         try:
-            date_str = _decode_pdf_string(created)
+            date_str = decode_text(created)
             result["created_at"] = _parse_date_string(date_str)
         except (ValueError, IndexError):
-            result["created_at"] = _decode_pdf_string(created)
+            result["created_at"] = decode_text(created)
 
     if modified := pdf_info.get("moddate") or pdf_info.get("modificationdate"):
         try:
-            date_str = _decode_pdf_string(modified)
+            date_str = decode_text(modified)
             result["modified_at"] = _parse_date_string(date_str)
         except (ValueError, IndexError):
-            result["modified_at"] = _decode_pdf_string(modified)
+            result["modified_at"] = decode_text(modified)
 
 
 def _extract_creator_metadata(pdf_info: dict[str, Any], result: Metadata) -> None:
     if creator := pdf_info.get("creator"):
-        result["created_by"] = _decode_pdf_string(creator)
+        result["created_by"] = decode_text(creator)
 
     if producer := pdf_info.get("producer"):
-        producer_str = _decode_pdf_string(producer)
+        producer_str = decode_text(producer)
         if "created_by" not in result:
             result["created_by"] = producer_str
         elif producer_str not in result["created_by"]:
@@ -255,7 +220,7 @@ def _generate_document_summary(document: Document) -> str:
         summary_parts.append(f"Document is {', '.join(permissions)}.")
 
     if hasattr(document, "status") and document.status:
-        status = _decode_pdf_string(document.status)
+        status = decode_text(document.status)
         summary_parts.append(f"Status: {status}.")
 
     if hasattr(document, "is_pdf_a") and document.is_pdf_a:
@@ -297,7 +262,7 @@ def _extract_structure_information(document: Document, result: Metadata) -> None
                     and hasattr(element, "text")
                     and element.text
                 ):
-                    subtitle = _decode_pdf_string(element.text)
+                    subtitle = decode_text(element.text)
 
                 if hasattr(element, "children") and element.children:
                     extract_languages(element.children)

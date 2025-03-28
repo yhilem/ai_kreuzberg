@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 from collections.abc import Awaitable
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from typing import TYPE_CHECKING, Any, Callable, Literal, TypedDict, Union
 
 from kreuzberg._constants import DEFAULT_MAX_CHARACTERS, DEFAULT_MAX_OVERLAP
@@ -14,11 +14,28 @@ else:  # pragma: no cover
     from typing import NotRequired
 
 if TYPE_CHECKING:
+    from pandas import DataFrame
+    from PIL.Image import Image
+
+    from kreuzberg._gmft import GMFTConfig
     from kreuzberg._ocr._easyocr import EasyOCRConfig
     from kreuzberg._ocr._paddleocr import PaddleOCRConfig
     from kreuzberg._ocr._tesseract import TesseractConfig
 
 OcrBackendType = Literal["tesseract", "easyocr", "paddleocr"]
+
+
+class TableData(TypedDict):
+    """Table data, returned from table extraction."""
+
+    cropped_image: Image
+    """The cropped image of the table."""
+    df: DataFrame
+    """The table data as a pandas DataFrame."""
+    page_number: int
+    """The page number of the table."""
+    text: str
+    """The table text as a markdown string."""
 
 
 class Metadata(TypedDict, total=False):
@@ -88,12 +105,14 @@ class ExtractionResult:
 
     content: str
     """The extracted content."""
-    chunks: list[str]
-    """The extracted content chunks. This is an empty list if 'chunk_content' is not set to True in the ExtractionConfig."""
     mime_type: str
     """The mime type of the extracted content. Is either text/plain or text/markdown."""
     metadata: Metadata
     """The metadata of the content."""
+    tables: list[TableData] = field(default_factory=list)
+    """Extracted tables. Is an empty list if 'extract_tables' is not set to True in the ExtractionConfig."""
+    chunks: list[str] = field(default_factory=list)
+    """The extracted content chunks. This is an empty list if 'chunk_content' is not set to True in the ExtractionConfig."""
 
 
 PostProcessingHook = Callable[[ExtractionResult], Union[ExtractionResult, Awaitable[ExtractionResult]]]
@@ -114,14 +133,22 @@ class ExtractionConfig:
     """Whether to force OCR."""
     chunk_content: bool = False
     """Whether to chunk the content into smaller chunks."""
+    extract_tables: bool = False
+    """Whether to extract tables from the content. This requires the 'gmft' dependency."""
     max_chars: int = DEFAULT_MAX_CHARACTERS
     """The size of each chunk in characters."""
     max_overlap: int = DEFAULT_MAX_OVERLAP
     """The overlap between chunks in characters."""
     ocr_backend: OcrBackendType | None = "tesseract"
-    """The OCR backend to use."""
+    """The OCR backend to use.
+
+    Notes:
+        - If set to 'None', OCR will not be performed.
+    """
     ocr_config: TesseractConfig | PaddleOCRConfig | EasyOCRConfig | None = None
     """Configuration to pass to the OCR backend."""
+    gmft_config: GMFTConfig | None = None
+    """GMFT configuration."""
     post_processing_hooks: list[PostProcessingHook] | None = None
     """Post processing hooks to call after processing is done and before the final result is returned."""
     validators: list[ValidationHook] | None = None

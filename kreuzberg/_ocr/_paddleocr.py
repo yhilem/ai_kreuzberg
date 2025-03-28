@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import platform
-import sys
 from dataclasses import dataclass
 from importlib.util import find_spec
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal
@@ -233,16 +232,9 @@ class PaddleBackend(OCRBackend[PaddleOCRConfig]):
         Raises:
             MissingDependencyError: If PaddleOCR is not installed.
             OCRError: If initialization fails.
-            ValidationError: If the python version is too high.
         """
         if cls._paddle_ocr is not None:
             return
-
-        if sys.version_info >= (3, 13):  # pragma: no cover
-            raise ValidationError(
-                "PaddleOCR is only available in python 3.12 and below. Please downgrade your Python or switch to a different OCR backend.",
-                context={"issue": "https://github.com/PaddlePaddle/Paddle/issues/71616"},
-            )
 
         try:
             from paddleocr import PaddleOCR

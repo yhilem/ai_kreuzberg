@@ -45,20 +45,28 @@ class PDFExtractor(Extractor):
 
     async def extract_path_async(self, path: Path) -> ExtractionResult:
         content_bytes = await AsyncPath(path).read_bytes()
-        metadata = await extract_pdf_metadata(content_bytes)
+
+        result: ExtractionResult | None = None
 
         if not self.config.force_ocr:
             content = await self._extract_pdf_searchable_text(path)
             if self._validate_extracted_text(content):
-                return ExtractionResult(content=content, mime_type=PLAIN_TEXT_MIME_TYPE, metadata=metadata, chunks=[])
+                result = ExtractionResult(content=content, mime_type=PLAIN_TEXT_MIME_TYPE, metadata={}, chunks=[])
 
-        if self.config.ocr_backend is not None:
+        if not result and self.config.ocr_backend is not None:
             result = await self._extract_pdf_text_with_ocr(path, self.config.ocr_backend)
 
-            result.metadata = metadata
-            return result
+        if not result:
+            result = ExtractionResult(content="", mime_type=PLAIN_TEXT_MIME_TYPE, metadata={}, chunks=[])
 
-        return ExtractionResult(content="", mime_type=PLAIN_TEXT_MIME_TYPE, metadata=metadata, chunks=[])
+        result.metadata = await extract_pdf_metadata(content_bytes)
+
+        if self.config.extract_tables:
+            from kreuzberg._gmft import extract_tables
+
+            result.tables = await extract_tables(path, self.config.gmft_config)
+
+        return result
 
     def extract_bytes_sync(self, content: bytes) -> ExtractionResult:
         return anyio.run(self.extract_bytes_async, content)

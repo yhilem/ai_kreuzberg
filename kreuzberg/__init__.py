@@ -1,10 +1,11 @@
+from kreuzberg._gmft import GMFTConfig
 from kreuzberg._ocr._easyocr import EasyOCRConfig
 from kreuzberg._ocr._paddleocr import PaddleOCRConfig
 from kreuzberg._ocr._tesseract import TesseractConfig
 
 from ._ocr._tesseract import PSMMode
 from ._registry import ExtractorRegistry
-from ._types import ExtractionConfig, ExtractionResult, Metadata
+from ._types import ExtractionConfig, ExtractionResult, Metadata, TableData
 from .exceptions import KreuzbergError, MissingDependencyError, OCRError, ParsingError, ValidationError
 from .extraction import (
     batch_extract_bytes,
@@ -22,6 +23,7 @@ __all__ = [
     "ExtractionConfig",
     "ExtractionResult",
     "ExtractorRegistry",
+    "GMFTConfig",
     "KreuzbergError",
     "Metadata",
     "MissingDependencyError",
@@ -29,6 +31,7 @@ __all__ = [
     "PSMMode",
     "PaddleOCRConfig",
     "ParsingError",
+    "TableData",
     "TesseractConfig",
     "ValidationError",
     "batch_extract_bytes",

@@ -173,6 +173,10 @@ class EasyOCRBackend(OCRBackend[EasyOCRConfig]):
         await self._init_easyocr(**kwargs)
 
         beam_width = kwargs.pop("beam_width")
+
+        kwargs.pop("language", None)
+        kwargs.pop("use_gpu", None)
+
         try:
             result = await run_sync(
                 self._reader.readtext,

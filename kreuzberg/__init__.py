@@ -18,6 +18,8 @@ from .extraction import (
     extract_file_sync,
 )
 
+__version__ = "3.2.0"
+
 __all__ = [
     "EasyOCRConfig",
     "ExtractionConfig",
@@ -34,6 +36,7 @@ __all__ = [
     "TableData",
     "TesseractConfig",
     "ValidationError",
+    "__version__",
     "batch_extract_bytes",
     "batch_extract_bytes_sync",
     "batch_extract_file",

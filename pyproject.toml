@@ -1,3 +1,8 @@
+[build-system]
+build-backend = "hatchling.build"
+
+requires = [ "hatchling" ]
+
 [project]
 name = "kreuzberg"
 version = "3.2.0"
@@ -49,6 +54,8 @@ dependencies = [
 ]
 
 optional-dependencies.all = [
+  # cli
+  "click>=8.1.0",
   # easyocr
   "easyocr>=1.7.2",
   # gmft
@@ -56,12 +63,19 @@ optional-dependencies.all = [
   # paddle
   "paddleocr>=3.1.0",
   "paddlepaddle>=3.1.0",
+  "rich>=13.0.0",
   # chunking
   "semantic-text-splitter>=0.27.0",
   "setuptools>=80.9.0",
+  "tomli>=2.0.0; python_version<'3.11'",
 ]
 optional-dependencies.chunking = [
   "semantic-text-splitter>=0.27.0",
+]
+optional-dependencies.cli = [
+  "click>=8.1.0",
+  "rich>=13.0.0",
+  "tomli>=2.0.0; python_version<'3.11'",
 ]
 optional-dependencies.easyocr = [
   "easyocr>=1.7.2",
@@ -75,6 +89,8 @@ optional-dependencies.paddleocr = [
   "setuptools>=80.9.0",
 ]
 urls.homepage = "https://github.com/Goldziher/kreuzberg"
+
+scripts.kreuzberg = "kreuzberg.cli:cli"
 
 [dependency-groups]
 dev = [

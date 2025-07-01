@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -332,6 +333,10 @@ async def test_batch_extract_bytes_invalid() -> None:
     assert "Unsupported mime type" in str(exc_info.value.exceptions[0])
 
 
+@pytest.mark.skipif(
+    sys.platform == "darwin" and os.environ.get("CI") == "true",
+    reason="Segfault issue with pypdfium2 in GitHub Actions on macOS",
+)
 def test_batch_extract_file_sync_mixed(test_article: Path) -> None:
     test_files = [test_article]
     test_files.extend((Path(__file__).parent / "source").glob("*.docx"))

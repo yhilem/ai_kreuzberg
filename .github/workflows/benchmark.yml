@@ -50,6 +50,8 @@ jobs:
         run: |
           # Sync all workspace packages with all extras
           uv sync --all-packages --all-extras
+          # Install benchmarks package explicitly
+          cd benchmarks && uv pip install -e .
           # Verify benchmarks CLI is available
           uv run python -m kreuzberg_benchmarks --help
 

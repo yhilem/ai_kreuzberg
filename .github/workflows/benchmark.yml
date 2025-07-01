@@ -50,6 +50,8 @@ jobs:
         run: |
           # Sync all workspace packages including benchmarks
           uv sync --all-packages --all-extras
+          # Install benchmarks package to make CLI available
+          uv pip install -e ./benchmarks --no-deps
 
       - name: Create test files
         run: |

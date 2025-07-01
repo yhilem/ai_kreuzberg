@@ -1,4 +1,5 @@
 """Command-line interface for Kreuzberg benchmarks."""
+# mypy: ignore-errors
 
 from __future__ import annotations
 

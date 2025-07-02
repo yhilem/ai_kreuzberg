@@ -178,7 +178,7 @@ class ExtractionConfig:
     keyword_count: int = 10
     """Number of keywords to extract if extract_keywords is True."""
     custom_entity_patterns: frozenset[tuple[str, str]] | None = None
-    """Custom entity patterns as {entity_type: regex_pattern}."""
+    """Custom entity patterns as a frozenset of (entity_type, regex_pattern) tuples."""
 
     def __post_init__(self) -> None:
         if self.custom_entity_patterns is not None and isinstance(self.custom_entity_patterns, dict):

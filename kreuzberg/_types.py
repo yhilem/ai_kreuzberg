@@ -114,6 +114,10 @@ class ExtractionResult:
     chunks: list[str] = field(default_factory=list)
     """The extracted content chunks. This is an empty list if 'chunk_content' is not set to True in the ExtractionConfig."""
 
+    def to_dict(self) -> dict[str, Any]:
+        """Converts the ExtractionResult to a dictionary."""
+        return asdict(self)
+
 
 PostProcessingHook = Callable[[ExtractionResult], Union[ExtractionResult, Awaitable[ExtractionResult]]]
 ValidationHook = Callable[[ExtractionResult], Union[None, Awaitable[None]]]

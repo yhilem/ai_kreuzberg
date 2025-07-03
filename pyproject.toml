@@ -5,7 +5,7 @@ requires = [ "hatchling" ]
 
 [project]
 name = "kreuzberg"
-version = "3.3.0"
+version = "3.4.0"
 description = "A text extraction library supporting PDFs, images, office documents and more"
 readme = "README.md"
 keywords = [
@@ -52,21 +52,10 @@ dependencies = [
 ]
 
 optional-dependencies.all = [
-  # cli
-  "click>=8.2.1",
-  # easyocr
-  "easyocr>=1.7.2",
-  # gmft
-  "gmft>=0.4.2",
-  # paddle
-  "paddleocr>=3.1.0",
-  "paddlepaddle>=3.1.0",
-  "rich>=14.0.0",
-  # chunking
-  "semantic-text-splitter>=0.27.0",
-  "setuptools>=80.9.0",
-  "tomli>=2.0.0; python_version<'3.11'",
+  "kreuzberg[api,chunking,cli,easyocr,gmft,paddleocr]",
 ]
+optional-dependencies.api = [ "litestar[standard,structlog,opentelemetry]>=2.1.6" ]
+
 optional-dependencies.chunking = [ "semantic-text-splitter>=0.27.0" ]
 optional-dependencies.cli = [
   "click>=8.2.1",
@@ -203,11 +192,24 @@ show_error_codes = true
 strict = true
 
 [[tool.mypy.overrides]]
-module = [ "rich.*", "typer.*", "matplotlib.*", "memory_profiler.*", "py_spy.*" ]
+module = [
+  "rich.*",
+  "typer.*",
+  "matplotlib.*",
+  "memory_profiler.*",
+  "py_spy.*",
+  "litestar.*",
+  "structlog.*",
+  "opentelemetry.*",
+]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "benchmarks.src.kreuzberg_benchmarks.*"
+disable_error_code = [ "misc" ]
+
+[[tool.mypy.overrides]]
+module = "kreuzberg.docker.main"
 disable_error_code = [ "misc" ]
 
 [tool.uv.sources]

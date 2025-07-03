@@ -31,6 +31,9 @@ pip install kreuzberg
 
 # Or install with CLI support
 pip install "kreuzberg[cli]"
+
+# Or install with API server
+pip install "kreuzberg[api]"
 ```
 
 Install pandoc:
@@ -79,6 +82,31 @@ async def main():
 
 asyncio.run(main())
 ```
+
+## Docker
+
+Docker images are available for easy deployment:
+
+```bash
+# Run the API server
+docker run -p 8000:8000 goldziher/kreuzberg:latest
+
+# Extract files via API
+curl -X POST http://localhost:8000/extract -F "data=@document.pdf"
+```
+
+See the [Docker documentation](https://goldziher.github.io/kreuzberg/user-guide/docker/) for more options.
+
+## REST API
+
+Run Kreuzberg as a REST API server:
+
+```bash
+pip install "kreuzberg[api]"
+litestar --app kreuzberg._api.main:app run
+```
+
+See the [API documentation](https://goldziher.github.io/kreuzberg/user-guide/api-server/) for endpoints and usage.
 
 ## Command Line Interface
 

@@ -7,6 +7,8 @@
 
 **High-performance Python library for text extraction from documents.** Extract text from PDFs, images, office documents, and more with both async and sync APIs.
 
+📖 **[Complete Documentation](https://goldziher.github.io/kreuzberg/)**
+
 ## Why Kreuzberg?
 
 - **🚀 Fastest Performance**: [Benchmarked](https://github.com/Goldziher/python-text-extraction-libs-benchmarks) as the fastest text extraction library
@@ -66,13 +68,13 @@ asyncio.run(main())
 
 ```bash
 # Run API server
-docker run -p 8000:8000 goldziher/kreuzberg:latest
+docker run -p 8000:8000 goldziher/kreuzberg:3.4.0
 
 # Extract files
 curl -X POST http://localhost:8000/extract -F "data=@document.pdf"
 ```
 
-Available variants: `latest`, `latest-easyocr`, `latest-paddle`, `latest-gmft`, `latest-all`
+Available variants: `3.4.0`, `3.4.0-easyocr`, `3.4.0-paddle`, `3.4.0-gmft`, `3.4.0-all`
 
 ### 🌐 REST API
 
@@ -129,8 +131,6 @@ kreuzberg extract *.pdf --output-dir ./extracted/
 > **Rule of thumb**: Use async API for complex documents and batch processing (up to 4.5x faster)
 
 ## Documentation
-
-📖 **[Complete Documentation](https://goldziher.github.io/kreuzberg/)**
 
 ### Quick Links
 

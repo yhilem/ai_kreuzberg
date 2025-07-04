@@ -3,11 +3,13 @@ name: Publish Docker Images
 
 on:
   workflow_dispatch:
+  release:
+    types: [published]
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'release' }}
     permissions:
       contents: read
       packages: write

@@ -62,15 +62,15 @@ result = await extract_file("document.pdf", config=ExtractionConfig(ocr_config=T
 
 #### Available PSM Modes
 
-| Mode                 | Enum Value                | Description                                              | Best For                                       |
-| -------------------- | ------------------------- | -------------------------------------------------------- | ---------------------------------------------- |
-| Automatic            | `PSMMode.AUTO`            | Automatic page segmentation with orientation detection   | General purpose (default)                      |
-| Single Block         | `PSMMode.SINGLE_BLOCK`    | Treat the image as a single text block                   | Simple layouts, preserving paragraph structure |
-| Single Line          | `PSMMode.SINGLE_LINE`     | Treat the image as a single text line                    | Receipts, labels, single-line text             |
-| Single Word          | `PSMMode.SINGLE_WORD`     | Treat the image as a single word                         | Word recognition tasks                         |
-| Single Character     | `PSMMode.SINGLE_CHAR`     | Treat the image as a single character                    | Character recognition tasks                    |
-| Sparse Text          | `PSMMode.SPARSE_TEXT`     | Find as much text as possible without assuming structure | Forms, tables, scattered text                  |
-| Sparse Text with OSD | `PSMMode.SPARSE_TEXT_OSD` | Like SPARSE_TEXT with orientation detection              | Complex layouts with varying text orientation  |
+| Mode          | Enum Value              | Description                                              | Best For                                       |
+| ------------- | ----------------------- | -------------------------------------------------------- | ---------------------------------------------- |
+| Auto Only     | `PSMMode.AUTO_ONLY`     | Automatic segmentation without orientation detection     | Modern documents (default - fastest)           |
+| Automatic     | `PSMMode.AUTO`          | Automatic page segmentation with orientation detection   | Rotated/skewed documents                       |
+| Single Block  | `PSMMode.SINGLE_BLOCK`  | Treat the image as a single text block                   | Simple layouts, preserving paragraph structure |
+| Single Column | `PSMMode.SINGLE_COLUMN` | Assume a single column of text                           | Books, articles, single-column documents       |
+| Single Line   | `PSMMode.SINGLE_LINE`   | Treat the image as a single text line                    | Receipts, labels, single-line text             |
+| Single Word   | `PSMMode.SINGLE_WORD`   | Treat the image as a single word                         | Word recognition tasks                         |
+| Sparse Text   | `PSMMode.SPARSE_TEXT`   | Find as much text as possible without assuming structure | Forms, tables, scattered text                  |
 
 ### Forcing OCR
 
@@ -139,23 +139,90 @@ result = await extract_file(
 
 ## Performance Optimization
 
-OCR performance and parallel processing can be controlled through process handlers and extraction hooks which are configured in the `ExtractionConfig` object. The default configuration handles performance optimization automatically.
+### Default Configuration
 
-This is useful for:
+Kreuzberg's defaults are optimized out-of-the-box for modern PDFs and standard documents:
 
-- Limiting resource usage on systems with limited memory
-- Optimizing performance on systems with many CPU cores
-- Balancing OCR tasks with other application workloads
+- **PSM Mode**: `AUTO_ONLY` - Faster than `AUTO` without orientation detection overhead
+- **Language Model**: Disabled by default for optimal performance on modern documents
+- **Dictionary Correction**: Enabled for accuracy
+
+The default configuration provides excellent extraction quality for:
+
+- Modern PDFs with embedded text
+- Scanned documents with clear printing
+- Office documents (DOCX, PPTX, XLSX)
+- Standard business documents
+
+### Speed vs Quality Trade-offs
+
+```python
+from kreuzberg import ExtractionConfig, TesseractConfig, PSMMode
+
+# Default configuration (optimized for modern documents)
+default_config = ExtractionConfig()  # Already optimized for speed and quality
+
+# Maximum speed configuration
+speed_config = ExtractionConfig(
+    ocr_backend="tesseract",
+    ocr_config=TesseractConfig(
+        psm=PSMMode.SINGLE_BLOCK,  # Assume simple layout
+        tessedit_enable_dict_correction=False,  # Skip dictionary correction
+    ),
+)
+
+# Maximum accuracy configuration (for degraded/historical documents)
+accuracy_config = ExtractionConfig(
+    ocr_backend="tesseract",
+    ocr_config=TesseractConfig(
+        psm=PSMMode.AUTO,  # Full analysis with orientation detection
+        language_model_ngram_on=True,  # Enable for degraded/historical text
+        tessedit_enable_dict_correction=True,  # Correct OCR errors
+    ),
+)
+```
+
+### Language Model N-gram Settings
+
+The `language_model_ngram_on` parameter controls Tesseract's use of n-gram language models:
+
+- **Default (False)**: Optimized for modern documents with clear text
+- **When to enable**: Historical documents, degraded scans, handwritten text, or noisy images
+
+```python
+# For degraded or historical documents
+historical_config = ExtractionConfig(
+    ocr_backend="tesseract",
+    ocr_config=TesseractConfig(
+        language_model_ngram_on=True,  # Enable for better accuracy on poor quality text
+    ),
+)
+```
+
+### When to Disable OCR
+
+For documents with text layers (searchable PDFs, Office docs), disable OCR entirely:
+
+```python
+# No OCR overhead for text documents
+text_config = ExtractionConfig(ocr_backend=None)
+```
+
+This provides significant speedup (78% of PDFs have text layers and extract in \<0.01s)
 
 ## Best Practices
 
 - **Language Selection**: Always specify the correct language for your documents to improve OCR accuracy
 - **PSM Mode Selection**: Choose the appropriate PSM mode based on your document layout:
-    - Use `PSM.SINGLE_BLOCK` for documents with simple layouts
-    - Use `PSM.SPARSE_TEXT` for forms or documents with tables
-    - Use `PSM.SINGLE_LINE` for receipts or labels
+    - Use `PSMMode.AUTO_ONLY` (default) for modern, well-formatted documents
+    - Use `PSMMode.SINGLE_BLOCK` for simple layouts with faster processing
+    - Use `PSMMode.SPARSE_TEXT` for forms or documents with tables
+    - Use `PSMMode.AUTO` only when orientation detection is needed
+- **Performance Optimization**:
+    - Disable OCR (`ocr_backend=None`) for documents with text layers
+    - Disable language model for clean documents (`language_model_ngram_on=False`)
+    - Disable dictionary correction for technical documents
 - **Image Quality**: For best results, ensure images are:
     - High resolution (at least 300 DPI)
     - Well-lit with good contrast
-    - Not skewed or rotated
-- **Performance**: For batch processing, adjust `max_processes` based on your system's capabilities
+    - Not skewed or rotated (unless using `PSMMode.AUTO`)

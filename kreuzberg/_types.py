@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from PIL.Image import Image
 
     from kreuzberg._gmft import GMFTConfig
+    from kreuzberg._language_detection import LanguageDetectionConfig
     from kreuzberg._ocr._easyocr import EasyOCRConfig
     from kreuzberg._ocr._paddleocr import PaddleOCRConfig
     from kreuzberg._ocr._tesseract import TesseractConfig
@@ -131,6 +132,8 @@ class ExtractionResult:
     """Extracted entities, if entity extraction is enabled."""
     keywords: list[tuple[str, float]] | None = None
     """Extracted keywords and their scores, if keyword extraction is enabled."""
+    detected_languages: list[str] | None = None
+    """Languages detected in the extracted content, if language detection is enabled."""
 
     def to_dict(self) -> dict[str, Any]:
         """Converts the ExtractionResult to a dictionary."""
@@ -183,6 +186,10 @@ class ExtractionConfig:
     """Number of keywords to extract if extract_keywords is True."""
     custom_entity_patterns: frozenset[tuple[str, str]] | None = None
     """Custom entity patterns as a frozenset of (entity_type, regex_pattern) tuples."""
+    auto_detect_language: bool = False
+    """Whether to automatically detect language and configure OCR accordingly."""
+    language_detection_config: LanguageDetectionConfig | None = None
+    """Configuration for language detection. If None, uses default settings."""
 
     def __post_init__(self) -> None:
         if self.custom_entity_patterns is not None and isinstance(self.custom_entity_patterns, dict):

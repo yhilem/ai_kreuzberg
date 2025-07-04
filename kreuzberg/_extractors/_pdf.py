@@ -299,8 +299,6 @@ class PDFExtractor(Extractor):
         """Extract text from PDF using OCR (sync version)."""
         pdf = None
         try:
-            from kreuzberg._multiprocessing.sync_tesseract import process_batch_images_sync_pure
-
             images = []
             with pypdfium_file_lock(path):
                 pdf = pypdfium2.PdfDocument(str(path))
@@ -325,18 +323,7 @@ class PDFExtractor(Extractor):
                     os.close(fd)
                     image_paths.append(temp_path)
 
-                if self.config.ocr_backend == "tesseract":
-                    from kreuzberg._ocr._tesseract import TesseractConfig
-
-                    if isinstance(self.config.ocr_config, TesseractConfig):
-                        config = self.config.ocr_config
-                    else:
-                        config = TesseractConfig()
-                    results = process_batch_images_sync_pure([str(p) for p in image_paths], config)
-                    text_parts = [r.content for r in results]
-                    return "\n\n".join(text_parts)
-
-                raise NotImplementedError(f"Sync OCR not implemented for {self.config.ocr_backend}")
+                return self._process_pdf_images_with_ocr(image_paths)
 
             finally:
                 for _, temp_path in temp_files:
@@ -349,3 +336,46 @@ class PDFExtractor(Extractor):
             if pdf:
                 with pypdfium_file_lock(path), contextlib.suppress(Exception):
                     pdf.close()
+
+    def _process_pdf_images_with_ocr(self, image_paths: list[str]) -> str:
+        """Process PDF images with the configured OCR backend."""
+        if self.config.ocr_backend == "tesseract":
+            from kreuzberg._multiprocessing.sync_tesseract import process_batch_images_sync_pure
+            from kreuzberg._ocr._tesseract import TesseractConfig
+
+            tesseract_config = (
+                self.config.ocr_config if isinstance(self.config.ocr_config, TesseractConfig) else TesseractConfig()
+            )
+            results = process_batch_images_sync_pure([str(p) for p in image_paths], tesseract_config)
+            text_parts = [r.content for r in results]
+            return "\n\n".join(text_parts)
+
+        if self.config.ocr_backend == "paddleocr":
+            from kreuzberg._multiprocessing.sync_paddleocr import process_image_sync_pure as paddle_process
+            from kreuzberg._ocr._paddleocr import PaddleOCRConfig
+
+            paddle_config = (
+                self.config.ocr_config if isinstance(self.config.ocr_config, PaddleOCRConfig) else PaddleOCRConfig()
+            )
+
+            text_parts = []
+            for image_path in image_paths:
+                result = paddle_process(Path(image_path), paddle_config)
+                text_parts.append(result.content)
+            return "\n\n".join(text_parts)
+
+        if self.config.ocr_backend == "easyocr":
+            from kreuzberg._multiprocessing.sync_easyocr import process_image_sync_pure as easy_process
+            from kreuzberg._ocr._easyocr import EasyOCRConfig
+
+            easy_config = (
+                self.config.ocr_config if isinstance(self.config.ocr_config, EasyOCRConfig) else EasyOCRConfig()
+            )
+
+            text_parts = []
+            for image_path in image_paths:
+                result = easy_process(Path(image_path), easy_config)
+                text_parts.append(result.content)
+            return "\n\n".join(text_parts)
+
+        raise NotImplementedError(f"Sync OCR not implemented for {self.config.ocr_backend}")

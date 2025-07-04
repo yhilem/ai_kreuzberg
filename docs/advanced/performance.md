@@ -125,21 +125,58 @@ The async API leverages Python's asyncio with intelligent task scheduling:
 1. **Configure OCR appropriately** for your document types
 1. **Profile your specific workload** - results vary by content
 
-### Configuration Examples
+### Optimized Default Configuration
+
+Kreuzberg's default configuration is **optimized out-of-the-box for modern PDFs and standard documents**:
+
+```python
+from kreuzberg import ExtractionConfig
+
+# Default configuration - already optimized for modern documents
+config = ExtractionConfig()  # Uses optimized defaults:
+# - PSM: AUTO_ONLY (fast without orientation detection)
+# - Language model: Disabled for performance
+# - Dictionary correction: Enabled for accuracy
+```
+
+### Advanced Configuration Examples
 
 ```python
 from kreuzberg import ExtractionConfig, extract_file_sync
-from kreuzberg._ocr import TesseractConfig
+from kreuzberg._ocr._tesseract import TesseractConfig, PSMMode
 
-# Optimized for speed
-fast_config = ExtractionConfig(ocr_backend="tesseract", ocr_config=TesseractConfig(psm=6))  # Assume uniform text block
+# Maximum speed configuration (for high-volume processing)
+speed_config = ExtractionConfig(
+    ocr_backend="tesseract",
+    ocr_config=TesseractConfig(
+        psm=PSMMode.SINGLE_BLOCK,  # Assume simple layout
+        language_model_ngram_on=False,  # Already disabled by default
+        tessedit_enable_dict_correction=False,  # Disable for maximum speed
+    ),
+)
 
-# Optimized for accuracy
-accurate_config = ExtractionConfig(ocr_backend="tesseract", ocr_config=TesseractConfig(psm=1))  # Auto page segmentation
+# Maximum accuracy configuration (for degraded documents)
+accuracy_config = ExtractionConfig(
+    ocr_backend="tesseract",
+    ocr_config=TesseractConfig(
+        psm=PSMMode.AUTO,  # Full analysis with orientation detection
+        language_model_ngram_on=True,  # Enable for historical/degraded text
+        tessedit_enable_dict_correction=True,  # Default - keep enabled
+    ),
+)
 
-# For simple documents (no OCR)
-text_only_config = ExtractionConfig(force_ocr=False, ocr_backend=None)
+# No OCR configuration (text documents only)
+text_only_config = ExtractionConfig(ocr_backend=None, force_ocr=False)
 ```
+
+### Performance Optimization Tips
+
+Based on comprehensive benchmarking with 138+ documents:
+
+1. **Disable OCR for text documents**: Setting `ocr_backend=None` provides significant speedup for documents with text layers
+1. **Use PSM `AUTO_ONLY` (default)**: Optimized for modern documents without orientation detection overhead
+1. **Language model trade-offs**: Disabling `language_model_ngram_on` can provide 30x+ speedup with minimal quality impact on clean documents
+1. **Dictionary correction**: Disabling `tessedit_enable_dict_correction` speeds up processing for technical documents
 
 ### Batch Processing Best Practices
 

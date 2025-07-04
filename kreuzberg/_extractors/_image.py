@@ -80,11 +80,11 @@ class ImageExtractor(Extractor):
         if self.config.ocr_backend is None:
             raise ValidationError("ocr_backend is None, cannot perform OCR")
 
-        from kreuzberg._ocr._tesseract import TesseractConfig
         from kreuzberg._types import ExtractionResult
 
         if self.config.ocr_backend == "tesseract":
             from kreuzberg._multiprocessing.sync_tesseract import process_batch_images_sync_pure
+            from kreuzberg._ocr._tesseract import TesseractConfig
 
             if isinstance(self.config.ocr_config, TesseractConfig):
                 config = self.config.ocr_config
@@ -95,6 +95,26 @@ class ImageExtractor(Extractor):
             if results:
                 return results[0]
             return ExtractionResult(content="", mime_type="text/plain", metadata={}, chunks=[])
+
+        if self.config.ocr_backend == "paddleocr":
+            from kreuzberg._multiprocessing.sync_paddleocr import process_image_sync_pure as paddle_process
+            from kreuzberg._ocr._paddleocr import PaddleOCRConfig
+
+            paddle_config = (
+                self.config.ocr_config if isinstance(self.config.ocr_config, PaddleOCRConfig) else PaddleOCRConfig()
+            )
+
+            return paddle_process(path, paddle_config)
+
+        if self.config.ocr_backend == "easyocr":
+            from kreuzberg._multiprocessing.sync_easyocr import process_image_sync_pure as easy_process
+            from kreuzberg._ocr._easyocr import EasyOCRConfig
+
+            easy_config = (
+                self.config.ocr_config if isinstance(self.config.ocr_config, EasyOCRConfig) else EasyOCRConfig()
+            )
+
+            return easy_process(path, easy_config)
 
         raise NotImplementedError(f"Sync OCR not implemented for {self.config.ocr_backend}")
 

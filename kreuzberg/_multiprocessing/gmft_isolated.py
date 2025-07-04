@@ -56,9 +56,7 @@ def _extract_tables_in_process(
                 force_large_table_assumption=config.force_large_table_assumption,
             )
         )
-        detector = AutoTableDetector(  # type: ignore[no-untyped-call]
-            config=TATRDetectorConfig(detector_base_threshold=config.detector_base_threshold)
-        )
+        detector = AutoTableDetector(config=TATRDetectorConfig(detector_base_threshold=config.detector_base_threshold))  # type: ignore[no-untyped-call]
 
         doc = PyPDFium2Document(str(file_path))
         cropped_tables = []

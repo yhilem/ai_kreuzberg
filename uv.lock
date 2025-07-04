@@ -1254,6 +1254,7 @@ requires-dist = [
     { name = "tomli", marker = "python_full_version < '3.11' and extra == 'cli'", specifier = ">=2.0.0" },
     { name = "typing-extensions", marker = "python_full_version < '3.12'", specifier = ">=4.14.0" },
 ]
+
 provides-extras = ["all", "api", "chunking", "cli", "easyocr", "gmft", "langdetect", "paddleocr", "entity-extraction"]
 
 [package.metadata.requires-dev]

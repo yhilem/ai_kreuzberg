@@ -210,7 +210,7 @@ async def extract_tables(  # noqa: PLR0915
             from gmft.formatters.tatr import TATRFormatConfig
             from gmft.pdf_bindings.pdfium import PyPDFium2Document
 
-            formatter: Any = AutoTableFormatter(  # type: ignore[no-untyped-call]
+            formatter: Any = AutoTableFormatter(  # type: ignore[no-untyped-call]  # type: ignore[no-untyped-call]
                 config=TATRFormatConfig(
                     verbosity=config.verbosity,
                     formatter_base_threshold=config.formatter_base_threshold,
@@ -226,7 +226,7 @@ async def extract_tables(  # noqa: PLR0915
                     force_large_table_assumption=config.force_large_table_assumption,
                 )
             )
-            detector: Any = AutoTableDetector(  # type: ignore[no-untyped-call]
+            detector: Any = AutoTableDetector(  # type: ignore[no-untyped-call]  # type: ignore[no-untyped-call]
                 config=TATRDetectorConfig(detector_base_threshold=config.detector_base_threshold)
             )
             doc = await run_sync(PyPDFium2Document, str(file_path))

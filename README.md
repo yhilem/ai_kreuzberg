@@ -14,9 +14,9 @@
 
 ### 🚀 Performance
 
-- [35+ files/second](https://goldziher.github.io/python-text-extraction-libs-benchmarks/) processing speed - 2-3x faster than alternatives
+- [benchmarked as the fastest framework](https://goldziher.github.io/python-text-extraction-libs-benchmarks/) - 2-3x faster than the nearest alternatives
 - Minimal footprint: 71MB install vs 1GB+ for competitors
-- Low memory usage (~530MB average) optimized for production workloads
+- Lowest memory usage (~530MB average) optimized for production workloads
 - Edge and serverless ready - deploy anywhere without heavy dependencies
 
 ### 🛠️ Engineering Quality
@@ -24,16 +24,15 @@
 - Built by software engineers with modern Python best practices
 - 95%+ test coverage with comprehensive test suite
 - Thoroughly benchmarked and profiled for real-world performance
-- Full type safety with excellent IDE support
+- Only framework offering true async/await support alongside sync APIs
 - Robust error handling and detailed logging
 
 ### 🎯 Developer Experience
 
 - Works out of the box with sane defaults, scales with your needs
-- Only framework offering true async/await support alongside sync APIs
 - Native MCP server for AI tool integration (Claude Desktop, Cursor)
-- Extensible architecture for custom document handlers
-- Comprehensive documentation and examples
+- Full type safety with excellent IDE support (completions)
+- Comprehensive documentation including full API reference
 
 ### 🌍 Deployment Options
 
@@ -49,6 +48,7 @@
 - Multiple OCR engines: Tesseract, EasyOCR, PaddleOCR with intelligent fallbacks
 - Advanced features: Table extraction, metadata extraction, content chunking for RAG
 - Production tools: REST API, CLI tools, batch processing, custom extractors
+- Fully extensible: Add your own extractors
 
 ## Quick Start
 

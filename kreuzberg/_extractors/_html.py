@@ -26,8 +26,21 @@ class HTMLExtractor(Extractor):
         return await run_sync(self.extract_bytes_sync, content)
 
     def extract_bytes_sync(self, content: bytes) -> ExtractionResult:
-        result = html_to_markdown.convert_to_markdown(safe_decode(content))
-        return ExtractionResult(content=normalize_spaces(result), mime_type=MARKDOWN_MIME_TYPE, metadata={}, chunks=[])
+        # Use html-to-markdown with script/nav removal for better quality
+        result = html_to_markdown.convert_to_markdown(
+            safe_decode(content),
+            preprocess_html=True,
+            preprocessing_preset="aggressive",
+            remove_navigation=True,
+            remove_forms=True,
+        )
+
+        extraction_result = ExtractionResult(
+            content=normalize_spaces(result), mime_type=MARKDOWN_MIME_TYPE, metadata={}, chunks=[]
+        )
+
+        # Apply quality processing
+        return self._apply_quality_processing(extraction_result)
 
     def extract_path_sync(self, path: Path) -> ExtractionResult:
         content = path.read_bytes()

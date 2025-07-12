@@ -122,6 +122,14 @@ class Metadata(TypedDict, total=False):
     warning: NotRequired[str]
     """Warning messages."""
 
+    # Table extraction metadata
+    table_count: NotRequired[int]
+    """Number of tables extracted from the document."""
+    tables_summary: NotRequired[str]
+    """Summary of table extraction results."""
+    quality_score: NotRequired[float]
+    """Quality score for extracted content (0.0-1.0)."""
+
 
 # Cache valid metadata keys at module level for performance
 _VALID_METADATA_KEYS = {
@@ -160,6 +168,9 @@ _VALID_METADATA_KEYS = {
     "email_bcc",
     "date",
     "attachments",
+    "table_count",
+    "tables_summary",
+    "quality_score",
 }
 
 
@@ -219,6 +230,45 @@ class ExtractionResult:
         """Converts the ExtractionResult to a dictionary."""
         return asdict(self)
 
+    def export_tables_to_csv(self) -> list[str]:
+        """Export all tables to CSV format.
+
+        Returns:
+            List of CSV strings, one per table
+        """
+        if not self.tables:
+            return []
+
+        from kreuzberg._utils._table import export_table_to_csv
+
+        return [export_table_to_csv(table) for table in self.tables]
+
+    def export_tables_to_tsv(self) -> list[str]:
+        """Export all tables to TSV format.
+
+        Returns:
+            List of TSV strings, one per table
+        """
+        if not self.tables:
+            return []
+
+        from kreuzberg._utils._table import export_table_to_tsv
+
+        return [export_table_to_tsv(table) for table in self.tables]
+
+    def get_table_summaries(self) -> list[dict[str, Any]]:
+        """Get structural information for all tables.
+
+        Returns:
+            List of table structure dictionaries
+        """
+        if not self.tables:
+            return []
+
+        from kreuzberg._utils._table import extract_table_structure_info
+
+        return [extract_table_structure_info(table) for table in self.tables]
+
 
 PostProcessingHook = Callable[[ExtractionResult], ExtractionResult | Awaitable[ExtractionResult]]
 ValidationHook = Callable[[ExtractionResult], None | Awaitable[None]]
@@ -272,6 +322,8 @@ class ExtractionConfig:
     """Configuration for language detection. If None, uses default settings."""
     spacy_entity_extraction_config: SpacyEntityExtractionConfig | None = None
     """Configuration for spaCy entity extraction. If None, uses default settings."""
+    enable_quality_processing: bool = True
+    """Whether to apply quality post-processing to improve extraction results."""
 
     def __post_init__(self) -> None:
         if self.custom_entity_patterns is not None and isinstance(self.custom_entity_patterns, dict):

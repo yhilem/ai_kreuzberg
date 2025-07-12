@@ -345,7 +345,11 @@ class TesseractBackend(OCRBackend[TesseractConfig]):
                     "OFF",
                 ]
                 for kwarg, value in kwargs.items():
-                    command.extend(["-c", f"{kwarg}={1 if value else 0}"])
+                    if isinstance(value, bool):
+                        command.extend(["-c", f"{kwarg}={1 if value else 0}"])
+                    else:
+                        # Handle string parameters (like tessedit_char_whitelist)
+                        command.extend(["-c", f"{kwarg}={value}"])
 
                 env: dict[str, Any] | None = None
                 if sys.platform.startswith("linux"):

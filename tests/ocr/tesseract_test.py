@@ -447,7 +447,7 @@ def test_process_image_sync(backend: TesseractBackend) -> None:
     ):
         mock_run.return_value = None
         mock_temp_file = Mock()
-        mock_temp_file.name = "/tmp/test_image"
+        mock_temp_file.name = "test_image"  # Use relative path for cross-platform compatibility
         mock_temp.return_value.__enter__.return_value = mock_temp_file
 
         result = backend.process_image_sync(image, language="eng")
@@ -468,7 +468,7 @@ def test_process_file_sync(backend: TesseractBackend, ocr_image: Path) -> None:
     ):
         mock_run.return_value = None
         mock_temp_file = Mock()
-        mock_temp_file.name = "/tmp/test_output"
+        mock_temp_file.name = "test_output"  # Use relative path for cross-platform compatibility
         mock_temp.return_value.__enter__.return_value = mock_temp_file
 
         result = backend.process_file_sync(ocr_image, language="eng")

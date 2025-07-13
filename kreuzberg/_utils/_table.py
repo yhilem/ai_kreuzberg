@@ -24,7 +24,7 @@ def export_table_to_csv(table: TableData, separator: str = ",") -> str:
         return ""
 
     output = StringIO()
-    table["df"].to_csv(output, sep=separator, index=False, quoting=csv.QUOTE_MINIMAL)
+    table["df"].to_csv(output, sep=separator, index=False, quoting=csv.QUOTE_MINIMAL, lineterminator="\n")
     return output.getvalue().strip()
 
 

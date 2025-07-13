@@ -14,7 +14,7 @@ result = await extract_file("path/to/your/document.pdf", config=config)
 
 if result.document_type:
     print(f"Detected document type: {result.document_type}")
-    print(f"Confidence: {result.type_confidence:.2f}")
+    print(f"Confidence: {result.document_type_confidence:.2f}")
 ```
 
 ## Classification Modes

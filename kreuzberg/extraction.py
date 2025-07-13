@@ -70,11 +70,11 @@ def _validate_and_post_process_helper(
             from kreuzberg._ocr import get_ocr_backend
 
             layout_result = get_ocr_backend("tesseract").process_file_sync(file_path, **config.get_config_dict())
-            result.document_type, result.type_confidence = classify_document_from_layout(layout_result, config)
+            result.document_type, result.document_type_confidence = classify_document_from_layout(layout_result, config)
         else:
             from kreuzberg._document_classification import classify_document
 
-            result.document_type, result.type_confidence = classify_document(result, config)
+            result.document_type, result.document_type_confidence = classify_document(result, config)
 
     return result
 

@@ -30,8 +30,8 @@ async def test_extract_file_with_all_document_types(doc_type: str, file_name: st
     config = ExtractionConfig(auto_detect_document_type=True)
     result = await extract_file(test_file, config=config)
     assert result.document_type == doc_type
-    assert result.type_confidence is not None
-    assert result.type_confidence > 0.5
+    assert result.document_type_confidence is not None
+    assert result.document_type_confidence > 0.5
 
 
 def test_classify_document_low_confidence() -> None:
@@ -83,4 +83,4 @@ async def test_extract_file_without_document_classification(tmp_path: Path) -> N
     config = ExtractionConfig(auto_detect_document_type=False)
     result = await extract_file(test_file, config=config)
     assert result.document_type is None
-    assert result.type_confidence is None
+    assert result.document_type_confidence is None

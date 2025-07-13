@@ -227,7 +227,7 @@ class ExtractionResult:
     """Languages detected in the extracted content, if language detection is enabled."""
     document_type: str | None = None
     """Detected document type, if document type detection is enabled."""
-    type_confidence: float | None = None
+    document_type_confidence: float | None = None
     """Confidence of the detected document type."""
     layout: DataFrame | None = field(default=None, repr=False, hash=False)
     """Internal layout data from OCR, not for public use."""

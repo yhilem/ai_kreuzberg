@@ -3,7 +3,11 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
+from kreuzberg._ocr import get_ocr_backend
+
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from kreuzberg._types import ExtractionConfig, ExtractionResult
 
 
@@ -112,3 +116,14 @@ def classify_document_from_layout(
         return best_type, best_confidence
 
     return None, None
+
+
+def auto_detect_document_type(
+    result: ExtractionResult, config: ExtractionConfig, file_path: Path | None = None
+) -> ExtractionResult:
+    if config.document_classification_mode == "vision" and file_path:
+        layout_result = get_ocr_backend("tesseract").process_file_sync(file_path, **config.get_config_dict())
+        result.document_type, result.document_type_confidence = classify_document_from_layout(layout_result, config)
+    else:
+        result.document_type, result.document_type_confidence = classify_document(result, config)
+    return result

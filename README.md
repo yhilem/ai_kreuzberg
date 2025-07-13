@@ -180,7 +180,7 @@ kreuzberg extract *.pdf --output-dir ./extracted/
 
 ## 📊 Performance Comparison
 
-[Comprehensive benchmarks](https://goldziher.github.io/python-text-extraction-libs-benchmarks/) across ~100 real-world documents • [View source](https://github.com/Goldziher/python-text-extraction-libs-benchmarks) • [**Detailed Analysis**](https://kreuzberg.dev/performance-analysis/):
+[Comprehensive benchmarks](https://benchmarks.kreuzberg.dev/) across ~100 real-world documents • [View source](https://github.com/Goldziher/python-text-extraction-libs-benchmarks) • [**Detailed Analysis**](https://kreuzberg.dev/performance-analysis/):
 
 | Framework     | Speed        | Memory | Install Size | Dependencies | Success Rate |
 | ------------- | ------------ | ------ | ------------ | ------------ | ------------ |

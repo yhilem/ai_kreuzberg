@@ -16,7 +16,7 @@ Kreuzberg provides both synchronous and asynchronous APIs, each optimized for di
 
 ## Competitive Performance
 
-[Comprehensive benchmarks](https://github.com/Goldziher/python-text-extraction-libs-benchmarks) comparing Kreuzberg against other popular Python text extraction libraries demonstrate:
+[Comprehensive benchmarks](https://benchmarks.kreuzberg.dev/) ([source code](https://github.com/Goldziher/python-text-extraction-libs-benchmarks)) comparing Kreuzberg against other popular Python text extraction libraries demonstrate:
 
 - **Fastest Extraction**: Consistently fastest processing times across file formats
 - **Lowest Memory Usage**: Most memory-efficient text extraction solution

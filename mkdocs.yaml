@@ -1,6 +1,6 @@
 site_name: Kreuzberg
 site_description: A modern text extraction library supporting PDFs, images, office documents and more
-site_url: https://goldziher.github.io/kreuzberg
+site_url: https://kreuzberg.dev
 site_author: Kreuzberg Contributors
 repo_name: Goldziher/kreuzberg
 repo_url: https://github.com/Goldziher/kreuzberg

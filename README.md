@@ -2,13 +2,13 @@
 
 [![Discord](https://img.shields.io/badge/Discord-Join%20our%20community-7289da)](https://discord.gg/pXxagNK2zN)
 [![PyPI version](https://badge.fury.io/py/kreuzberg.svg)](https://badge.fury.io/py/kreuzberg)
-[![Documentation](https://img.shields.io/badge/docs-GitHub_Pages-blue)](https://goldziher.github.io/kreuzberg/)
+[![Documentation](https://img.shields.io/badge/docs-kreuzberg.dev-blue)](https://kreuzberg.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Test Coverage](https://img.shields.io/badge/coverage-95%25-green)](https://github.com/Goldziher/kreuzberg)
 
 **Advanced Document Intelligence for Modern Python Applications.** Transform PDFs, images, and office documents into structured data with production-grade performance. Built by engineers who understand that speed, reliability, and developer experience matter.
 
-📖 **[Complete Documentation](https://goldziher.github.io/kreuzberg/)**
+📖 **[Complete Documentation](https://kreuzberg.dev/)**
 
 ## Why Choose Kreuzberg?
 
@@ -180,7 +180,7 @@ kreuzberg extract *.pdf --output-dir ./extracted/
 
 ## 📊 Performance Comparison
 
-[Comprehensive benchmarks](https://goldziher.github.io/python-text-extraction-libs-benchmarks/) across ~100 real-world documents • [View source](https://github.com/Goldziher/python-text-extraction-libs-benchmarks) • [**Detailed Analysis**](https://goldziher.github.io/kreuzberg/performance-analysis/):
+[Comprehensive benchmarks](https://goldziher.github.io/python-text-extraction-libs-benchmarks/) across ~100 real-world documents • [View source](https://github.com/Goldziher/python-text-extraction-libs-benchmarks) • [**Detailed Analysis**](https://kreuzberg.dev/performance-analysis/):
 
 | Framework     | Speed        | Memory | Install Size | Dependencies | Success Rate |
 | ------------- | ------------ | ------ | ------------ | ------------ | ------------ |
@@ -205,14 +205,14 @@ kreuzberg extract *.pdf --output-dir ./extracted/
 
 ### Quick Links
 
-- [Installation Guide](https://goldziher.github.io/kreuzberg/getting-started/installation/) - Setup and dependencies
-- [User Guide](https://goldziher.github.io/kreuzberg/user-guide/) - Comprehensive usage guide
-- [Performance Analysis](https://goldziher.github.io/kreuzberg/performance-analysis/) - Detailed benchmark results
-- [API Reference](https://goldziher.github.io/kreuzberg/api-reference/) - Complete API documentation
-- [Docker Guide](https://goldziher.github.io/kreuzberg/user-guide/docker/) - Container deployment
-- [REST API](https://goldziher.github.io/kreuzberg/user-guide/api-server/) - HTTP endpoints
-- [CLI Guide](https://goldziher.github.io/kreuzberg/cli/) - Command-line usage
-- [OCR Configuration](https://goldziher.github.io/kreuzberg/user-guide/ocr-configuration/) - OCR engine setup
+- [Installation Guide](https://kreuzberg.dev/getting-started/installation/) - Setup and dependencies
+- [User Guide](https://kreuzberg.dev/user-guide/) - Comprehensive usage guide
+- [Performance Analysis](https://kreuzberg.dev/performance-analysis/) - Detailed benchmark results
+- [API Reference](https://kreuzberg.dev/api-reference/) - Complete API documentation
+- [Docker Guide](https://kreuzberg.dev/user-guide/docker/) - Container deployment
+- [REST API](https://kreuzberg.dev/user-guide/api-server/) - HTTP endpoints
+- [CLI Guide](https://kreuzberg.dev/cli/) - Command-line usage
+- [OCR Configuration](https://kreuzberg.dev/user-guide/ocr-configuration/) - OCR engine setup
 
 ## License
 

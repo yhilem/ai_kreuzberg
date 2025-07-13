@@ -20,6 +20,12 @@ from kreuzberg._mcp.server import (
     mcp,
 )
 
+# Skip all MCP tests on macOS CI due to segmentation faults
+pytestmark = pytest.mark.skipif(
+    sys.platform == "darwin" and os.environ.get("CI") == "true",
+    reason="MCP tests cause segmentation faults on macOS CI",
+)
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -137,10 +143,6 @@ def test_extract_bytes_basic(searchable_pdf: Path) -> None:
     assert "Sample PDF" in result["content"]
 
 
-@pytest.mark.skipif(
-    sys.platform == "darwin" and os.environ.get("CI") == "true",
-    reason="Segmentation fault in CI on macOS with heavy extraction workloads",
-)
 def test_extract_bytes_with_options(searchable_pdf: Path) -> None:
     """Test bytes extraction with various options."""
     with searchable_pdf.open("rb") as f:

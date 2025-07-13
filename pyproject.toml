@@ -91,8 +91,9 @@ optional-dependencies.paddleocr = [
   "paddlepaddle>=3.1.0",
   "setuptools>=80.9.0",
 ]
-urls.homepage = "https://github.com/Goldziher/kreuzberg"
+urls.documentation = "https://kreuzberg.dev"
 
+urls.homepage = "https://github.com/Goldziher/kreuzberg"
 scripts.kreuzberg = "kreuzberg.cli:cli"
 scripts.kreuzberg-mcp = "kreuzberg._mcp.server:main"
 

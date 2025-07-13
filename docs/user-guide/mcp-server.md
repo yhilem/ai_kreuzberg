@@ -31,10 +31,10 @@ pip install kreuzberg
 
 ```bash
 # Recommended: With uvx and all features (for Claude Desktop)
-uvx --with "kreuzberg[all]" kreuzberg-mcp
+uvx --from "kreuzberg[all]" kreuzberg-mcp
 
 # With uvx and specific features
-uvx --with "kreuzberg[chunking,langdetect,entity-extraction]" kreuzberg-mcp
+uvx --from "kreuzberg[chunking,langdetect,entity-extraction]" kreuzberg-mcp
 
 # Basic: Direct execution (after pip install)
 kreuzberg-mcp
@@ -46,13 +46,13 @@ Add Kreuzberg to Claude Code using the CLI:
 
 ```bash
 # Recommended: With all features for full functionality
-claude mcp add kreuzberg "uvx --with kreuzberg[all] kreuzberg-mcp"
+claude mcp add kreuzberg uvx -- --from "kreuzberg[all]" kreuzberg-mcp
 
 # With specific features for your use case
-claude mcp add kreuzberg "uvx --with kreuzberg[chunking,langdetect,entity-extraction] kreuzberg-mcp"
+claude mcp add kreuzberg uvx -- --from "kreuzberg[chunking,langdetect,entity-extraction]" kreuzberg-mcp
 
 # Basic: Core features only
-claude mcp add kreuzberg "uvx kreuzberg-mcp"
+claude mcp add kreuzberg uvx kreuzberg-mcp
 ```
 
 ### Claude Desktop Configuration
@@ -69,7 +69,7 @@ Add Kreuzberg to your Claude Desktop configuration file:
   "mcpServers": {
     "kreuzberg": {
       "command": "uvx",
-      "args": ["--with", "kreuzberg[all]", "kreuzberg-mcp"]
+      "args": ["--from", "kreuzberg[all]", "kreuzberg-mcp"]
     }
   }
 }
@@ -137,10 +137,10 @@ pip install "kreuzberg[all]"
 
 ```bash
 # Recommended: With all features for full functionality
-uvx --with "kreuzberg[all]" kreuzberg-mcp
+uvx --from "kreuzberg[all]" kreuzberg-mcp
 
 # With specific features for your use case
-uvx --with "kreuzberg[chunking,langdetect,entity-extraction]" kreuzberg-mcp
+uvx --from "kreuzberg[chunking,langdetect,entity-extraction]" kreuzberg-mcp
 
 # Basic: Core features only
 uvx kreuzberg-mcp
@@ -537,15 +537,15 @@ Claude: I'll extract all tables from your financial report.
 1. **Missing Optional Dependencies**
 
     - **Chunking Error**: `MissingDependencyError: The package 'semantic-text-splitter' is required`
-        - Solution: `uvx --with "kreuzberg[chunking]" kreuzberg-mcp`
+        - Solution: `uvx --from "kreuzberg[chunking]" kreuzberg-mcp`
     - **Language Detection Ignored**: No error, but `auto_detect_language=True` has no effect
-        - Solution: `uvx --with "kreuzberg[langdetect]" kreuzberg-mcp`
+        - Solution: `uvx --from "kreuzberg[langdetect]" kreuzberg-mcp`
     - **Entity/Keyword Extraction Ignored**: No error, but features return None
-        - Solution: `uvx --with "kreuzberg[entity-extraction]" kreuzberg-mcp`
+        - Solution: `uvx --from "kreuzberg[entity-extraction]" kreuzberg-mcp`
     - **Advanced OCR Unavailable**: `easyocr` or `paddleocr` backend not found
-        - Solution: `uvx --with "kreuzberg[easyocr,paddleocr]" kreuzberg-mcp`
+        - Solution: `uvx --from "kreuzberg[easyocr,paddleocr]" kreuzberg-mcp`
     - **Table Extraction Error**: `MissingDependencyError: The package 'gmft' is required`
-        - Solution: `uvx --with "kreuzberg[gmft]" kreuzberg-mcp`
+        - Solution: `uvx --from "kreuzberg[gmft]" kreuzberg-mcp`
 
 1. **uvx Command Not Found**
 

@@ -2,138 +2,166 @@
 
 ## Overview
 
-This page presents comprehensive benchmark results comparing Kreuzberg against other text extraction frameworks. All data is derived from rigorous testing across ~100 real-world documents using standardized methodology.
+This page presents comprehensive performance analysis of Kreuzberg based on standardized benchmarking across 18 file formats. The data demonstrates Kreuzberg's position as the fastest Python CPU-based text extraction framework.
 
-> **Benchmark Methodology**: Results based on the [python-text-extraction-libraries-benchmarks-2025](https://github.com/Goldziher/python-text-extraction-libraries-benchmarks-2025) project with comprehensive testing across multiple document types and sizes.
+> **Live Benchmarks**: View real-time performance comparisons at [benchmarks.kreuzberg.dev](https://benchmarks.kreuzberg.dev/)
+> **Methodology**: Full benchmark methodology and source code available at [github.com/Goldziher/python-text-extraction-libs-benchmarks](https://github.com/Goldziher/python-text-extraction-libs-benchmarks)
 
 ## Executive Summary
 
-Kreuzberg demonstrates exceptional performance across all key metrics:
+Kreuzberg achieves industry-leading performance metrics:
 
-- **Speed**: 6-126x faster than competitors
-- **Memory**: 2-4x lower usage
-- **Installation**: 2-68x smaller footprint
-- **Reliability**: Perfect 100% success rate
+- **Speed**: Fastest Python CPU-based text extraction framework
+- **Memory**: Lowest memory footprint at ~360MB average
+- **Installation**: Minimal 71MB package size
+- **Reliability**: 100% success rate across all tested formats
 
-## Detailed Performance Metrics
+## Technical Performance Metrics
 
 ### Processing Speed
 
-#### By File Size Category
+#### Throughput by File Size Category
 
-| Category              | Kreuzberg Sync | Kreuzberg Async | Best Competitor | Advantage   |
-| --------------------- | -------------- | --------------- | --------------- | ----------- |
-| **Tiny (\<100KB)**    | 31.6 files/sec | 23.6 files/sec  | 4.8 files/sec   | 6.6x faster |
-| **Small (100KB-1MB)** | 9.0 files/sec  | 10.1 files/sec  | 3.6 files/sec   | 2.8x faster |
-| **Medium (1-10MB)**   | 2.6 files/sec  | 3.2 files/sec   | 0.065 files/sec | 49x faster  |
+| Category              | Kreuzberg Sync | Kreuzberg Async | Technical Notes                   |
+| --------------------- | -------------- | --------------- | --------------------------------- |
+| **Tiny (\<100KB)**    | 31.78 files/s  | 23.94 files/s   | Sync faster due to lower overhead |
+| **Small (100KB-1MB)** | 8.91 files/s   | 9.31 files/s    | Async benefits from concurrency   |
+| **Medium (1-10MB)**   | 2.42 files/s   | 3.16 files/s    | Async leverages multiprocessing   |
 
-#### Processing Time Comparison
+#### Processing Architecture
 
-| Framework           | Tiny Files (s) | Small Files (s) | Medium Files (s) |
-| ------------------- | -------------- | --------------- | ---------------- |
-| **Kreuzberg Sync**  | 0.032          | 0.111           | 0.388            |
-| **Kreuzberg Async** | 0.042          | 0.099           | 0.315            |
-| Extractous          | 0.316          | 0.281           | 15.38            |
-| Unstructured        | 0.210          | 1.123           | -                |
-| Docling             | 3.956          | 14.47           | -                |
-
-### Memory Usage
-
-| Framework           | Average Memory (MB) | vs Kreuzberg |
-| ------------------- | ------------------- | ------------ |
-| **Kreuzberg Sync**  | 360                 | Baseline     |
-| **Kreuzberg Async** | 396                 | +10%         |
-| Extractous          | 513                 | +43%         |
-| Unstructured        | 1,389               | +286%        |
-| Docling             | 1,838               | +411%        |
-
-### Installation Size
-
-| Framework     | Size (MB) | Packages | vs Kreuzberg |
-| ------------- | --------- | -------- | ------------ |
-| **Kreuzberg** | 87        | 43       | Baseline     |
-| Unstructured  | 176       | 54       | 2.0x larger  |
-| MarkItDown    | 208       | 25       | 2.4x larger  |
-| Docling       | 5,900     | 103      | 67.8x larger |
-
-### Success Rate & Reliability
-
-| Framework     | Tiny Files | Small Files | Medium Files | Overall  |
-| ------------- | ---------- | ----------- | ------------ | -------- |
-| **Kreuzberg** | 100%       | 100%        | 100%         | **100%** |
-| Extractous    | 100%       | 95.8%       | 100%         | 98.6%    |
-| Unstructured  | 100%       | 100%        | -            | 100%     |
-| Docling       | 100%       | 96.3%       | -            | 98.2%    |
-
-### Content Extraction Quality
-
-#### Characters Extracted (Average)
-
-| Framework     | Tiny Files | Small Files | Medium Files |
-| ------------- | ---------- | ----------- | ------------ |
-| **Kreuzberg** | 6,950      | 173,505     | 500,643      |
-| Extractous    | 6,894      | 106,641     | 251,612      |
-| Unstructured  | 3,842      | 70,396      | -            |
-| Docling       | 3,316      | 59,129      | -            |
-
-## Performance Insights
-
-### Speed Advantages
-
-1. **Optimized Processing Pipeline**: Efficient async/await implementation
-1. **Smart Resource Management**: Minimal overhead operations
-1. **Native Libraries**: Built on high-performance C libraries (PDFium, Tesseract)
+- **Synchronous Mode**: Direct execution path with minimal overhead, optimal for single-file operations
+- **Asynchronous Mode**: Event-loop based with intelligent task scheduling, ideal for concurrent workloads
+- **Multiprocessing**: Automatic CPU core utilization for compute-intensive operations (OCR, PDF parsing)
+- **Memory Management**: Streaming architecture prevents memory bloat on large files
 
 ### Memory Efficiency
 
-1. **Lean Architecture**: Minimal memory footprint during processing
-1. **Resource Cleanup**: Proper resource disposal and garbage collection
-1. **Streaming Processing**: Process large files without loading entirely into memory
+| Mode                | Memory Usage | Characteristics                                       |
+| ------------------- | ------------ | ----------------------------------------------------- |
+| **Kreuzberg Sync**  | 359.8 MB     | Baseline - minimal overhead, efficient GC             |
+| **Kreuzberg Async** | 395.2 MB     | +10% due to event loop and concurrent task management |
 
-### Installation Benefits
+**Memory optimization strategies:**
 
-1. **Minimal Dependencies**: Only essential packages included
-1. **No Heavy ML Models**: CPU-focused processing without large model files
-1. **Efficient Packaging**: Optimized distribution with selective dependencies
+- Lazy loading of document components
+- Streaming text extraction for large files
+- Automatic garbage collection after each extraction
+- Process pool recycling for long-running operations
 
-## Production Implications
+### Installation Footprint
 
-### Cost Savings
+**Kreuzberg specifications:**
 
-- **Infrastructure**: 2-4x lower memory requirements reduce server costs
-- **Storage**: 2-68x smaller installation saves disk space
-- **Processing**: 6-126x faster execution reduces compute time
+- **Package size**: 71 MB
+- **Dependencies**: 43 packages
+- **Core components**: PDFium, python-docx, python-pptx, pypandoc
+- **Optional extras**: EasyOCR, PaddleOCR, GMFT (table extraction)
 
-### Operational Benefits
+**Size optimization achieved through:**
 
-- **Deployment Speed**: Faster installations and updates
-- **Resource Planning**: Predictable memory and CPU usage
-- **Scaling**: Efficient resource utilization enables higher throughput
+- Selective dependency installation
+- No bundled ML models
+- Efficient binary packaging
+- Modular architecture with optional components
 
-### Developer Experience
+### Reliability Metrics
 
-- **Quick Setup**: Minimal installation time and complexity
-- **Reliable Performance**: Consistent results across document types
-- **Production Ready**: Battle-tested performance characteristics
+**Kreuzberg achieves 100% success rate across all tested formats:**
 
-## Test Environment
+- Zero timeouts or failures in benchmark suite
+- Robust error handling with graceful degradation
+- Comprehensive format support (18 file types)
+- Consistent performance across file sizes
 
-**Hardware**: Linux CI runners
-**Python Version**: 3.13
-**Document Corpus**: ~100 real-world documents tested across multiple frameworks
-**Test Date**: July 13, 2025
-**Methodology**: [Full methodology available](https://github.com/Goldziher/python-text-extraction-libraries-benchmarks-2025)
+### Supported File Formats
 
-## Framework Comparison Matrix
+**Comprehensive format coverage across 6 categories:**
 
-| Metric              | Kreuzberg | Extractous | Unstructured | Docling |
-| ------------------- | --------- | ---------- | ------------ | ------- |
-| **Speed**           | ★★★★★     | ★★☆☆☆      | ★★☆☆☆        | ★☆☆☆☆   |
-| **Memory**          | ★★★★★     | ★★★★☆      | ★★☆☆☆        | ★☆☆☆☆   |
-| **Installation**    | ★★★★★     | -          | ★★★☆☆        | ★☆☆☆☆   |
-| **Reliability**     | ★★★★★     | ★★★★☆      | ★★★★★        | ★★★★☆   |
-| **Content Quality** | ★★★★★     | ★★★☆☆      | ★★★☆☆        | ★★☆☆☆   |
-| **Overall**         | ★★★★★     | ★★★☆☆      | ★★★☆☆        | ★★☆☆☆   |
+| Category   | Formats                | Features                    |
+| ---------- | ---------------------- | --------------------------- |
+| Documents  | PDF, DOCX, PPTX, XLSX  | Full text, metadata, tables |
+| Web/Markup | HTML, Markdown, RST    | Structure preservation      |
+| Images     | PNG, JPG, JPEG, BMP    | OCR with multiple engines   |
+| Email      | EML, MSG               | Headers, body, attachments  |
+| Data       | CSV, JSON, YAML        | Native parsing              |
+| Archives   | ZIP (containing above) | Recursive extraction        |
+
+## Technical Architecture
+
+### Performance Optimizations
+
+**Speed optimizations:**
+
+- Native C extensions (PDFium for PDFs, Tesseract for OCR)
+- Efficient data handling with minimal copies
+- Memory pooling for frequently used objects
+- Parallel processing for multi-page documents
+
+**Memory optimizations:**
+
+- Streaming extraction for large files
+- Lazy loading of document components
+- Automatic resource cleanup
+- Bounded memory usage regardless of file size
+
+**Async implementation:**
+
+- True async/await support (not just wrapper functions)
+- Intelligent task scheduling
+- Process pool for CPU-intensive operations
+- Non-blocking I/O throughout the pipeline
+
+## Production Deployment
+
+### Infrastructure Benefits
+
+**Resource efficiency:**
+
+- Minimal memory footprint (~360MB) enables higher container density
+- Small installation size (71MB) reduces image build times
+- Fast processing speeds reduce compute costs
+- Predictable resource usage simplifies capacity planning
+
+**Deployment options:**
+
+- Docker images for all architectures (linux/amd64, linux/arm64)
+- Serverless compatible (AWS Lambda, Google Cloud Functions)
+- Native Python package for traditional deployments
+- REST API server for microservice architectures
+
+**Operational advantages:**
+
+- Zero external API dependencies
+- Local processing for data sovereignty
+- Configurable resource limits
+- Comprehensive logging and monitoring
+
+## Benchmark Methodology
+
+### Test Environment
+
+- **Platform**: Linux CI runners with standardized hardware
+- **Python Version**: 3.12-3.13
+- **Document Set**: 18 file formats across 6 categories
+- **Metrics Collected**: Processing speed, memory usage, success rate
+- **Methodology**: [Full details and source code](https://github.com/Goldziher/python-text-extraction-libs-benchmarks)
+
+### Key Performance Indicators
+
+**Kreuzberg demonstrates:**
+
+- **Fastest processing**: Leading throughput across all file size categories
+- **Lowest memory usage**: ~360MB average vs industry alternatives
+- **Smallest footprint**: 71MB installation size
+- **High reliability**: 100% success rate in comprehensive testing
+- **Comprehensive format support**: 18 file types with consistent performance
+
+## Conclusion
+
+Kreuzberg's performance leadership stems from its efficient architecture, optimized implementation, and focus on real-world production needs. The combination of speed, reliability, and resource efficiency makes it the optimal choice for Python-based text extraction workloads.
+
+For the latest benchmark results and to compare performance across different frameworks, visit [benchmarks.kreuzberg.dev](https://benchmarks.kreuzberg.dev/).
 
 ______________________________________________________________________
 

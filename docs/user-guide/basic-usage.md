@@ -1,6 +1,6 @@
 # Basic Usage
 
-Kreuzberg offers a simple API for text extraction from documents and images.
+Kreuzberg provides a unified API for document intelligence operations, supporting both synchronous and asynchronous processing patterns.
 
 ## Core Functions
 

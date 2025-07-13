@@ -6,166 +6,126 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Test Coverage](https://img.shields.io/badge/coverage-95%25-green)](https://github.com/Goldziher/kreuzberg)
 
-**Advanced Document Intelligence for Modern Python Applications.** Transform PDFs, images, and office documents into structured data with production-grade performance. Built by engineers who understand that speed, reliability, and developer experience matter.
+**A document intelligence framework for Python.** Extract text, metadata, and structured information from diverse document formats through a unified, extensible API. Built on established open source foundations including Pandoc, PDFium, and Tesseract.
 
 📖 **[Complete Documentation](https://kreuzberg.dev/)**
 
-## Why Choose Kreuzberg?
+## Framework Overview
 
-### ⚡ Proven Performance
+### Document Intelligence Capabilities
 
-[Benchmarked](https://goldziher.github.io/python-text-extraction-libs-benchmarks/) 6-126x faster than alternatives while using minimal resources. Process up to 14 files per second with 87MB install size and ~360MB memory usage. Optimized for production workloads and resource-constrained environments.
+- **Text Extraction**: High-fidelity text extraction preserving document structure and formatting
+- **Metadata Extraction**: Comprehensive metadata including author, creation date, language, and document properties
+- **Format Support**: 18 document types including PDF, Microsoft Office, images, HTML, and structured data formats
+- **OCR Integration**: Multiple OCR engines (Tesseract, EasyOCR, PaddleOCR) with automatic fallback
+- **Table Detection**: Structured table extraction with cell-level precision via GMFT integration
 
-### 🏗️ Production Engineering
+### Technical Architecture
 
-Comprehensive test coverage (95%+), robust error handling, and true async/await support. Built with modern Python practices for reliability in production environments.
+- **Performance**: Highest throughput among Python document processing frameworks (30+ docs/second)
+- **Resource Efficiency**: 71MB installation, ~360MB runtime memory footprint
+- **Extensibility**: Plugin architecture for custom extractors via BaseExtractor interface
+- **API Design**: Synchronous and asynchronous APIs with consistent interfaces
+- **Type Safety**: Complete type annotations throughout the codebase
 
-### 🔧 Developer Experience
+### Open Source Foundation
 
-Works immediately with smart defaults, scales as you grow. Native MCP integration for AI tools, full type safety, and clear documentation.
+Kreuzberg leverages established open source technologies:
 
-### 🚀 Flexible Deployment
-
-Deploy on serverless platforms, containers, or traditional servers. Supports both CPU and GPU processing (via PaddleOCR and EasyOCR). No external API dependencies. Multiple deployment modes: CLI, REST API, MCP server.
-
-### 📄 Comprehensive Format Support
-
-Extract from PDFs, images, Office documents, HTML, spreadsheets, and presentations. Multiple OCR engines with intelligent fallbacks, table extraction, and content preparation for RAG workflows.
+- **Pandoc**: Universal document converter for robust format support
+- **PDFium**: Google's PDF rendering engine for accurate PDF processing
+- **Tesseract**: Google's OCR engine for text recognition
+- **Python-docx/pptx**: Native Microsoft Office format support
 
 ## Quick Start
 
-### Installation
+### Extract Text with CLI
 
 ```bash
-# Basic installation
-pip install kreuzberg
+# Extract text from any file to markdown
+uvx kreuzberg extract document.pdf > output.md
 
-# With optional features
-pip install "kreuzberg[cli,api]"        # CLI + REST API
-pip install "kreuzberg[easyocr,gmft]"   # EasyOCR + table extraction
-pip install "kreuzberg[all]"            # Everything
+# With all features (OCR, table extraction, etc.)
+uvx --from "kreuzberg[all]" kreuzberg extract invoice.pdf --ocr --format markdown
+
+# Extract with rich metadata
+uvx kreuzberg extract report.pdf --show-metadata --format json
 ```
 
-### System Dependencies
+### Python Usage
 
-```bash
-# Ubuntu/Debian
-sudo apt-get install tesseract-ocr pandoc
-
-# macOS
-brew install tesseract pandoc
-
-# Windows
-choco install tesseract pandoc
-```
-
-### Basic Usage
+**Async (recommended for web apps):**
 
 ```python
-import asyncio
 from kreuzberg import extract_file
 
-async def main():
-    # Extract content from files
-    result = await extract_file("document.pdf")
-    print(result.content)
-    print(result.metadata)
+# In your async function
+result = await extract_file("presentation.pptx")
+print(result.content)
 
-asyncio.run(main())
+# Rich metadata extraction
+print(f"Title: {result.metadata.title}")
+print(f"Author: {result.metadata.author}")
+print(f"Page count: {result.metadata.page_count}")
+print(f"Created: {result.metadata.created_at}")
 ```
+
+**Sync (for scripts and CLI tools):**
+
+```python
+from kreuzberg import extract_file_sync
+
+result = extract_file_sync("report.docx")
+print(result.content)
+
+# Access rich metadata
+print(f"Language: {result.metadata.language}")
+print(f"Word count: {result.metadata.word_count}")
+print(f"Keywords: {result.metadata.keywords}")
+```
+
+### Docker
+
+```bash
+# Run the REST API
+docker run -p 8000:8000 goldziher/kreuzberg
+
+# Extract via API
+curl -X POST -F "file=@document.pdf" http://localhost:8000/extract
+```
+
+📖 **[Installation Guide](https://kreuzberg.dev/getting-started/installation/)** • **[CLI Documentation](https://kreuzberg.dev/cli/)** • **[API Reference](https://kreuzberg.dev/api-reference/)**
 
 ## Deployment Options
 
 ### 🤖 MCP Server (AI Integration)
 
-**Connect directly to Claude Desktop, Cursor, and other AI tools with the Model Context Protocol:**
+**Add to Claude Desktop with one command:**
 
 ```bash
-# Install and run MCP server with all features (recommended)
-pip install "kreuzberg[all]"
-kreuzberg-mcp
-
-# Or with uvx (recommended for Claude Desktop)
-uvx --with "kreuzberg[all]" kreuzberg-mcp
-
-# Basic installation (core features only)
-pip install kreuzberg
-kreuzberg-mcp
+claude mcp add kreuzberg uvx -- --from "kreuzberg[all]" kreuzberg-mcp
 ```
 
-**Configure in Claude Desktop (`claude_desktop_config.json`):**
+**Or configure manually in `claude_desktop_config.json`:**
 
 ```json
 {
   "mcpServers": {
     "kreuzberg": {
       "command": "uvx",
-      "args": ["--with", "kreuzberg[all]", "kreuzberg-mcp"]
+      "args": ["--from", "kreuzberg[all]", "kreuzberg-mcp"]
     }
   }
 }
 ```
 
-**Basic configuration (core features only):**
+**MCP capabilities:**
 
-```json
-{
-  "mcpServers": {
-    "kreuzberg": {
-      "command": "uvx",
-      "args": ["kreuzberg-mcp"]
-    }
-  }
-}
-```
+- Extract text from PDFs, images, Office docs, and more
+- Full OCR support with multiple engines
+- Table extraction and metadata parsing
 
-**Available MCP capabilities:**
-
-- **Tools**: `extract_document`, `extract_bytes`, `extract_simple`
-- **Resources**: Configuration, supported formats, OCR backends
-- **Prompts**: Extract-and-summarize, structured analysis workflows
-
-### 🐳 Docker (Recommended)
-
-```bash
-# Run API server
-docker run -p 8000:8000 goldziher/kreuzberg:latest
-
-# Extract files
-curl -X POST http://localhost:8000/extract -F "data=@document.pdf"
-```
-
-Available variants: `latest`, `v3.8.0`, `v3.8.0-easyocr`, `v3.8.0-paddle`, `v3.8.0-gmft`, `v3.8.0-all`
-
-### 🌐 REST API
-
-```bash
-# Install and run
-pip install "kreuzberg[api]"
-litestar --app kreuzberg._api.main:app run
-
-# Health check
-curl http://localhost:8000/health
-
-# Extract files
-curl -X POST http://localhost:8000/extract -F "data=@file.pdf"
-```
-
-### 💻 Command Line
-
-```bash
-# Install CLI
-pip install "kreuzberg[cli]"
-
-# Extract to stdout
-kreuzberg extract document.pdf
-
-# JSON output with metadata
-kreuzberg extract document.pdf --output-format json --show-metadata
-
-# Batch processing
-kreuzberg extract *.pdf --output-dir ./extracted/
-```
+📖 **[MCP Documentation](https://kreuzberg.dev/user-guide/mcp-server/)**
 
 ## Supported Formats
 
@@ -178,26 +138,28 @@ kreuzberg extract *.pdf --output-dir ./extracted/
 | **Web**           | HTML, XML, MHTML               |
 | **Archives**      | Support via extraction         |
 
-## 📊 Performance Comparison
+## 📊 Performance Characteristics
 
-[Comprehensive benchmarks](https://benchmarks.kreuzberg.dev/) across ~100 real-world documents • [View source](https://github.com/Goldziher/python-text-extraction-libs-benchmarks) • [**Detailed Analysis**](https://kreuzberg.dev/performance-analysis/):
+[View comprehensive benchmarks](https://benchmarks.kreuzberg.dev/) • [Benchmark methodology](https://github.com/Goldziher/python-text-extraction-libs-benchmarks) • [**Detailed Analysis**](https://kreuzberg.dev/performance-analysis/)
 
-| Framework     | Speed        | Memory | Install Size | Dependencies | Success Rate |
-| ------------- | ------------ | ------ | ------------ | ------------ | ------------ |
-| **Kreuzberg** | 14.4 files/s | 360MB  | 87MB         | 43           | 100%         |
-| Unstructured  | ~12 files/s  | ~1GB   | 146MB        | 54           | 88%+         |
-| MarkItDown    | ~15 files/s  | ~1.5GB | 251MB        | 25           | 80%\*        |
-| Docling       | ~1 file/min  | ~5GB   | 1,032MB      | 88           | 45%\*        |
+### Technical Specifications
 
-\*_Performance varies significantly with document complexity and size_
+| Metric                       | Kreuzberg Sync | Kreuzberg Async | Benchmarked        |
+| ---------------------------- | -------------- | --------------- | ------------------ |
+| **Throughput (tiny files)**  | 31.78 files/s  | 23.94 files/s   | Highest throughput |
+| **Throughput (small files)** | 8.91 files/s   | 9.31 files/s    | Highest throughput |
+| **Memory footprint**         | 359.8 MB       | 395.2 MB        | Lowest usage       |
+| **Installation size**        | 71 MB          | 71 MB           | Smallest size      |
+| **Success rate**             | 100%           | 100%            | Perfect            |
+| **Supported formats**        | 18             | 18              | Comprehensive      |
 
-**Key strengths:**
+### Architecture Advantages
 
-- 6-126x faster processing than comparable frameworks
-- Smallest installation footprint and memory usage
-- Only framework with built-in async/await support
-- Supports both CPU and GPU processing
-- Built by software engineers for production reliability
+- **Native C extensions**: Built on PDFium and Tesseract for maximum performance
+- **Async/await support**: True asynchronous processing with intelligent task scheduling
+- **Memory efficiency**: Streaming architecture minimizes memory allocation
+- **Process pooling**: Automatic multiprocessing for CPU-intensive operations
+- **Optimized data flow**: Efficient data handling with minimal transformations
 
 > **Benchmark details**: Tests include PDFs, Word docs, HTML, images, and spreadsheets in multiple languages (English, Hebrew, German, Chinese, Japanese, Korean) on standardized hardware.
 

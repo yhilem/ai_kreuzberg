@@ -1,54 +1,54 @@
 # Kreuzberg
 
-Kreuzberg is an advanced open source document intelligence framework built for production workloads. Designed by engineers for reliability and performance, it transforms PDFs, images, and office documents into structured data with minimal complexity.
+Kreuzberg is a document intelligence framework that transforms unstructured documents into structured, machine-readable data. Built on a foundation of established open source technologies—PDFium for PDF processing, Tesseract for optical character recognition, and Pandoc for universal document conversion—Kreuzberg provides a unified interface for extracting text, metadata, and structural information from diverse document formats.
 
-Built on proven technologies including PDFium, Tesseract, and Pandoc, Kreuzberg delivers enterprise-grade document processing capabilities while maintaining simplicity and speed.
+The framework emphasizes extensibility, allowing developers to integrate custom extractors and processors while maintaining consistent APIs and error handling across all document types.
 
-## Why Kreuzberg?
+## Core Capabilities
 
-Kreuzberg addresses real production needs with measurable benefits. While not exclusively a complete solution, it integrates well with existing pipelines and can be deployed alongside other tools based on specific requirements.
+Kreuzberg addresses the complete document intelligence pipeline through a modular, extensible architecture designed for production environments.
 
-### 🚀 Performance
+### Performance Characteristics
 
-- [benchmarked as the fastest framework](https://benchmarks.kreuzberg.dev/) - 6-126x
-    faster than competitors
-- Minimal footprint: 87MB install vs 1GB+ for competitors
-- Lowest memory usage (~360MB average) optimized for production workloads
-- Edge and serverless ready - deploy anywhere without heavy dependencies
+- **Throughput**: Process 30+ documents per second (small files), with linear scaling to larger documents
+- **Resource Efficiency**: 71MB installation footprint, ~360MB runtime memory usage
+- **Reliability**: 100% extraction success rate across 18 tested file formats
+- **Architecture**: Native C extensions (PDFium, Tesseract) with Python async/await support
+- **Benchmarks**: [Comprehensive performance analysis](https://benchmarks.kreuzberg.dev/)
 
-### 🛠️ Engineering Quality
+### Engineering Principles
 
-- Built by software engineers with modern Python best practices
-- 95%+ test coverage with comprehensive test suite
-- Thoroughly benchmarked and profiled for real-world performance
-- Only framework offering true async/await support alongside sync APIs
-- Robust error handling and detailed logging
+- **Test Coverage**: 95%+ coverage with comprehensive test suites
+- **API Design**: True async/await implementation alongside synchronous APIs
+- **Error Handling**: Consistent exception hierarchy with detailed context
+- **Type Safety**: Full type annotations for enhanced developer experience
+- **Profiling**: Continuous performance monitoring and optimization
 
-### 🎯 Developer Experience
+### Developer Integration
 
-- Works out of the box with sane defaults, scales with your needs
-- Native MCP server for AI tool integration (Claude Desktop, Cursor)
-- Full type safety with excellent IDE support (completions)
-- Comprehensive documentation including full API reference
+- **Zero Configuration**: Functional defaults with progressive configuration options
+- **AI Tool Integration**: Native Model Context Protocol (MCP) server implementation
+- **IDE Support**: Complete type annotations and docstrings for intelligent code completion
+- **Documentation**: Comprehensive API reference with practical examples
 
-### 🌍 Deployment Options
+### Deployment Architecture
 
-- Docker images for all architectures (AMD64, ARM64)
-- Cloud native - AWS Lambda, Google Cloud Functions, Azure Functions
-- Supports both CPU and GPU processing (PaddleOCR, EasyOCR)
-- Local processing - no external API dependencies
-- Multiple deployment modes: CLI, REST API, MCP server
+- **Containerization**: Multi-architecture Docker images (linux/amd64, linux/arm64)
+- **Serverless**: Optimized for AWS Lambda, Google Cloud Functions, Azure Functions
+- **Processing Modes**: CPU-based with optional GPU acceleration (EasyOCR, PaddleOCR)
+- **Data Sovereignty**: Local processing without external API dependencies
+- **Interface Options**: Command-line interface, REST API, MCP server
 
-### 🎯 Complete Solution
+### Document Intelligence Features
 
-- Comprehensive format support: PDFs, images, Office docs, HTML, spreadsheets, presentations
-- Multiple OCR engines: Tesseract, EasyOCR, PaddleOCR with intelligent fallbacks
-- Advanced features: Table extraction, metadata extraction, content chunking for RAG
-- Production tools: REST API, CLI tools, batch processing, custom extractors
-- Fully extensible: Add your own extractors
+- **Format Support**: 18 document types including PDF, DOCX, PPTX, images, HTML, and structured data formats
+- **OCR Engines**: Tesseract (default), EasyOCR, PaddleOCR with automatic fallback strategies
+- **Data Extraction**: Text content, document metadata, table structures, and embedded resources
+- **Processing Capabilities**: Content chunking for RAG pipelines, language detection, format preservation
+- **Extensibility**: Plugin architecture for custom extractors via BaseExtractor interface
 
-## Perfect for Modern Applications
+## Architecture Philosophy
 
-Kreuzberg was architected for **RAG (Retrieval Augmented Generation)** applications, **serverless functions**, and \*
-*cloud-native deployments*\*. Whether you're building AI applications, processing pipelines, or document management
-systems, Kreuzberg delivers unmatched performance with minimal complexity.
+Kreuzberg builds upon established open source foundations, leveraging Pandoc's universal document conversion capabilities, PDFium's robust PDF handling, and Tesseract's proven OCR technology. This approach ensures reliability while enabling rapid feature development.
+
+The framework is designed for modern document processing workflows including Retrieval Augmented Generation (RAG) pipelines, batch document analysis, and real-time content extraction in cloud-native environments.

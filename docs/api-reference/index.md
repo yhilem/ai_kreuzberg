@@ -1,6 +1,6 @@
 # API Reference
 
-Detailed documentation for Kreuzberg's public API.
+Complete reference documentation for the Kreuzberg document intelligence framework's public API.
 
 ## Core Components
 

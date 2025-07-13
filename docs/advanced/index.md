@@ -1,6 +1,6 @@
 # Advanced Topics
 
-This section covers advanced features and usage patterns for Kreuzberg.
+This section explores advanced capabilities of the Kreuzberg document intelligence framework, including extensibility mechanisms, performance optimization, and custom integration patterns.
 
 ## Topics
 

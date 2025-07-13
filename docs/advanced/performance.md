@@ -16,13 +16,13 @@ Kreuzberg provides both synchronous and asynchronous APIs, each optimized for di
 
 ## Competitive Performance
 
-[Comprehensive benchmarks](https://benchmarks.kreuzberg.dev/) ([source code](https://github.com/Goldziher/python-text-extraction-libs-benchmarks)) comparing Kreuzberg against other popular Python text extraction libraries demonstrate:
+[Live benchmarks](https://benchmarks.kreuzberg.dev/) ([source code](https://github.com/Goldziher/python-text-extraction-libs-benchmarks)) demonstrate Kreuzberg as the fastest Python CPU-based text extraction framework:
 
-- **Fastest Extraction**: Consistently fastest processing times across file formats
-- **Lowest Memory Usage**: Most memory-efficient text extraction solution
-- **Smallest Installation**: 71.0 MB vs competitors ranging from 145.8 MB to 1,031.9 MB
-- **100% Success Rate**: Reliable extraction across all tested document types
-- **Optimal for High-Throughput**: Designed for real-time, production applications
+- **Leading Performance**: 31.78 files/second for small documents, 2.42 files/second for medium files
+- **Minimal Memory**: ~360MB average usage, lowest among tested frameworks
+- **Smallest Installation**: 71MB package size for maximum deployment flexibility
+- **High Reliability**: 100% success rate across all 18 tested file formats
+- **Production Optimized**: Built for high-throughput, real-time applications
 
 ## Internal Benchmark Results
 

@@ -1,6 +1,6 @@
 # Custom Extractors
 
-Kreuzberg provides a flexible system for adding and removing custom extractors through the `ExtractorRegistry`. This allows you to extend Kreuzberg's capabilities to handle additional file formats or customize how existing formats are processed.
+The Kreuzberg document intelligence framework provides an extensible architecture through the `ExtractorRegistry` system. This plugin mechanism enables developers to extend document processing capabilities by implementing custom extractors for specialized formats or processing requirements.
 
 ## Creating a Custom Extractor
 

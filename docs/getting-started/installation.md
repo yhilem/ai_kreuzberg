@@ -1,12 +1,12 @@
 # Installation
 
-Kreuzberg is composed of a core package and several `optional` dependencies, which users can install at their discretion.
+Kreuzberg is a modular document intelligence framework with a core package and optional components for specialized functionality.
 
 ## System Dependencies
 
 ### Pandoc
 
-Kreuzberg relies on `pandoc`, which is a **required** system dependency. To install it, follow the instructions below:
+Pandoc is the foundation of Kreuzberg's universal document conversion capabilities. This **required** system dependency enables reliable extraction across diverse document formats. Install Pandoc for your platform:
 
 #### Ubuntu/Debian
 

@@ -1,6 +1,6 @@
 # User Guide
 
-This guide covers the main concepts and usage patterns of Kreuzberg.
+This guide provides comprehensive documentation for the Kreuzberg document intelligence framework, covering core concepts, configuration options, and integration patterns.
 
 ## Contents
 

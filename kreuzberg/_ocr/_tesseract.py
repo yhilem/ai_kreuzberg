@@ -192,7 +192,7 @@ class PSMMode(Enum):
     """Treat the image as a single character."""
 
 
-@dataclass(unsafe_hash=True, frozen=True)
+@dataclass(unsafe_hash=True, frozen=True, slots=True)
 class TesseractConfig:
     """Configuration options for Tesseract OCR engine."""
 

@@ -111,7 +111,7 @@ EASYOCR_SUPPORTED_LANGUAGE_CODES: Final[set[str]] = {
 }
 
 
-@dataclass(unsafe_hash=True, frozen=True)
+@dataclass(unsafe_hash=True, frozen=True, slots=True)
 class EasyOCRConfig:
     """Configuration options for EasyOCR."""
 

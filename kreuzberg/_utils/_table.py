@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import csv
-from io import StringIO
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -23,9 +22,9 @@ def export_table_to_csv(table: TableData, separator: str = ",") -> str:
     if "df" not in table or table["df"] is None:
         return ""
 
-    output = StringIO()
-    table["df"].to_csv(output, sep=separator, index=False, quoting=csv.QUOTE_MINIMAL, lineterminator="\n")
-    return output.getvalue().strip()
+    # Use pandas to_csv() direct string return instead of StringIO
+    csv_output = table["df"].to_csv(sep=separator, index=False, quoting=csv.QUOTE_MINIMAL, lineterminator="\n")
+    return str(csv_output).strip()
 
 
 def export_table_to_tsv(table: TableData) -> str:

@@ -4,7 +4,6 @@ import hashlib
 import re
 from contextlib import suppress
 from functools import lru_cache
-from io import StringIO
 
 import chardetng_py
 
@@ -171,9 +170,7 @@ def normalize_spaces(text: str) -> str:
     # Split by double newlines to preserve paragraph breaks
     paragraphs = text.split("\n\n")
 
-    # Use StringIO for efficient string building
-    result = StringIO()
-    first_paragraph = True
+    result_paragraphs = []
 
     for paragraph in paragraphs:
         # Use pre-compiled patterns for better performance
@@ -182,23 +179,14 @@ def normalize_spaces(text: str) -> str:
         # Clean up multiple newlines within paragraph (keep single newlines)
         cleaned = _NEWLINES_PATTERN.sub("\n", cleaned)
 
-        # Process lines efficiently without creating intermediate list
-        lines_buffer = StringIO()
-        first_line = True
-
+        # Process lines efficiently
+        lines = []
         for line in cleaned.split("\n"):
             stripped_line = line.strip()
             if stripped_line:
-                if not first_line:
-                    lines_buffer.write("\n")
-                lines_buffer.write(stripped_line)
-                first_line = False
+                lines.append(stripped_line)
 
-        normalized_content = lines_buffer.getvalue()
-        if normalized_content:
-            if not first_paragraph:
-                result.write("\n\n")
-            result.write(normalized_content)
-            first_paragraph = False
+        if lines:
+            result_paragraphs.append("\n".join(lines))
 
-    return result.getvalue()
+    return "\n\n".join(result_paragraphs)

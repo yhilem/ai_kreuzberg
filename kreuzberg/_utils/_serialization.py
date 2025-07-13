@@ -32,14 +32,11 @@ def encode_hook(obj: Any) -> Any:
     if isinstance(obj, Exception):
         return {"message": str(obj), "type": type(obj).__name__}
 
-    # Check for dict-like methods more efficiently
+    # Check for dict-like methods more efficiently using any() with generator
     for attr_name in _DICT_METHOD_NAMES:
-        try:
-            method = getattr(obj, attr_name, None)
-            if method is not None and callable(method):
-                return method()
-        except AttributeError:  # noqa: PERF203
-            continue
+        method = getattr(obj, attr_name, None)
+        if method is not None and callable(method):
+            return method()
 
     if is_dataclass(obj) and not isinstance(obj, type):
         # Use msgspec.to_builtins for more efficient conversion

@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from pandas import DataFrame
 
 
-@dataclass(unsafe_hash=True)
+@dataclass(unsafe_hash=True, slots=True)
 class GMFTConfig:
     """Configuration options for GMFT.
 

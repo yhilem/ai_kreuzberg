@@ -64,31 +64,22 @@ class KreuzbergCache(Generic[T]):
         Returns:
             Unique cache key string
         """
-        # Use more efficient string building for cache key
         if not kwargs:
             return "empty"
 
-        # Use StringIO for efficient string building
-        from io import StringIO
-
-        buffer = StringIO()
-        first = True
-
+        # Build cache key using list + join (faster than StringIO)
+        parts = []
         for key in sorted(kwargs):
-            if not first:
-                buffer.write("&")
-            first = False
-
             value = kwargs[key]
             # Convert common types efficiently
             if isinstance(value, (str, int, float, bool)):
-                buffer.write(f"{key}={value}")
+                parts.append(f"{key}={value}")
             elif isinstance(value, bytes):
-                buffer.write(f"{key}=bytes:{len(value)}")
+                parts.append(f"{key}=bytes:{len(value)}")
             else:
-                buffer.write(f"{key}={type(value).__name__}:{value!s}")
+                parts.append(f"{key}={type(value).__name__}:{value!s}")
 
-        cache_str = buffer.getvalue()
+        cache_str = "&".join(parts)
         # SHA256 is secure and fast enough for cache keys
         return hashlib.sha256(cache_str.encode()).hexdigest()[:16]
 

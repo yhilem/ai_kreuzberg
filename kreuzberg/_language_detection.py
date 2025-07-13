@@ -23,7 +23,7 @@ except ImportError:
 _CACHE_SIZE = 128
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class LanguageDetectionConfig:
     """Configuration for language detection.
 

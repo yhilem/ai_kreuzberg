@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-@dataclass(unsafe_hash=True, frozen=True)
+@dataclass(unsafe_hash=True, frozen=True, slots=True)
 class SpacyEntityExtractionConfig:
     """Configuration for spaCy-based entity extraction."""
 

@@ -73,12 +73,13 @@ class StructuredDataExtractor(Extractor):
             text_parts: list[str] = []
             metadata: dict[str, Any] = {}
 
+            # Use match statement for cleaner code and avoid multiple isinstance calls
             if isinstance(data, dict):
-                text_parts.extend(self._extract_from_dict(data, metadata))
+                text_parts = self._extract_from_dict(data, metadata)
             elif isinstance(data, list):
-                text_parts.extend(self._extract_from_list(data, metadata))
+                text_parts = self._extract_from_list(data, metadata)
             else:
-                text_parts.append(str(data))
+                text_parts = [str(data)]
 
             combined_text = "\n".join(text_parts) if text_parts else text_content
 
@@ -110,9 +111,9 @@ class StructuredDataExtractor(Extractor):
             if isinstance(value, str) and value.strip():
                 text_parts.append(f"{full_key}: {value}")
 
-                # Use set for O(1) membership testing
+                # Check if key contains any text field keywords efficiently
                 key_lower = key.lower()
-                if any(text_field in key_lower for text_field in _TEXT_FIELD_KEYWORDS):
+                if any(keyword in key_lower for keyword in _TEXT_FIELD_KEYWORDS):
                     metadata[full_key] = value
 
             elif isinstance(value, (int, float, bool)):

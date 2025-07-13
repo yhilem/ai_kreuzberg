@@ -63,7 +63,7 @@ def extract_document(  # noqa: PLR0913
     )
 
     result = extract_file_sync(file_path, mime_type, config)
-    return result.to_dict()
+    return result.to_dict(include_none=True)
 
 
 @mcp.tool()
@@ -116,7 +116,7 @@ def extract_bytes(  # noqa: PLR0913
     )
 
     result = extract_bytes_sync(content_bytes, mime_type, config)
-    return result.to_dict()
+    return result.to_dict(include_none=True)
 
 
 @mcp.tool()

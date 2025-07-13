@@ -31,7 +31,7 @@ except ImportError:  # pragma: no cover
 PADDLEOCR_SUPPORTED_LANGUAGE_CODES: Final[set[str]] = {"ch", "en", "french", "german", "japan", "korean"}
 
 
-@dataclass(unsafe_hash=True, frozen=True)
+@dataclass(unsafe_hash=True, frozen=True, slots=True)
 class PaddleOCRConfig:
     """Configuration options for PaddleOCR.
 

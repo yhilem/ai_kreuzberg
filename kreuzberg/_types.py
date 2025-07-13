@@ -193,7 +193,7 @@ def normalize_metadata(data: dict[str, Any] | None) -> Metadata:
     return normalized
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Entity:
     """Represents an extracted entity with type, text, and position."""
 
@@ -207,7 +207,7 @@ class Entity:
     """End character offset in the content"""
 
 
-@dataclass
+@dataclass(slots=True)
 class ExtractionResult:
     """The result of a file extraction."""
 
@@ -228,8 +228,16 @@ class ExtractionResult:
     detected_languages: list[str] | None = None
     """Languages detected in the extracted content, if language detection is enabled."""
 
-    def to_dict(self) -> dict[str, Any]:
-        """Converts the ExtractionResult to a dictionary."""
+    def to_dict(self, include_none: bool = False) -> dict[str, Any]:
+        """Converts the ExtractionResult to a dictionary.
+
+        Args:
+            include_none: If True, include fields with None values.
+                         If False (default), exclude None values.
+
+        Returns:
+            Dictionary representation of the ExtractionResult.
+        """
         # Use msgspec.to_builtins for efficient conversion
         # The builtin_types parameter allows DataFrames to pass through
         result = msgspec.to_builtins(
@@ -237,6 +245,9 @@ class ExtractionResult:
             builtin_types=(type(None),),  # Allow None to pass through
             order="deterministic",  # Ensure consistent output
         )
+
+        if include_none:
+            return result  # type: ignore[no-any-return]
 
         # Remove None values to match expected behavior
         return {k: v for k, v in result.items() if v is not None}
@@ -285,7 +296,7 @@ PostProcessingHook = Callable[[ExtractionResult], ExtractionResult | Awaitable[E
 ValidationHook = Callable[[ExtractionResult], None | Awaitable[None]]
 
 
-@dataclass(unsafe_hash=True)
+@dataclass(unsafe_hash=True, slots=True)
 class ExtractionConfig:
     """Represents configuration settings for an extraction process.
 

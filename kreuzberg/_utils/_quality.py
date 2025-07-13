@@ -102,9 +102,10 @@ def clean_extracted_text(text: str) -> str:
     if not text:
         return text
 
-    # Remove script and style content
-    for pattern in _SCRIPT_PATTERNS.values():
-        text = pattern.sub(" ", text)
+    # Remove script and style content using functools.reduce for single pass
+    from functools import reduce
+
+    text = reduce(lambda t, pattern: pattern.sub(" ", t), _SCRIPT_PATTERNS.values(), text)
 
     # Clean OCR artifacts
     text = _clean_ocr_artifacts(text)
@@ -134,10 +135,8 @@ def _calculate_script_penalty(text: str, total_chars: int) -> float:
     if total_chars == 0:
         return 0.0
 
-    script_chars = 0
-    for pattern in _SCRIPT_PATTERNS.values():
-        matches = pattern.findall(text)
-        script_chars += sum(len(match) for match in matches)
+    # Use sum with generator expression for single-pass calculation
+    script_chars = sum(len(match) for pattern in _SCRIPT_PATTERNS.values() for match in pattern.findall(text))
 
     return min(1.0, script_chars / total_chars)
 
@@ -147,10 +146,8 @@ def _calculate_navigation_penalty(text: str, total_chars: int) -> float:
     if total_chars == 0:
         return 0.0
 
-    nav_chars = 0
-    for pattern in _NAVIGATION_PATTERNS.values():
-        matches = pattern.findall(text)
-        nav_chars += sum(len(match) for match in matches)
+    # Use sum with generator expression for single-pass calculation
+    nav_chars = sum(len(match) for pattern in _NAVIGATION_PATTERNS.values() for match in pattern.findall(text))
 
     return min(1.0, nav_chars / total_chars)
 

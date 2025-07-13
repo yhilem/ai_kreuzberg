@@ -3,7 +3,6 @@ from __future__ import annotations
 import contextlib
 import os
 import tempfile
-from io import StringIO
 from multiprocessing import cpu_count
 from pathlib import Path
 from re import Pattern
@@ -249,16 +248,10 @@ class PDFExtractor(Extractor):
             *[backend.process_image(image, **self.config.get_config_dict()) for image in images],
             batch_size=cpu_count(),
         )
-        # Use StringIO for efficient string building
-        content_buffer = StringIO()
-        for i, result in enumerate(ocr_results):
-            if i > 0:
-                content_buffer.write("\n")
-            content_buffer.write(result.content)
+        # Use list comprehension and join for efficient string building
+        content = "\n".join(result.content for result in ocr_results)
 
-        return ExtractionResult(
-            content=content_buffer.getvalue(), mime_type=PLAIN_TEXT_MIME_TYPE, metadata={}, chunks=[]
-        )
+        return ExtractionResult(content=content, mime_type=PLAIN_TEXT_MIME_TYPE, metadata={}, chunks=[])
 
     @staticmethod
     async def _extract_pdf_searchable_text(input_file: Path) -> str:
@@ -277,26 +270,20 @@ class PDFExtractor(Extractor):
         try:
             with pypdfium_file_lock(input_file):
                 document = await run_sync(pypdfium2.PdfDocument, str(input_file))
-                text_buffer = StringIO()
+                pages_content = []
                 page_errors = []
-                has_content = False
 
                 for i, page in enumerate(cast("pypdfium2.PdfDocument", document)):
                     try:
                         text_page = page.get_textpage()
                         page_content = text_page.get_text_bounded()
-                        if has_content:
-                            text_buffer.write("\n")
-                        text_buffer.write(page_content)
-                        has_content = True
+                        pages_content.append(page_content)
                     except Exception as e:  # noqa: PERF203, BLE001
                         page_errors.append({"page": i + 1, "error": str(e)})
-                        if has_content:
-                            text_buffer.write("\n")
-                        text_buffer.write(f"[Error extracting page {i + 1}]")
-                        has_content = True
+                        pages_content.append(f"[Error extracting page {i + 1}]")
 
-                text = text_buffer.getvalue()
+                text = "\n".join(pages_content)
+                has_content = bool(text.strip())
 
                 if page_errors and has_content:
                     return normalize_spaces(text)
@@ -331,14 +318,14 @@ class PDFExtractor(Extractor):
         try:
             with pypdfium_file_lock(path):
                 pdf = pypdfium2.PdfDocument(str(path))
-                text_buffer = StringIO()
+                pages_text = []
                 for page in pdf:
                     text_page = page.get_textpage()
                     text = text_page.get_text_bounded()
-                    text_buffer.write(text)
+                    pages_text.append(text)
                     text_page.close()
                     page.close()
-                return text_buffer.getvalue()
+                return "\n".join(pages_text)
         except Exception as e:
             raise ParsingError(f"Failed to extract PDF text: {e}") from e
         finally:
@@ -408,13 +395,8 @@ class PDFExtractor(Extractor):
         else:
             raise NotImplementedError(f"Sync OCR not implemented for {self.config.ocr_backend}")
 
-        # Use StringIO for efficient string building
-        content_buffer = StringIO()
-        for i, result in enumerate(results):
-            if i > 0:
-                content_buffer.write("\n\n")
-            content_buffer.write(result.content)
-        return content_buffer.getvalue()
+        # Use list comprehension and join for efficient string building
+        return "\n\n".join(result.content for result in results)
 
     def _extract_with_playa_sync(self, path: Path, fallback_text: str) -> str:
         """Extract text using playa for better structure preservation."""
@@ -422,19 +404,14 @@ class PDFExtractor(Extractor):
             content = path.read_bytes()
             document = parse(content, max_workers=1)
 
-            text_buffer = StringIO()
-            has_content = False
-
+            # Extract text while preserving structure
+            pages_text = []
             for page in document.pages:
-                # Extract text while preserving structure
                 page_text = page.extract_text()
                 if page_text and page_text.strip():
-                    if has_content:
-                        text_buffer.write("\n\n")
-                    text_buffer.write(page_text)
-                    has_content = True
+                    pages_text.append(page_text)
 
-            if has_content:
-                return text_buffer.getvalue()
+            if pages_text:
+                return "\n\n".join(pages_text)
 
         return fallback_text

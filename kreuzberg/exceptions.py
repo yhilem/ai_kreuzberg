@@ -7,6 +7,8 @@ from typing import Any
 class KreuzbergError(Exception):
     """Base exception for all Kreuzberg errors."""
 
+    __slots__ = ("context",)
+
     context: Any
     """The context of the error."""
 
@@ -43,13 +45,19 @@ class KreuzbergError(Exception):
 class ParsingError(KreuzbergError):
     """Raised when a parsing error occurs."""
 
+    __slots__ = ()
+
 
 class ValidationError(KreuzbergError):
     """Raised when a validation error occurs."""
 
+    __slots__ = ()
+
 
 class MissingDependencyError(KreuzbergError):
     """Raised when a dependency is missing."""
+
+    __slots__ = ()
 
     @classmethod
     def create_for_package(
@@ -79,3 +87,5 @@ class MissingDependencyError(KreuzbergError):
 
 class OCRError(KreuzbergError):
     """Raised when an OCR error occurs."""
+
+    __slots__ = ()

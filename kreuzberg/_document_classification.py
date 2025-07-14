@@ -4,6 +4,12 @@ import re
 from typing import TYPE_CHECKING
 
 from kreuzberg._ocr import get_ocr_backend
+from kreuzberg.exceptions import MissingDependencyError
+
+try:
+    from deep_translator import GoogleTranslator
+except ImportError:
+    GoogleTranslator = None
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -50,7 +56,13 @@ def classify_document(result: ExtractionResult, config: ExtractionConfig) -> tup
         A tuple containing the detected document type and the confidence score,
         or (None, None) if no type is detected with sufficient confidence.
     """
-    content_lower = result.content.lower()
+    if not GoogleTranslator:
+        raise MissingDependencyError(
+            "The 'deep-translator' library is not installed. Please install it with: pip install 'kreuzberg[auto-classify-document-type]'"
+        )
+
+    translated_text = GoogleTranslator(source="auto", target="en").translate(result.content)
+    content_lower = translated_text.lower()
     scores = dict.fromkeys(DOCUMENT_CLASSIFIERS, 0)
 
     for doc_type, patterns in DOCUMENT_CLASSIFIERS.items():
@@ -85,6 +97,11 @@ def classify_document_from_layout(
         A tuple containing the detected document type and the confidence score,
         or (None, None) if no type is detected with sufficient confidence.
     """
+    if not GoogleTranslator:
+        raise MissingDependencyError(
+            "The 'deep-translator' library is not installed. Please install it with: pip install 'kreuzberg[auto-classify-document-type]'"
+        )
+
     if result.layout is None or result.layout.empty:
         return None, None
 
@@ -92,12 +109,16 @@ def classify_document_from_layout(
     if not all(col in layout_df.columns for col in ["text", "top", "height"]):
         return None, None
 
+    # Translate all text in the layout
+    translated_text = GoogleTranslator(source="auto", target="en").translate_batch(layout_df["text"].tolist())
+    layout_df["translated_text"] = translated_text
+
     page_height = layout_df["top"].max() + layout_df["height"].max()
     scores = dict.fromkeys(DOCUMENT_CLASSIFIERS, 0.0)
 
     for doc_type, patterns in DOCUMENT_CLASSIFIERS.items():
         for pattern in patterns:
-            found_words = layout_df[layout_df["text"].str.contains(pattern, case=False, na=False)]
+            found_words = layout_df[layout_df["translated_text"].str.contains(pattern, case=False, na=False)]
             if not found_words.empty:
                 scores[doc_type] += 1.0
                 word_top = found_words.iloc[0]["top"]

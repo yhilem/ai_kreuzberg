@@ -866,6 +866,19 @@ wheels = [
 ]
 
 [[package]]
+name = "deep-translator"
+version = "1.11.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "beautifulsoup4" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7d/03/8fa7635c729a01de71151894cdf002ad6d245bfd6d1a731da864cf534dcf/deep_translator-1.11.4.tar.gz", hash = "sha256:801260c69231138707ea88a0955e484db7d40e210c9e0ae0f77372ffda5f4bf5", size = 36043, upload-time = "2023-06-28T19:55:23.499Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/38/3f/61a8ef73236dbea83a1a063a8af2f8e1e41a0df64f122233938391d0f175/deep_translator-1.11.4-py3-none-any.whl", hash = "sha256:d635df037e23fa35d12fd42dab72a0b55c9dd19e6292009ee7207e3f30b9e60a", size = 42285, upload-time = "2023-06-28T19:55:20.928Z" },
+]
+
+[[package]]
 name = "defusedxml"
 version = "0.7.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1843,7 +1856,6 @@ dependencies = [
     { name = "html-to-markdown", extra = ["lxml"] },
     { name = "mcp" },
     { name = "msgspec" },
-    { name = "pandas" },
     { name = "playa-pdf" },
     { name = "psutil" },
     { name = "pypdfium2" },
@@ -1875,6 +1887,10 @@ all = [
 ]
 api = [
     { name = "litestar", extra = ["opentelemetry", "standard", "structlog"] },
+]
+auto-classify-document-type = [
+    { name = "deep-translator" },
+    { name = "pandas" },
 ]
 chunking = [
     { name = "semantic-text-splitter" },
@@ -1929,6 +1945,7 @@ requires-dist = [
     { name = "anyio", specifier = ">=4.9.0" },
     { name = "chardetng-py", specifier = ">=0.3.4" },
     { name = "click", marker = "extra == 'cli'", specifier = ">=8.2.1" },
+    { name = "deep-translator", marker = "extra == 'auto-classify-document-type'", specifier = ">=1.11.4" },
     { name = "easyocr", marker = "extra == 'easyocr'", specifier = ">=1.7.2" },
     { name = "exceptiongroup", marker = "python_full_version < '3.11'", specifier = ">=1.2.2" },
     { name = "fast-langdetect", marker = "extra == 'langdetect'", specifier = ">=0.3.2" },
@@ -1942,7 +1959,7 @@ requires-dist = [
     { name = "msgspec", specifier = ">=0.18.0" },
     { name = "paddleocr", marker = "extra == 'paddleocr'", specifier = ">=3.1.0" },
     { name = "paddlepaddle", marker = "extra == 'paddleocr'", specifier = ">=3.1.0" },
-    { name = "pandas", specifier = ">=2.2.0" },
+    { name = "pandas", marker = "extra == 'auto-classify-document-type'", specifier = ">=2.2.0" },
     { name = "playa-pdf", specifier = ">=0.6.1" },
     { name = "psutil", specifier = ">=7.0.0" },
     { name = "pypdfium2", specifier = "==4.30.0" },
@@ -1956,7 +1973,7 @@ requires-dist = [
     { name = "tomli", marker = "python_full_version < '3.11' and extra == 'cli'", specifier = ">=2.0.0" },
     { name = "typing-extensions", marker = "python_full_version < '3.12'", specifier = ">=4.14.0" },
 ]
-provides-extras = ["additional-extensions", "all", "api", "chunking", "cli", "easyocr", "entity-extraction", "gmft", "langdetect", "paddleocr"]
+provides-extras = ["additional-extensions", "all", "api", "auto-classify-document-type", "chunking", "cli", "easyocr", "entity-extraction", "gmft", "langdetect", "paddleocr"]
 
 [package.metadata.requires-dev]
 dev = [

@@ -5,7 +5,7 @@ requires = [ "hatchling" ]
 
 [project]
 name = "kreuzberg"
-version = "3.9.0"
+version = "3.9.1"
 description = "Document intelligence framework for Python - Extract text, metadata, and structured data from diverse file formats"
 readme = "README.md"
 keywords = [
@@ -58,12 +58,12 @@ classifiers = [
 
 dependencies = [
   "anyio>=4.9.0",
-  "chardetng-py>=0.3.4",
+  "chardetng-py>=0.3.5",
   "exceptiongroup>=1.2.2; python_version<'3.11'",
-  "html-to-markdown[lxml]>=1.8.0",
-  "mcp>=1.11.0",
+  "html-to-markdown[lxml]>=1.9.0",
+  "mcp>=1.12.2",
   "msgspec>=0.18.0",
-  "playa-pdf>=0.6.1",                                 # pinned due to breaking changes in 0.5.0
+  "playa-pdf>=0.6.4",                                 # pinned due to breaking changes in 0.5.0
   "psutil>=7.0.0",
   "pypdfium2==4.30.0",                                # pinned due to bug in 4.30.1, until v5 is stable
   "python-calamine>=0.3.2",
@@ -88,7 +88,7 @@ optional-dependencies.auto-classify-document-type = [
 optional-dependencies.chunking = [ "semantic-text-splitter>=0.27.0" ]
 optional-dependencies.cli = [
   "click>=8.2.1",
-  "rich>=14.0.0",
+  "rich>=14.1.0",
   "tomli>=2.0.0; python_version<'3.11'",
 ]
 optional-dependencies.easyocr = [ "easyocr>=1.7.2" ]
@@ -115,7 +115,7 @@ dev = [
   "pytest-cov>=6.2.1",
   "pytest-mock>=3.14.0",
   "pytest-timeout>=2.4.0",
-  "ruff>=0.12.1",
+  "ruff>=0.12.5",
   "trio>=0.30.0",
   "uv-bump",
 ]
@@ -216,7 +216,13 @@ max_supported_python = "3.13"
 [tool.pytest.ini_options]
 timeout = 300
 testpaths = [ "tests" ]
-norecursedirs = [ "benchmarks", "python-text-extraction-libs-benchmarks", "dist", "build", "*.egg" ]
+norecursedirs = [
+  "benchmarks",
+  "python-text-extraction-libs-benchmarks",
+  "dist",
+  "build",
+  "*.egg",
+]
 filterwarnings = [
   "ignore:Exception ignored in:pytest.PytestUnraisableExceptionWarning",
   "ignore:pkg_resources is deprecated as an API:DeprecationWarning",

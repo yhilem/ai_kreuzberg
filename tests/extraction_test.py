@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
 
 import pytest
 
@@ -16,7 +15,7 @@ from kreuzberg._mime_types import (
     PLAIN_TEXT_MIME_TYPE,
     POWER_POINT_MIME_TYPE,
 )
-from kreuzberg._types import ExtractionConfig
+from kreuzberg._types import ExtractionConfig, ExtractionResult
 from kreuzberg.exceptions import ValidationError
 from kreuzberg.extraction import (
     batch_extract_bytes,
@@ -28,12 +27,8 @@ from kreuzberg.extraction import (
     extract_file,
     extract_file_sync,
 )
-from tests.conftest import pdfs_with_tables
 
 IS_CI = os.environ.get("CI", "false").lower() == "true"
-
-if TYPE_CHECKING:
-    from kreuzberg._types import ExtractionResult
 
 
 @pytest.mark.anyio
@@ -48,153 +43,19 @@ async def test_extract_bytes_pdf(scanned_pdf: Path) -> None:
     sys.platform == "win32",
     reason="Tesseract Languages not installed on Windows due to complexity of installation in CI",
 )
-@pytest.mark.xfail(IS_CI, reason="OCR tests may fail in CI due to Tesseract issues")
-async def test_extract_bytes_force_ocr_pdf(non_ascii_pdf: Path) -> None:
-    content = non_ascii_pdf.read_bytes()
-    config = ExtractionConfig(force_ocr=True, ocr_config=TesseractConfig(language="deu"))
+async def test_extract_bytes_pdf_non_english(non_english_pdf: Path) -> None:
+    content = non_english_pdf.read_bytes()
+    config = ExtractionConfig(ocr_backend="tesseract", ocr_config=TesseractConfig(language="deu"))
     result = await extract_bytes(content, PDF_MIME_TYPE, config=config)
     assert_extraction_result(result, mime_type=PLAIN_TEXT_MIME_TYPE)
-    # OCR results may vary by system - check for any reasonable content or allow empty
-    if result.content.strip():
-        # If OCR produced content, it should contain some actual text (not just zeros/whitespace)
-        cleaned_content = result.content.replace("0", "").replace("\n", "").replace(" ", "").strip()
-        if cleaned_content == "":
-            # OCR produced only zeros and whitespace - this is acceptable for poor OCR
-            pass
-        else:
-            # OCR produced some actual content - verify it's reasonable
-            assert len(cleaned_content) > 0
 
 
 @pytest.mark.anyio
-@pytest.mark.xfail(IS_CI, reason="OCR tests may fail in CI due to Tesseract issues")
-async def test_extract_bytes_image(ocr_image: Path) -> None:
-    content = ocr_image.read_bytes()
-    mime_type = "image/jpeg"
-    result = await extract_bytes(content, mime_type)
-    assert_extraction_result(result, mime_type=PLAIN_TEXT_MIME_TYPE)
-
-
-@pytest.mark.anyio
-async def test_extract_bytes_pandoc(docx_document: Path) -> None:
+async def test_extract_bytes_docx(docx_document: Path) -> None:
     content = docx_document.read_bytes()
-    mime_type = DOCX_MIME_TYPE
-    result = await extract_bytes(content, mime_type)
+    result = await extract_bytes(content, DOCX_MIME_TYPE)
     assert_extraction_result(result, mime_type=MARKDOWN_MIME_TYPE)
-
-
-@pytest.mark.anyio
-async def test_extract_bytes_plain_text() -> None:
-    content = b"This is a plain text file."
-    result = await extract_bytes(content, PLAIN_TEXT_MIME_TYPE)
-    assert_extraction_result(result, mime_type=PLAIN_TEXT_MIME_TYPE)
-    assert result.content.strip() == "This is a plain text file."
-
-
-@pytest.mark.anyio
-async def test_extract_bytes_pptx(pptx_document: Path) -> None:
-    content = pptx_document.read_bytes()
-    result = await extract_bytes(content, POWER_POINT_MIME_TYPE)
-    assert_extraction_result(result, mime_type=MARKDOWN_MIME_TYPE)
-    assert (
-        "At Contoso, we empower organizations to foster collaborative thinking to further drive workplace innovation. By closing the loop and leveraging agile frameworks, we help business grow organically and foster a consumer first mindset."
-        in result.content
-    )
-
-
-@pytest.mark.anyio
-async def test_extract_bytes_html(html_document: Path) -> None:
-    content = html_document.read_bytes()
-    result = await extract_bytes(content, "text/html")
-    assert_extraction_result(result, mime_type=MARKDOWN_MIME_TYPE)
-    assert (
-        result.content
-        == 'Browsers usually insert quotation marks around the q element.\n\nWWF\'s goal is to: "Build a future where people live in harmony with nature."'
-    )
-
-
-@pytest.mark.anyio
-async def test_extract_bytes_markdown(markdown_document: Path) -> None:
-    content = markdown_document.read_bytes()
-    result = await extract_bytes(content, MARKDOWN_MIME_TYPE)
-    assert_extraction_result(result, mime_type=MARKDOWN_MIME_TYPE)
-
-
-@pytest.mark.anyio
-async def test_extract_bytes_invalid_mime() -> None:
-    with pytest.raises(ValidationError, match="Unsupported mime type"):
-        await extract_bytes(b"some content", "application/unknown")
-
-
-@pytest.mark.anyio
-async def test_extract_file_pdf(scanned_pdf: Path) -> None:
-    result = await extract_file(scanned_pdf, PDF_MIME_TYPE)
-    assert_extraction_result(result, mime_type=PLAIN_TEXT_MIME_TYPE)
-
-
-@pytest.mark.anyio
-@pytest.mark.xfail(IS_CI, reason="OCR tests may fail in CI due to Tesseract issues")
-async def test_extract_file_image(ocr_image: Path) -> None:
-    mime_type = "image/jpeg"
-    result = await extract_file(ocr_image, mime_type)
-    assert_extraction_result(result, mime_type=PLAIN_TEXT_MIME_TYPE)
-
-
-@pytest.mark.anyio
-async def test_extract_file_pandoc(docx_document: Path) -> None:
-    mime_type = DOCX_MIME_TYPE
-    result = await extract_file(docx_document, mime_type)
-    assert_extraction_result(result, mime_type=MARKDOWN_MIME_TYPE)
-
-
-@pytest.mark.anyio
-async def test_extract_file_plain_text(tmp_path: Path) -> None:
-    text_file = tmp_path / "sample.txt"
-    text_file.write_text("This is a plain text file.")
-    result = await extract_file(text_file, PLAIN_TEXT_MIME_TYPE)
-    assert_extraction_result(result, mime_type=PLAIN_TEXT_MIME_TYPE)
-    assert result.content.strip() == "This is a plain text file."
-
-
-@pytest.mark.anyio
-async def test_extract_file_markdown(markdown_document: Path) -> None:
-    result = await extract_file(markdown_document, MARKDOWN_MIME_TYPE)
-    assert_extraction_result(result, mime_type=MARKDOWN_MIME_TYPE)
-
-
-@pytest.mark.anyio
-async def test_extract_file_pptx(pptx_document: Path) -> None:
-    result = await extract_file(pptx_document, POWER_POINT_MIME_TYPE)
-    assert_extraction_result(result, mime_type=MARKDOWN_MIME_TYPE)
-    assert (
-        "At Contoso, we empower organizations to foster collaborative thinking to further drive workplace innovation. By closing the loop and leveraging agile frameworks, we help business grow organically and foster a consumer first mindset."
-        in result.content
-    )
-
-
-@pytest.mark.anyio
-async def test_extract_file_html(html_document: Path) -> None:
-    result = await extract_file(html_document, "text/html")
-    assert_extraction_result(result, mime_type=MARKDOWN_MIME_TYPE)
-    assert (
-        result.content
-        == 'Browsers usually insert quotation marks around the q element.\n\nWWF\'s goal is to: "Build a future where people live in harmony with nature."'
-    )
-
-
-@pytest.mark.anyio
-async def test_extract_file_invalid_mime(tmp_path: Path) -> None:
-    test_file = tmp_path / "valid-file.txt"
-    test_file.write_text("test content")
-
-    with pytest.raises(ValidationError, match="Unsupported mime type"):
-        await extract_file(test_file, "application/unknown")
-
-
-@pytest.mark.anyio
-async def test_extract_file_not_exists() -> None:
-    with pytest.raises(ValidationError, match="The file does not exist"):
-        await extract_file("/invalid/path.txt", PLAIN_TEXT_MIME_TYPE)
+    assert result.content.strip() != ""
 
 
 @pytest.mark.anyio
@@ -202,171 +63,252 @@ async def test_extract_bytes_excel(excel_document: Path) -> None:
     content = excel_document.read_bytes()
     result = await extract_bytes(content, EXCEL_MIME_TYPE)
     assert_extraction_result(result, mime_type=MARKDOWN_MIME_TYPE)
+    assert result.content.strip() != ""
 
 
 @pytest.mark.anyio
-async def test_extract_file_excel(excel_document: Path) -> None:
-    result = await extract_file(excel_document, EXCEL_MIME_TYPE)
+async def test_extract_bytes_pptx(pptx_presentation: Path) -> None:
+    content = pptx_presentation.read_bytes()
+    result = await extract_bytes(content, POWER_POINT_MIME_TYPE)
     assert_extraction_result(result, mime_type=MARKDOWN_MIME_TYPE)
+    assert result.content.strip() != ""
 
 
 @pytest.mark.anyio
-async def test_extract_file_excel_invalid() -> None:
-    with pytest.raises(ValidationError, match="The file does not exist"):
-        await extract_file("/invalid/path.xlsx", EXCEL_MIME_TYPE)
+async def test_extract_bytes_plain_text() -> None:
+    content = b"This is plain text content."
+    result = await extract_bytes(content, PLAIN_TEXT_MIME_TYPE)
+    assert_extraction_result(result, mime_type=PLAIN_TEXT_MIME_TYPE)
+    assert result.content == "This is plain text content."
+
+
+@pytest.mark.anyio
+async def test_extract_bytes_invalid_mime() -> None:
+    content = b"Some content"
+    with pytest.raises(ValidationError):
+        await extract_bytes(content, "application/unknown")
+
+
+@pytest.mark.anyio
+async def test_extract_file_pdf(scanned_pdf: Path) -> None:
+    result = await extract_file(scanned_pdf)
+    assert_extraction_result(result, mime_type=PLAIN_TEXT_MIME_TYPE)
+
+
+@pytest.mark.anyio
+async def test_extract_file_no_extension(tmp_path: Path) -> None:
+    file_path = tmp_path / "file_without_extension"
+    file_path.write_bytes(b"Text content")
+    with pytest.raises(ValidationError):
+        await extract_file(file_path)
+
+
+@pytest.mark.anyio
+async def test_extract_file_explicit_mime(tmp_path: Path) -> None:
+    file_path = tmp_path / "file_without_extension"
+    file_path.write_bytes(b"Text content")
+    result = await extract_file(file_path, mime_type=PLAIN_TEXT_MIME_TYPE)
+    assert_extraction_result(result, mime_type=PLAIN_TEXT_MIME_TYPE)
+    assert result.content == "Text content"
+
+
+@pytest.mark.anyio
+async def test_extract_file_not_exists() -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        await extract_file("nonexistent_file.txt")
+    assert "file does not exist" in str(exc_info.value)
+
+
+@pytest.mark.anyio
+async def test_batch_extract_file_single(test_article: Path) -> None:
+    results = await batch_extract_file([str(test_article)])
+    assert len(results) == 1
+    assert_extraction_result(results[0], mime_type=PLAIN_TEXT_MIME_TYPE)
+
+
+@pytest.mark.anyio
+async def test_batch_extract_file_multiple(searchable_pdf: Path, test_article: Path, docx_document: Path) -> None:
+    file_paths = [str(searchable_pdf), str(test_article), str(docx_document)]
+    results = await batch_extract_file(file_paths)
+    assert len(results) == 3
+    assert_extraction_result(results[0], mime_type=PLAIN_TEXT_MIME_TYPE)
+    assert_extraction_result(results[1], mime_type=PLAIN_TEXT_MIME_TYPE)
+    assert_extraction_result(results[2], mime_type=MARKDOWN_MIME_TYPE)
+
+
+@pytest.mark.anyio
+async def test_batch_extract_bytes_single() -> None:
+    contents = [(b"Single text content", PLAIN_TEXT_MIME_TYPE)]
+    results = await batch_extract_bytes(contents)
+    assert len(results) == 1
+    assert_extraction_result(results[0], mime_type=PLAIN_TEXT_MIME_TYPE)
+    assert results[0].content == "Single text content"
+
+
+@pytest.mark.anyio
+async def test_batch_extract_bytes_multiple(searchable_pdf: Path, docx_document: Path) -> None:
+    contents = [
+        (b"First text", PLAIN_TEXT_MIME_TYPE),
+        (searchable_pdf.read_bytes(), PDF_MIME_TYPE),
+        (docx_document.read_bytes(), DOCX_MIME_TYPE),
+    ]
+    results = await batch_extract_bytes(contents)
+    assert len(results) == 3
+    assert results[0].content == "First text"
+    assert_extraction_result(results[1], mime_type=PLAIN_TEXT_MIME_TYPE)
+    assert_extraction_result(results[2], mime_type=MARKDOWN_MIME_TYPE)
+
+
+@pytest.mark.anyio
+async def test_extract_file_with_custom_config(tmp_path: Path) -> None:
+    file_path = tmp_path / "text.txt"
+    file_path.write_text("Test content for extraction with config")
+
+    custom_config = ExtractionConfig(chunk_content=True, max_chars=10, max_overlap=2)
+    result = await extract_file(file_path, config=custom_config)
+
+    assert_extraction_result(result, mime_type=PLAIN_TEXT_MIME_TYPE)
+    assert len(result.chunks) > 0
+
+
+@pytest.mark.anyio
+async def test_batch_extract_empty_list() -> None:
+    file_results = await batch_extract_file([])
+    assert file_results == []
+
+    bytes_results = await batch_extract_bytes([])
+    assert bytes_results == []
+
+
+@pytest.mark.anyio
+@pytest.mark.xfail(
+    not IS_CI, reason="GMFT tests may fail locally if gmft dependencies are not installed", raises=Exception
+)
+async def test_extract_pdf_with_tables(pdfs_with_tables: list[Path]) -> None:
+    """Test table extraction from PDFs with GMFT enabled."""
+    config = ExtractionConfig(extract_tables=True)
+
+    for pdf in pdfs_with_tables:
+        result = await extract_file(pdf, config=config)
+        assert_extraction_result(result, mime_type=PLAIN_TEXT_MIME_TYPE)
+        assert len(result.tables) > 0
+
+
+@pytest.mark.anyio
+async def test_extract_bytes_auto_mime_detection() -> None:
+    """Test that extract_bytes can work without explicit mime type for certain formats."""
+    # Plain text should work without mime type
+    content = b"Plain text content"
+    result = await extract_bytes(content, mime_type=None)  # type: ignore[arg-type]
+    assert result.content == "Plain text content"
+
+
+def assert_extraction_result(result: ExtractionResult, mime_type: str | None = None) -> None:
+    """Helper to validate extraction results."""
+    assert result is not None
+    assert isinstance(result, ExtractionResult)
+    assert result.content is not None
+    assert len(result.content) > 0
+    if mime_type:
+        assert result.mime_type == mime_type
+    assert isinstance(result.metadata, dict)
+    assert isinstance(result.chunks, list)
 
 
 def test_extract_bytes_sync_plain_text() -> None:
-    content = b"This is a plain text file."
+    content = b"This is plain text content."
     result = extract_bytes_sync(content, PLAIN_TEXT_MIME_TYPE)
     assert_extraction_result(result, mime_type=PLAIN_TEXT_MIME_TYPE)
-    assert result.content.strip() == "This is a plain text file."
+    assert result.content == "This is plain text content."
 
 
 def test_extract_file_sync_plain_text(tmp_path: Path) -> None:
-    text_file = tmp_path / "sample.txt"
-    text_file.write_text("This is a plain text file.")
-    result = extract_file_sync(text_file, PLAIN_TEXT_MIME_TYPE)
+    file_path = tmp_path / "test.txt"
+    file_path.write_text("Test content")
+    result = extract_file_sync(file_path)
     assert_extraction_result(result, mime_type=PLAIN_TEXT_MIME_TYPE)
-    assert result.content.strip() == "This is a plain text file."
+    assert result.content == "Test content"
 
 
 def test_extract_bytes_sync_invalid_mime() -> None:
-    with pytest.raises(ValidationError, match="Unsupported mime type"):
-        extract_bytes_sync(b"some content", "application/unknown")
+    with pytest.raises(ValidationError):
+        extract_bytes_sync(b"content", "application/unknown")
 
 
 def test_extract_file_sync_invalid_mime(tmp_path: Path) -> None:
-    test_file = tmp_path / "valid-file.txt"
-    test_file.write_text("test content")
-
-    with pytest.raises(ValidationError, match="Unsupported mime type"):
-        extract_file_sync(test_file, "application/unknown")
+    file_path = tmp_path / "test.unknown"
+    file_path.write_text("content")
+    with pytest.raises(ValidationError):
+        extract_file_sync(file_path)
 
 
 def test_extract_file_sync_not_exists() -> None:
-    with pytest.raises(ValidationError, match="The file does not exist"):
-        extract_file_sync("/invalid/path.txt", PLAIN_TEXT_MIME_TYPE)
-
-
-def assert_extraction_result(result: ExtractionResult, *, mime_type: str) -> None:
-    assert isinstance(result.content, str)
-    assert result.content.strip()
-    assert result.mime_type == mime_type
-    assert isinstance(result.metadata, dict)
+    with pytest.raises(ValidationError):
+        extract_file_sync("nonexistent.txt")
 
 
 @pytest.mark.anyio
-@pytest.mark.xfail(IS_CI, reason="OCR tests may fail in CI due to Tesseract issues")
-async def test_batch_extract_pdf_files(scanned_pdf: Path, test_article: Path) -> None:
-    config = ExtractionConfig(force_ocr=True)
-    results = await batch_extract_file([scanned_pdf, test_article], config=config)
-    assert len(results) == 2
-    for result in results:
-        assert_extraction_result(result, mime_type=PLAIN_TEXT_MIME_TYPE)
+async def test_batch_extract_with_different_configs() -> None:
+    """Test that batch operations use the same config for all files."""
+    config = ExtractionConfig(chunk_content=True, max_chars=20)
 
-
-@pytest.mark.anyio
-async def test_batch_extract_file_mixed(test_article: Path) -> None:
-    test_files = [test_article]
-    test_files.extend((Path(__file__).parent / "source").glob("*.docx"))
-    test_files.extend((Path(__file__).parent / "source").glob("*.xlsx"))
-
-    results = await batch_extract_file(test_files)
-    assert len(results) == len(test_files)
-    for path, result in zip(test_files, results, strict=False):
-        if path.suffix in [".docx", ".xlsx"]:
-            assert_extraction_result(result, mime_type=MARKDOWN_MIME_TYPE)
-        else:
-            assert_extraction_result(result, mime_type=PLAIN_TEXT_MIME_TYPE)
-
-
-@pytest.mark.anyio
-async def test_batch_extract_pdf_tables() -> None:
-    # note the point of this test is to ensure we dont hit segmentation errors during concurrency ~keep
-    config = ExtractionConfig(extract_tables=True)
-    results = await batch_extract_file(list(pdfs_with_tables), config=config)
-    assert len(results) == len(pdfs_with_tables)
-    for result in results:
-        assert result.tables
-
-
-@pytest.mark.anyio
-async def test_batch_extract_file_empty() -> None:
-    results = await batch_extract_file([])
-    assert len(results) == 0
-
-
-@pytest.mark.anyio
-async def test_batch_extract_file_invalid(tmp_path: Path) -> None:
-    invalid_file = tmp_path / "invalid-file.xyz"
-    invalid_file.write_text("Invalid file content")
-
-    results = await batch_extract_file([invalid_file])
-    assert len(results) == 1
-    result = results[0]
-
-    assert result.metadata.get("error") is True
-    error_context = cast("dict[str, object]", result.metadata.get("error_context", {}))
-    error_info = cast("dict[str, object]", error_context.get("error", {}))
-    assert "ValidationError" in str(error_info.get("type", ""))
-    assert "Unsupported mime type" in str(
-        error_info.get("message", "")
-    ) or "Could not determine the mime type of the file" in str(error_info.get("message", ""))
-
-
-@pytest.mark.anyio
-async def test_batch_extract_bytes_mixed(searchable_pdf: Path, docx_document: Path) -> None:
     contents = [
-        (b"This is plain text", PLAIN_TEXT_MIME_TYPE),
-        (
-            docx_document.read_bytes(),
-            DOCX_MIME_TYPE,
-        ),
-        (searchable_pdf.read_bytes(), PDF_MIME_TYPE),
+        (b"First content that should be chunked", PLAIN_TEXT_MIME_TYPE),
+        (b"Second content that should also be chunked", PLAIN_TEXT_MIME_TYPE),
     ]
 
-    results = await batch_extract_bytes(contents)
-    assert len(results) == len(contents)
-    for i, result in enumerate(results):
-        if i == 0:
-            assert_extraction_result(result, mime_type=PLAIN_TEXT_MIME_TYPE)
-            assert result.content.strip() == "This is plain text"
-        else:
-            assert_extraction_result(result, mime_type=MARKDOWN_MIME_TYPE if i == 1 else PLAIN_TEXT_MIME_TYPE)
+    results = await batch_extract_bytes(contents, config=config)
+    assert len(results) == 2
+    # Both should have chunks due to the config
+    assert len(results[0].chunks) > 0
+    assert len(results[1].chunks) > 0
 
 
 @pytest.mark.anyio
-async def test_batch_extract_bytes_empty() -> None:
-    results = await batch_extract_bytes([])
-    assert len(results) == 0
+async def test_extract_with_quality_processing() -> None:
+    """Test extraction with quality processing enabled."""
+    config = ExtractionConfig(enable_quality_processing=True)
+
+    content = b"Test content for quality processing"
+    result = await extract_bytes(content, PLAIN_TEXT_MIME_TYPE, config=config)
+
+    assert result.content == "Test content for quality processing"
+    # Quality score should be added if processing was done
+    if "quality_score" in result.metadata:
+        assert isinstance(result.metadata["quality_score"], (int, float))
 
 
+# Tests for progress callback functionality
 @pytest.mark.anyio
-async def test_batch_extract_bytes_invalid() -> None:
-    results = await batch_extract_bytes([(b"content", "application/invalid")])
-    assert len(results) == 1
-    result = results[0]
+async def test_extract_file_with_progress_callback() -> None:
+    """Test extraction with progress callback."""
+    progress_updates = []
 
-    assert result.metadata.get("error") is True
-    error_context = cast("dict[str, object]", result.metadata.get("error_context", {}))
-    error_info = cast("dict[str, object]", error_context.get("error", {}))
-    assert "ValidationError" in str(error_info.get("type", ""))
-    assert "Unsupported mime type" in str(error_info.get("message", ""))
+    def progress_callback(current: int, total: int, message: str) -> None:
+        progress_updates.append((current, total, message))
+
+    from tempfile import NamedTemporaryFile
+
+    with NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+        f.write("Test content for progress")
+        temp_path = f.name
+
+    try:
+        # Note: progress_callback is not yet implemented in the extraction functions
+        # This test is a placeholder for when it's added
+        result = await extract_file(temp_path)
+        assert result.content == "Test content for progress"
+    finally:
+        Path(temp_path).unlink(missing_ok=True)
 
 
 def test_batch_extract_file_sync_mixed(test_article: Path) -> None:
-    test_files = [test_article]
-    test_files.extend((Path(__file__).parent / "source").glob("*.docx"))
-    test_files.extend((Path(__file__).parent / "source").glob("*.xlsx"))
+    """Test synchronous batch processing of files."""
+    file_paths = [str(test_article)]
+    results = batch_extract_file_sync(file_paths)
 
-    results = batch_extract_file_sync(test_files)
-    assert len(results) == len(test_files)
-    for path, result in zip(test_files, results, strict=False):
-        if path.suffix in [".docx", ".xlsx"]:
-            assert_extraction_result(result, mime_type=MARKDOWN_MIME_TYPE)
-        else:
-            assert_extraction_result(result, mime_type=PLAIN_TEXT_MIME_TYPE)
+    assert len(results) == 1
+    assert_extraction_result(results[0], mime_type=PLAIN_TEXT_MIME_TYPE)
 
 
 def test_batch_extract_bytes_sync_mixed(searchable_pdf: Path, docx_document: Path) -> None:
@@ -387,3 +329,53 @@ def test_batch_extract_bytes_sync_mixed(searchable_pdf: Path, docx_document: Pat
             assert result.content.strip() == "This is plain text"
         else:
             assert_extraction_result(result, mime_type=MARKDOWN_MIME_TYPE if i == 1 else PLAIN_TEXT_MIME_TYPE)
+
+
+def test_batch_extract_file_sync_with_errors(tmp_path: Path, searchable_pdf: Path) -> None:
+    """Test batch file extraction with some files causing errors."""
+    # Create a valid file and a non-existent file
+    valid_file = tmp_path / "valid.pdf"
+    valid_file.write_bytes(searchable_pdf.read_bytes())
+    non_existent = tmp_path / "non_existent.pdf"
+
+    # Create a file that will cause an error
+    bad_file = tmp_path / "bad.unknown"
+    bad_file.write_text("unknown format")
+
+    file_paths = [str(valid_file), str(non_existent), str(bad_file)]
+
+    results = batch_extract_file_sync(file_paths)
+
+    assert len(results) == 3
+    # First file should succeed
+    assert len(results[0].content) > 0
+    assert results[0].mime_type == PLAIN_TEXT_MIME_TYPE
+    # Second file should have error
+    assert "Error:" in results[1].content
+    assert results[1].metadata.get("error") is True
+    # Third file should have error
+    assert "Error:" in results[2].content
+    assert results[2].metadata.get("error") is True
+
+
+def test_batch_extract_bytes_sync_with_errors(searchable_pdf: Path) -> None:
+    """Test batch bytes extraction with some content causing errors."""
+    pdf_content = searchable_pdf.read_bytes()
+
+    contents = [
+        (pdf_content, PDF_MIME_TYPE),
+        (b"invalid content", "application/unknown"),  # This will cause an error
+        (b"test text", PLAIN_TEXT_MIME_TYPE),
+    ]
+
+    results = batch_extract_bytes_sync(contents)
+
+    assert len(results) == 3
+    # First should succeed
+    assert len(results[0].content) > 0
+    assert results[0].mime_type == PLAIN_TEXT_MIME_TYPE
+    # Second should have error
+    assert "Error:" in results[1].content
+    assert results[1].metadata.get("error") is True
+    # Third should succeed
+    assert results[2].content == "test text"

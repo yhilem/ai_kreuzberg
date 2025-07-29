@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from unittest.mock import Mock, patch
+
 import pytest
 
 from kreuzberg._ocr._easyocr import EasyOCRConfig
 from kreuzberg._ocr._paddleocr import PaddleOCRConfig
 from kreuzberg._ocr._tesseract import TesseractConfig
-from kreuzberg._types import Entity, ExtractionConfig, ExtractionResult
+from kreuzberg._types import Entity, ExtractionConfig, ExtractionResult, normalize_metadata
 from kreuzberg.exceptions import ValidationError
 
 
@@ -189,3 +191,250 @@ def test_extraction_result_to_dict_minimal() -> None:
     assert "entities" not in result_dict
     assert "keywords" not in result_dict
     assert "detected_languages" not in result_dict
+
+
+def test_extraction_result_to_dict_with_include_none() -> None:
+    """Test ExtractionResult.to_dict() with include_none=True."""
+    # Create extraction result with only required fields
+    result = ExtractionResult(
+        content="Simple content",
+        mime_type="text/plain",
+        metadata={},
+    )
+
+    # Convert to dict with include_none=True
+    result_dict = result.to_dict(include_none=True)
+
+    # Verify all fields are present, even if None
+    assert result_dict["content"] == "Simple content"
+    assert result_dict["mime_type"] == "text/plain"
+    assert result_dict["metadata"] == {}
+    assert result_dict["tables"] == []
+    assert result_dict["chunks"] == []
+    assert result_dict["entities"] is None
+    assert result_dict["keywords"] is None
+    assert result_dict["detected_languages"] is None
+
+
+def test_extraction_result_export_tables_to_csv() -> None:
+    """Test ExtractionResult.export_tables_to_csv() method."""
+    # For this test, we'll mock the table export functionality
+    # since it requires pandas DataFrames which may not be available
+
+    mock_table1 = Mock()
+    mock_table2 = Mock()
+
+    result = ExtractionResult(
+        content="Content with tables",
+        mime_type="text/plain",
+        metadata={},
+        tables=[mock_table1, mock_table2],
+    )
+
+    # Mock the export_table_to_csv function
+    with patch("kreuzberg._types.export_table_to_csv") as mock_export:
+        mock_export.side_effect = ["csv1", "csv2"]
+
+        # Export tables to CSV
+        csv_list = result.export_tables_to_csv()
+
+        # Verify we get 2 CSV strings
+        assert len(csv_list) == 2
+        assert csv_list[0] == "csv1"
+        assert csv_list[1] == "csv2"
+
+        # Verify export_table_to_csv was called with each table
+        assert mock_export.call_count == 2
+        mock_export.assert_any_call(mock_table1)
+        mock_export.assert_any_call(mock_table2)
+
+
+def test_extraction_result_export_tables_to_csv_empty() -> None:
+    """Test ExtractionResult.export_tables_to_csv() with no tables."""
+    result = ExtractionResult(
+        content="Content without tables",
+        mime_type="text/plain",
+        metadata={},
+        tables=[],
+    )
+
+    # Export tables to CSV
+    csv_list = result.export_tables_to_csv()
+
+    # Should return empty list
+    assert csv_list == []
+
+
+def test_extraction_result_export_tables_to_tsv() -> None:
+    """Test ExtractionResult.export_tables_to_tsv() method."""
+
+    mock_table1 = Mock()
+    mock_table2 = Mock()
+
+    result = ExtractionResult(
+        content="Content with tables",
+        mime_type="text/plain",
+        metadata={},
+        tables=[mock_table1, mock_table2],
+    )
+
+    # Mock the export_table_to_tsv function
+    with patch("kreuzberg._types.export_table_to_tsv") as mock_export:
+        mock_export.side_effect = ["tsv1", "tsv2"]
+
+        # Export tables to TSV
+        tsv_list = result.export_tables_to_tsv()
+
+        # Verify we get 2 TSV strings
+        assert len(tsv_list) == 2
+        assert tsv_list[0] == "tsv1"
+        assert tsv_list[1] == "tsv2"
+
+        # Verify export_table_to_tsv was called with each table
+        assert mock_export.call_count == 2
+        mock_export.assert_any_call(mock_table1)
+        mock_export.assert_any_call(mock_table2)
+
+
+def test_extraction_result_export_tables_to_tsv_empty() -> None:
+    """Test ExtractionResult.export_tables_to_tsv() with no tables."""
+    result = ExtractionResult(
+        content="Content without tables",
+        mime_type="text/plain",
+        metadata={},
+        tables=[],
+    )
+
+    # Export tables to TSV
+    tsv_list = result.export_tables_to_tsv()
+
+    # Should return empty list
+    assert tsv_list == []
+
+
+def test_extraction_result_get_table_summaries() -> None:
+    """Test ExtractionResult.get_table_summaries() method."""
+
+    mock_table1 = Mock()
+    mock_table2 = Mock()
+
+    result = ExtractionResult(
+        content="Content with tables",
+        mime_type="text/plain",
+        metadata={},
+        tables=[mock_table1, mock_table2],
+    )
+
+    # Mock the extract_table_structure_info function
+    with patch("kreuzberg._types.extract_table_structure_info") as mock_extract:
+        mock_extract.side_effect = [
+            {"rows": 3, "columns": 2, "headers": ["Header1", "Header2"]},
+            {"rows": 4, "columns": 3, "headers": ["Name", "Age", "City"]},
+        ]
+
+        # Get table summaries
+        summaries = result.get_table_summaries()
+
+        # Verify we get 2 summaries
+        assert len(summaries) == 2
+
+        # Verify first table summary
+        assert summaries[0]["rows"] == 3
+        assert summaries[0]["columns"] == 2
+        assert summaries[0]["headers"] == ["Header1", "Header2"]
+
+        # Verify second table summary
+        assert summaries[1]["rows"] == 4
+        assert summaries[1]["columns"] == 3
+        assert summaries[1]["headers"] == ["Name", "Age", "City"]
+
+        # Verify extract_table_structure_info was called with each table
+        assert mock_extract.call_count == 2
+        mock_extract.assert_any_call(mock_table1)
+        mock_extract.assert_any_call(mock_table2)
+
+
+def test_extraction_result_get_table_summaries_empty() -> None:
+    """Test ExtractionResult.get_table_summaries() with no tables."""
+    result = ExtractionResult(
+        content="Content without tables",
+        mime_type="text/plain",
+        metadata={},
+        tables=[],
+    )
+
+    # Get table summaries
+    summaries = result.get_table_summaries()
+
+    # Should return empty list
+    assert summaries == []
+
+
+def test_normalize_metadata() -> None:
+    """Test normalize_metadata function."""
+
+    # Test with valid metadata
+    metadata = {
+        "title": "Test Document",
+        "authors": ["Alice", "Bob"],
+        "date": "2024-01-01",
+        "invalid_key": "should be filtered out",
+        "subject": "Testing",
+    }
+
+    normalized = normalize_metadata(metadata)
+
+    # Verify only valid keys are included
+    assert "title" in normalized
+    assert "authors" in normalized
+    assert "date" in normalized
+    assert "subject" in normalized
+    assert "invalid_key" not in normalized
+
+    # Verify values are preserved
+    assert normalized["title"] == "Test Document"
+    assert normalized["authors"] == ["Alice", "Bob"]
+    assert normalized["date"] == "2024-01-01"
+    assert normalized["subject"] == "Testing"
+
+
+def test_normalize_metadata_with_none_values() -> None:
+    """Test normalize_metadata filters out None values."""
+
+    metadata = {
+        "title": "Test Document",
+        "authors": None,
+        "date": None,
+        "subject": None,
+    }
+
+    normalized = normalize_metadata(metadata)
+
+    # Verify None values are filtered out
+    assert "title" in normalized
+    assert "authors" not in normalized
+    assert "date" not in normalized
+    assert "subject" not in normalized
+
+
+def test_normalize_metadata_empty() -> None:
+    """Test normalize_metadata with empty dict."""
+
+    # Test with empty dict
+    normalized = normalize_metadata({})
+    assert normalized == {}
+
+    # Test with None
+    normalized = normalize_metadata(None)
+    assert normalized == {}
+
+
+def test_extraction_config_post_init_custom_entity_patterns() -> None:
+    """Test ExtractionConfig __post_init__ converts custom_entity_patterns to frozenset."""
+    patterns = frozenset([("CUSTOM_TYPE", r"\d{3}-\d{3}-\d{4}")])
+
+    config = ExtractionConfig(custom_entity_patterns=patterns)
+
+    # Verify it's a frozenset
+    assert isinstance(config.custom_entity_patterns, frozenset)
+    assert ("CUSTOM_TYPE", r"\d{3}-\d{3}-\d{4}") in config.custom_entity_patterns

@@ -24,11 +24,12 @@ FULL_DATE_LENGTH = 14
 BOM_CHAR = "\ufeff"
 
 
-async def extract_pdf_metadata(pdf_content: bytes) -> Metadata:
+async def extract_pdf_metadata(pdf_content: bytes, password: str = "") -> Metadata:
     """Extract metadata from a PDF document.
 
     Args:
         pdf_content: The bytes of the PDF document.
+        password: Password for encrypted PDF files.
 
     Raises:
         ParsingError: If the PDF metadata could not be extracted.
@@ -37,7 +38,7 @@ async def extract_pdf_metadata(pdf_content: bytes) -> Metadata:
         A dictionary of metadata extracted from the PDF.
     """
     try:
-        document = parse(pdf_content, max_workers=1)
+        document = parse(pdf_content, max_workers=1, password=password)
         metadata: Metadata = {}
 
         for raw_info in document.info:
@@ -275,13 +276,14 @@ def _extract_structure_information(document: Document, result: Metadata) -> None
             result["subtitle"] = subtitle
 
 
-def extract_pdf_metadata_sync(pdf_content: bytes) -> Metadata:
+def extract_pdf_metadata_sync(pdf_content: bytes, password: str = "") -> Metadata:
     """Synchronous version of extract_pdf_metadata.
 
     Extract metadata from a PDF document without using async/await.
 
     Args:
         pdf_content: The bytes of the PDF document.
+        password: Password for encrypted PDF files.
 
     Raises:
         ParsingError: If the PDF metadata could not be extracted.
@@ -290,7 +292,7 @@ def extract_pdf_metadata_sync(pdf_content: bytes) -> Metadata:
         A dictionary of metadata extracted from the PDF.
     """
     try:
-        document = parse(pdf_content, max_workers=1)
+        document = parse(pdf_content, max_workers=1, password=password)
         metadata: Metadata = {}
 
         for raw_info in document.info:

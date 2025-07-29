@@ -22,7 +22,7 @@ from kreuzberg._ocr._easyocr import EasyOCRConfig
 from kreuzberg._ocr._paddleocr import PaddleOCRConfig
 from kreuzberg._ocr._tesseract import TesseractConfig
 from kreuzberg._playa import extract_pdf_metadata, extract_pdf_metadata_sync
-from kreuzberg._types import ExtractionResult, OcrBackendType
+from kreuzberg._types import ExtractionResult, Metadata, OcrBackendType
 from kreuzberg._utils._errors import create_error_context, should_retry
 from kreuzberg._utils._pdf_lock import pypdfium_file_lock
 from kreuzberg._utils._string import normalize_spaces
@@ -33,6 +33,7 @@ from kreuzberg.exceptions import ParsingError
 
 if TYPE_CHECKING:  # pragma: no cover
     from PIL.Image import Image
+    from playa.document import Document
 
 
 class PDFExtractor(Extractor):
@@ -45,7 +46,7 @@ class PDFExtractor(Extractor):
         file_path, unlink = await create_temp_file(".pdf")
         await AsyncPath(file_path).write_bytes(content)
         try:
-            metadata = await extract_pdf_metadata(content)
+            metadata = await self._extract_metadata_with_password_attempts(content)
             result = await self.extract_path_async(file_path)
 
             result.metadata = metadata
@@ -73,7 +74,7 @@ class PDFExtractor(Extractor):
         if not result:
             result = ExtractionResult(content="", mime_type=PLAIN_TEXT_MIME_TYPE, metadata={}, chunks=[])
 
-        result.metadata = await extract_pdf_metadata(content_bytes)
+        result.metadata = await self._extract_metadata_with_password_attempts(content_bytes)
 
         if self.config.extract_tables:
             # GMFT is optional dependency
@@ -107,7 +108,7 @@ class PDFExtractor(Extractor):
 
             result = self.extract_path_sync(Path(temp_path))
 
-            metadata = extract_pdf_metadata_sync(content)
+            metadata = self._extract_metadata_with_password_attempts_sync(content)
             result.metadata = metadata
 
             return result
@@ -406,11 +407,81 @@ class PDFExtractor(Extractor):
         # Use list comprehension and join for efficient string building
         return "\n\n".join(result.content for result in results)
 
+    def _parse_with_password_attempts(self, content: bytes) -> Document:
+        """Parse PDF with password attempts."""
+        # Normalize password to list
+        if isinstance(self.config.pdf_password, str):
+            passwords = [self.config.pdf_password] if self.config.pdf_password else [""]
+        else:
+            passwords = list(self.config.pdf_password)
+
+        # Try each password in sequence
+        last_exception = None
+        for password in passwords:
+            try:
+                return parse(content, max_workers=1, password=password)
+            except Exception as e:  # noqa: PERF203, BLE001
+                last_exception = e
+                continue
+
+        # If all passwords failed, raise the last exception
+        if last_exception:
+            raise last_exception from None
+
+        # Fallback to no password
+        return parse(content, max_workers=1, password="")
+
+    def _get_passwords_to_try(self) -> list[str]:
+        """Get list of passwords to try in sequence."""
+        if isinstance(self.config.pdf_password, str):
+            return [self.config.pdf_password] if self.config.pdf_password else [""]
+        return list(self.config.pdf_password) if self.config.pdf_password else [""]
+
+    async def _extract_metadata_with_password_attempts(self, content: bytes) -> Metadata:
+        """Extract PDF metadata with password attempts."""
+        passwords = self._get_passwords_to_try()
+
+        last_exception = None
+        for password in passwords:
+            try:
+                return await extract_pdf_metadata(content, password=password)
+            except Exception as e:  # noqa: PERF203, BLE001
+                last_exception = e
+                continue
+
+        # If all passwords failed, try with empty password as fallback
+        try:
+            return await extract_pdf_metadata(content, password="")
+        except Exception:
+            if last_exception:
+                raise last_exception from None
+            raise
+
+    def _extract_metadata_with_password_attempts_sync(self, content: bytes) -> Metadata:
+        """Extract PDF metadata with password attempts (sync version)."""
+        passwords = self._get_passwords_to_try()
+
+        last_exception = None
+        for password in passwords:
+            try:
+                return extract_pdf_metadata_sync(content, password=password)
+            except Exception as e:  # noqa: PERF203, BLE001
+                last_exception = e
+                continue
+
+        # If all passwords failed, try with empty password as fallback
+        try:
+            return extract_pdf_metadata_sync(content, password="")
+        except Exception:
+            if last_exception:
+                raise last_exception from None
+            raise
+
     def _extract_with_playa_sync(self, path: Path, fallback_text: str) -> str:
         """Extract text using playa for better structure preservation."""
         with contextlib.suppress(Exception):
             content = path.read_bytes()
-            document = parse(content, max_workers=1)
+            document = self._parse_with_password_attempts(content)
 
             # Extract text while preserving structure
             pages_text = []

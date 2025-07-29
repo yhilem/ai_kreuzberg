@@ -357,6 +357,8 @@ class ExtractionConfig:
     """The mode to use for document classification."""
     enable_quality_processing: bool = True
     """Whether to apply quality post-processing to improve extraction results."""
+    pdf_password: str | list[str] = ""
+    """Password(s) for encrypted PDF files. Can be a single password or list of passwords to try in sequence. Only used when crypto extra is installed."""
 
     def __post_init__(self) -> None:
         if self.custom_entity_patterns is not None and isinstance(self.custom_entity_patterns, dict):

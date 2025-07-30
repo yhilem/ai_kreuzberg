@@ -186,7 +186,7 @@ def normalize_metadata(data: dict[str, Any] | None) -> Metadata:
 
     Filters out invalid keys and ensures type safety.
     """
-    if not data:  # pragma: no cover
+    if not data:
         return {}
 
     # Filter and return only valid metadata

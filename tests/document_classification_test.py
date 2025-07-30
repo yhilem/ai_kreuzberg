@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import TYPE_CHECKING
-from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
@@ -80,32 +79,30 @@ def test_document_classifiers_available() -> None:
     expected_types = {"invoice", "receipt", "contract", "report", "form"}
     assert set(DOCUMENT_CLASSIFIERS.keys()) == expected_types
 
-    for classifier in DOCUMENT_CLASSIFIERS.values():
-        assert hasattr(classifier, "patterns")
-        assert hasattr(classifier, "keywords")
-        assert hasattr(classifier, "exclusions")
+    for pattern_list in DOCUMENT_CLASSIFIERS.values():
+        assert isinstance(pattern_list, list)
+        assert len(pattern_list) > 0
 
 
 def test_document_classifiers_patterns() -> None:
     """Test that document classifiers have valid patterns."""
-    for classifier in DOCUMENT_CLASSIFIERS.values():
-        assert isinstance(classifier.patterns, list)
-        assert len(classifier.patterns) > 0
+    for patterns in DOCUMENT_CLASSIFIERS.values():
+        assert isinstance(patterns, list)
+        assert len(patterns) > 0
 
-        for pattern in classifier.patterns:
+        for pattern in patterns:
             assert isinstance(pattern, str)
             assert len(pattern) > 0
 
 
 def test_document_classifiers_keywords() -> None:
-    """Test that document classifiers have valid keywords."""
-    for classifier in DOCUMENT_CLASSIFIERS.values():
-        assert isinstance(classifier.keywords, list)
-        assert len(classifier.keywords) > 0
+    """Test that document classifiers contain keyword patterns."""
+    # Since DOCUMENT_CLASSIFIERS contains regex patterns, we check some patterns exist
+    invoice_patterns = DOCUMENT_CLASSIFIERS["invoice"]
+    assert any("invoice" in pattern.lower() for pattern in invoice_patterns)
 
-        for keyword in classifier.keywords:
-            assert isinstance(keyword, str)
-            assert len(keyword) > 0
+    receipt_patterns = DOCUMENT_CLASSIFIERS["receipt"]
+    assert any("receipt" in pattern.lower() for pattern in receipt_patterns)
 
 
 def test_classify_document_with_metadata() -> None:
@@ -330,11 +327,11 @@ def test_auto_detect_document_type_from_content() -> None:
     )
     config = ExtractionConfig()
 
-    doc_type, confidence = auto_detect_document_type(result, config)
+    detection_result = auto_detect_document_type(result, config)
 
-    assert doc_type == "invoice"
-    assert confidence is not None
-    assert confidence > 0.5
+    assert detection_result.document_type == "invoice"
+    assert detection_result.document_type_confidence is not None
+    assert detection_result.document_type_confidence > 0.5
 
 
 def test_auto_detect_document_type_from_layout() -> None:
@@ -355,10 +352,10 @@ def test_auto_detect_document_type_from_layout() -> None:
     )
     config = ExtractionConfig()
 
-    doc_type, confidence = auto_detect_document_type(result, config)
+    detection_result = auto_detect_document_type(result, config)
 
-    assert doc_type == "receipt"
-    assert confidence is not None
+    assert detection_result.document_type == "receipt"
+    assert detection_result.document_type_confidence is not None
 
 
 def test_auto_detect_document_type_disabled() -> None:
@@ -370,10 +367,10 @@ def test_auto_detect_document_type_disabled() -> None:
     )
     config = ExtractionConfig(auto_detect_document_type=False)
 
-    doc_type, confidence = auto_detect_document_type(result, config)
+    detection_result = auto_detect_document_type(result, config)
 
-    assert doc_type is None
-    assert confidence is None
+    assert detection_result.document_type is None
+    assert detection_result.document_type_confidence is None
 
 
 def test_auto_detect_document_type_no_matches() -> None:
@@ -385,10 +382,10 @@ def test_auto_detect_document_type_no_matches() -> None:
     )
     config = ExtractionConfig()
 
-    doc_type, confidence = auto_detect_document_type(result, config)
+    detection_result = auto_detect_document_type(result, config)
 
-    assert doc_type is None
-    assert confidence is None
+    assert detection_result.document_type is None
+    assert detection_result.document_type_confidence is None
 
 
 def test_auto_detect_document_type_confidence_threshold() -> None:
@@ -400,11 +397,11 @@ def test_auto_detect_document_type_confidence_threshold() -> None:
     )
     config = ExtractionConfig(document_type_confidence_threshold=0.9)
 
-    doc_type, confidence = auto_detect_document_type(result, config)
+    detection_result = auto_detect_document_type(result, config)
 
     # Should return None if confidence is below threshold
-    assert doc_type is None
-    assert confidence is None
+    assert detection_result.document_type is None
+    assert detection_result.document_type_confidence is None
 
 
 @pytest.mark.anyio

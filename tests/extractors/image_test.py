@@ -237,7 +237,7 @@ def test_extract_bytes_with_different_mime_types() -> None:
 
 def test_extract_bytes_sync_with_ocr_config() -> None:
     """Test extract_bytes_sync with specific OCR configuration."""
-    from kreuzberg._ocr._tesseract import TesseractConfig, PSMMode
+    from kreuzberg._ocr._tesseract import PSMMode, TesseractConfig
 
     tesseract_config = TesseractConfig(
         language="fra",
@@ -259,7 +259,7 @@ def test_extract_bytes_sync_with_ocr_config() -> None:
                 expected_result = ExtractionResult(
                     content="extracted French text",
                     mime_type="text/plain",
-                    metadata={"language": "fra"},
+                    metadata={},
                 )
                 mock_extract.return_value = expected_result
 

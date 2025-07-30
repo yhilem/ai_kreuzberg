@@ -463,22 +463,45 @@ def test_try_discover_config_returns_none(tmp_path: Path) -> None:
     assert result is None
 
 
-def test_configure_ocr_backend_with_none() -> None:
-    """Test OCR backend configuration with None."""
-    result = _configure_ocr_backend({}, None)
-    assert result is None
+def test_build_extraction_config_comprehensive() -> None:
+    """Test building ExtractionConfig with comprehensive options."""
+    config_dict = {
+        "force_ocr": True,
+        "chunk_content": False,
+        "extract_tables": True,
+        "max_chars": 2000,
+        "auto_detect_document_type": True,
+    }
+
+    config = build_extraction_config_from_dict(config_dict)
+
+    assert config.force_ocr is True
+    assert config.chunk_content is False
+    assert config.extract_tables is True
+    assert config.max_chars == 2000
+    assert config.auto_detect_document_type is True
 
 
-def test_configure_gmft_with_none() -> None:
-    """Test GMFT configuration with None."""
-    result = _configure_gmft({}, None)
-    assert result is None
+def test_build_from_dict_with_ocr_config() -> None:
+    """Test building ExtractionConfig with OCR configuration."""
+    config_dict = {
+        "force_ocr": True,
+        "ocr_backend": "tesseract",
+        "tesseract": {"language": "eng", "psm": 6},
+    }
+
+    result = build_extraction_config_from_dict(config_dict)
+    assert result.ocr_backend == "tesseract"
+    assert isinstance(result.ocr_config, TesseractConfig)
+    assert result.ocr_config.language == "eng"
 
 
-def test_build_ocr_config_from_cli_empty() -> None:
-    """Test building OCR config from empty CLI args."""
-    result = _build_ocr_config_from_cli({})
-    assert result == {}
+def test_build_from_dict_ocr_backend_none() -> None:
+    """Test building ExtractionConfig with OCR backend set to 'none'."""
+    config_dict = {"ocr_backend": "none"}
+
+    result = build_extraction_config_from_dict(config_dict)
+    assert result.ocr_backend is None
 
 
 def test_merge_cli_args_with_boolean_flags() -> None:
@@ -503,99 +526,65 @@ def test_merge_file_config_with_missing_keys() -> None:
     assert result["force_ocr"] is False  # Preserved from base
     assert result["chunk_content"] is False  # Overridden
 
-    def test_build_from_dict_basic(self) -> None:
-        """Test building ExtractionConfig from basic dictionary."""
-        config_dict = {
-            "force_ocr": True,
-            "chunk_content": False,
-            "extract_tables": True,
-            "max_chars": 2000,
-        }
 
-        result = build_extraction_config_from_dict(config_dict)
-        assert isinstance(result, ExtractionConfig)
-        assert result.force_ocr is True
-        assert result.chunk_content is False
-        assert result.extract_tables is True
-        assert result.max_chars == 2000
+def test_build_from_dict_with_gmft_config() -> None:
+    """Test building ExtractionConfig with GMFT configuration."""
+    config_dict = {
+        "extract_tables": True,
+        "gmft": {
+            "verbosity": 2,
+            "detector_base_threshold": 0.7,
+        },
+    }
 
-    def test_build_from_dict_with_ocr_config(self) -> None:
-        """Test building ExtractionConfig with OCR configuration."""
-        config_dict = {
-            "force_ocr": True,
-            "ocr_backend": "tesseract",
-            "tesseract": {"language": "eng", "psm": 6},
-        }
+    result = build_extraction_config_from_dict(config_dict)
+    assert result.extract_tables is True
+    assert isinstance(result.gmft_config, GMFTConfig)
+    assert result.gmft_config.verbosity == 2
 
-        result = build_extraction_config_from_dict(config_dict)
-        assert result.ocr_backend == "tesseract"
-        assert isinstance(result.ocr_config, TesseractConfig)
-        assert result.ocr_config.language == "eng"
 
-    def test_build_from_dict_ocr_backend_none(self) -> None:
-        """Test building ExtractionConfig with OCR backend set to 'none'."""
-        config_dict = {"ocr_backend": "none"}
+def test_build_extraction_config_file_cli_merge() -> None:
+    """Test building ExtractionConfig with file and CLI argument merging."""
+    file_config = {
+        "max_chars": 1000,
+        "tesseract": {"language": "eng"},
+    }
+    cli_args = {
+        "force_ocr": True,
+        "ocr_backend": "tesseract",
+    }
 
-        result = build_extraction_config_from_dict(config_dict)
-        assert result.ocr_backend is None
+    result = build_extraction_config(file_config, cli_args)
+    assert result.force_ocr is True  # CLI overrides file
+    assert result.max_chars == 1000  # File value preserved
+    assert result.ocr_backend == "tesseract"
 
-    def test_build_from_dict_with_gmft_config(self) -> None:
-        """Test building ExtractionConfig with GMFT configuration."""
-        config_dict = {
-            "extract_tables": True,
-            "gmft": {
-                "verbosity": 2,
-                "detector_base_threshold": 0.7,
-            },
-        }
 
-        result = build_extraction_config_from_dict(config_dict)
-        assert result.extract_tables is True
-        assert isinstance(result.gmft_config, GMFTConfig)
-        assert result.gmft_config.verbosity == 2
+def test_build_extraction_config_complete() -> None:
+    """Test building ExtractionConfig with all supported fields."""
+    config_dict = {
+        "force_ocr": True,
+        "chunk_content": True,
+        "extract_tables": True,
+        "max_chars": 4000,
+        "max_overlap": 200,
+        "language_detection_threshold": 0.8,
+        "auto_detect_language": True,
+        "document_classification_mode": "text",
+        "document_type_confidence_threshold": 0.7,
+        "ocr_backend": "tesseract",
+        "tesseract": {"language": "eng+fra"},
+        "gmft": {"verbosity": 1},
+    }
 
-    def test_build_extraction_config_legacy(self) -> None:
-        """Test legacy build_extraction_config function."""
-        file_config = {
-            "force_ocr": False,
-            "max_chars": 1000,
-            "tesseract": {"language": "eng"},
-        }
-        cli_args = {
-            "force_ocr": True,
-            "ocr_backend": "tesseract",
-        }
-
-        result = build_extraction_config(file_config, cli_args)
-        assert result.force_ocr is True  # CLI overrides file
-        assert result.max_chars == 1000  # File value preserved
-        assert result.ocr_backend == "tesseract"
-
-    def test_build_extraction_config_complete(self) -> None:
-        """Test building ExtractionConfig with all supported fields."""
-        config_dict = {
-            "force_ocr": True,
-            "chunk_content": True,
-            "extract_tables": True,
-            "max_chars": 4000,
-            "max_overlap": 200,
-            "language_detection_threshold": 0.8,
-            "auto_detect_language": True,
-            "document_classification_mode": "text",
-            "document_type_confidence_threshold": 0.7,
-            "ocr_backend": "tesseract",
-            "tesseract": {"language": "eng+fra"},
-            "gmft": {"verbosity": 1},
-        }
-
-        result = build_extraction_config_from_dict(config_dict)
-        assert result.force_ocr is True
-        assert result.chunk_content is True
-        assert result.extract_tables is True
-        assert result.max_chars == 4000
-        assert result.max_overlap == 200
-        assert result.auto_detect_language is True
-        assert result.ocr_backend == "tesseract"
+    result = build_extraction_config_from_dict(config_dict)
+    assert result.force_ocr is True
+    assert result.chunk_content is True
+    assert result.extract_tables is True
+    assert result.max_chars == 4000
+    assert result.max_overlap == 200
+    assert result.auto_detect_language is True
+    assert result.ocr_backend == "tesseract"
 
 
 class TestHighLevelAPI:

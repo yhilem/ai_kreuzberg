@@ -4,21 +4,33 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
+from typing import Any
+from unittest.mock import patch
 
 import pytest
 
 from kreuzberg._config import (
+    _build_ocr_config_from_cli,
+    _configure_gmft,
+    _configure_ocr_backend,
+    _merge_cli_args,
+    _merge_file_config,
     build_extraction_config,
     build_extraction_config_from_dict,
     discover_and_load_config,
     find_config_file,
+    find_default_config,
     load_config_from_file,
     load_config_from_path,
+    load_default_config,
     merge_configs,
     parse_ocr_backend_config,
     try_discover_config,
 )
-from kreuzberg._ocr._tesseract import TesseractConfig
+from kreuzberg._gmft import GMFTConfig
+from kreuzberg._ocr._easyocr import EasyOCRConfig
+from kreuzberg._ocr._paddleocr import PaddleOCRConfig
+from kreuzberg._ocr._tesseract import PSMMode, TesseractConfig
 from kreuzberg._types import ExtractionConfig
 from kreuzberg.exceptions import ValidationError
 
@@ -84,6 +96,32 @@ requires = ["hatchling"]
 
         with pytest.raises(ValidationError, match="Invalid TOML"):
             load_config_from_file(config_file)
+
+    def test_load_nested_config(self, tmp_path: Path) -> None:
+        """Test loading nested configuration."""
+        config_path = tmp_path / "kreuzberg.toml"
+        config_content = """
+ocr_backend = "tesseract"
+extract_tables = true
+
+[tesseract]
+language = "eng+fra"
+psm = 6
+config = "--oem 1"
+
+[gmft]
+verbosity = 2
+detector_base_threshold = 0.7
+"""
+        config_path.write_text(config_content)
+
+        result = load_config_from_file(config_path)
+
+        assert result["ocr_backend"] == "tesseract"
+        assert result["extract_tables"] is True
+        assert result["tesseract"]["language"] == "eng+fra"
+        assert result["tesseract"]["psm"] == 6
+        assert result["gmft"]["verbosity"] == 2
 
 
 class TestConfigDiscovery:
@@ -151,6 +189,38 @@ force_ocr = false
         result = find_config_file(tmp_path)
         assert result is None
 
+    def test_find_config_stops_at_git_root(self, tmp_path: Path) -> None:
+        """Test that config search stops at .git directory."""
+        # Create .git directory
+        git_dir = tmp_path / ".git"
+        git_dir.mkdir()
+
+        # Search from subdirectory
+        subdir = tmp_path / "subdir"
+        subdir.mkdir()
+
+        result = find_config_file(subdir)
+        assert result is None
+
+    def test_find_config_default_start_path(self) -> None:
+        """Test find_config_file with default start path."""
+        with patch("pathlib.Path.cwd") as mock_cwd:
+            mock_cwd.return_value = Path("/fake/path")
+
+            # Mock the file system traversal
+            with patch.object(Path, "exists", return_value=False):
+                result = find_config_file()
+                assert result is None
+
+    def test_find_config_invalid_pyproject_toml(self, tmp_path: Path) -> None:
+        """Test handling invalid pyproject.toml file."""
+        config_file = tmp_path / "pyproject.toml"
+        config_file.write_text("invalid [ toml")
+
+        # Should skip invalid pyproject.toml
+        result = find_config_file(tmp_path)
+        assert result is None
+
 
 class TestConfigParsing:
     """Test configuration parsing functionality."""
@@ -175,6 +245,30 @@ class TestConfigParsing:
         result = merge_configs(base, override)
         assert result == {"tesseract": {"lang": "eng", "psm": 6, "oem": 1}}
 
+    def test_merge_configs_empty_base(self) -> None:
+        """Test merging with empty base config."""
+        base: dict[str, Any] = {}
+        override = {"force_ocr": True, "max_chars": 1000}
+
+        result = merge_configs(base, override)
+        assert result == override
+
+    def test_merge_configs_empty_override(self) -> None:
+        """Test merging with empty override config."""
+        base = {"force_ocr": True, "max_chars": 1000}
+        override: dict[str, Any] = {}
+
+        result = merge_configs(base, override)
+        assert result == base
+
+    def test_merge_configs_deep_nesting(self) -> None:
+        """Test merging deeply nested configurations."""
+        base = {"level1": {"level2": {"level3": {"value1": "base", "value2": "keep"}}}}
+        override = {"level1": {"level2": {"level3": {"value1": "override", "value3": "new"}}}}
+
+        result = merge_configs(base, override)
+        assert result == {"level1": {"level2": {"level3": {"value1": "override", "value2": "keep", "value3": "new"}}}}
+
     def test_parse_tesseract_config(self) -> None:
         """Test parsing Tesseract OCR configuration."""
         config_dict = {"tesseract": {"language": "eng", "psm": 6}}
@@ -183,6 +277,50 @@ class TestConfigParsing:
         assert isinstance(result, TesseractConfig)
         assert result.language == "eng"
         assert result.psm.value == 6
+
+    def test_parse_tesseract_config_with_all_fields(self) -> None:
+        """Test parsing Tesseract configuration with all fields."""
+        config_dict = {
+            "tesseract": {
+                "language": "eng+fra",
+                "psm": 6,
+                "tessedit_char_whitelist": "0123456789",
+            }
+        }
+
+        result = parse_ocr_backend_config(config_dict, "tesseract")
+        assert isinstance(result, TesseractConfig)
+        assert result.language == "eng+fra"
+        assert result.psm == PSMMode.SINGLE_BLOCK
+        assert result.tessedit_char_whitelist == "0123456789"
+
+    def test_parse_easyocr_config(self) -> None:
+        """Test parsing EasyOCR configuration."""
+        config_dict = {
+            "easyocr": {
+                "language": ["en", "fr"],
+            }
+        }
+
+        result = parse_ocr_backend_config(config_dict, "easyocr")
+        assert isinstance(result, EasyOCRConfig)
+        assert result.language == ["en", "fr"]
+
+    def test_parse_paddleocr_config(self) -> None:
+        """Test parsing PaddleOCR configuration."""
+        config_dict = {
+            "paddleocr": {
+                "language": "en",
+                "use_angle_cls": True,
+                "use_gpu": False,
+            }
+        }
+
+        result = parse_ocr_backend_config(config_dict, "paddleocr")
+        assert isinstance(result, PaddleOCRConfig)
+        assert result.language == "en"
+        assert result.use_angle_cls is True
+        assert result.use_gpu is False
 
     def test_parse_ocr_config_missing_backend(self) -> None:
         """Test parsing when OCR backend config is missing."""
@@ -196,6 +334,13 @@ class TestConfigParsing:
         config_dict = {"tesseract": "invalid"}
 
         result = parse_ocr_backend_config(config_dict, "tesseract")
+        assert result is None
+
+    def test_parse_ocr_config_invalid_backend(self) -> None:
+        """Test parsing with invalid backend name."""
+        config_dict = {"tesseract": {"language": "eng"}}
+
+        result = parse_ocr_backend_config(config_dict, "invalid_backend")  # type: ignore[arg-type]
         assert result is None
 
 
@@ -238,6 +383,21 @@ class TestExtractionConfigBuilder:
         result = build_extraction_config_from_dict(config_dict)
         assert result.ocr_backend is None
 
+    def test_build_from_dict_with_gmft_config(self) -> None:
+        """Test building ExtractionConfig with GMFT configuration."""
+        config_dict = {
+            "extract_tables": True,
+            "gmft": {
+                "verbosity": 2,
+                "detector_base_threshold": 0.7,
+            },
+        }
+
+        result = build_extraction_config_from_dict(config_dict)
+        assert result.extract_tables is True
+        assert isinstance(result.gmft_config, GMFTConfig)
+        assert result.gmft_config.verbosity == 2
+
     def test_build_extraction_config_legacy(self) -> None:
         """Test legacy build_extraction_config function."""
         file_config = {
@@ -253,6 +413,32 @@ class TestExtractionConfigBuilder:
         result = build_extraction_config(file_config, cli_args)
         assert result.force_ocr is True  # CLI overrides file
         assert result.max_chars == 1000  # File value preserved
+        assert result.ocr_backend == "tesseract"
+
+    def test_build_extraction_config_complete(self) -> None:
+        """Test building ExtractionConfig with all supported fields."""
+        config_dict = {
+            "force_ocr": True,
+            "chunk_content": True,
+            "extract_tables": True,
+            "max_chars": 4000,
+            "max_overlap": 200,
+            "language_detection_threshold": 0.8,
+            "auto_detect_language": True,
+            "document_classification_mode": "text",
+            "document_type_confidence_threshold": 0.7,
+            "ocr_backend": "tesseract",
+            "tesseract": {"language": "eng+fra"},
+            "gmft": {"verbosity": 1},
+        }
+
+        result = build_extraction_config_from_dict(config_dict)
+        assert result.force_ocr is True
+        assert result.chunk_content is True
+        assert result.extract_tables is True
+        assert result.max_chars == 4000
+        assert result.max_overlap == 200
+        assert result.auto_detect_language is True
         assert result.ocr_backend == "tesseract"
 
 
@@ -318,6 +504,204 @@ requires = ["hatchling"]
 
         result = try_discover_config(tmp_path)
         assert result is None
+
+    def test_load_default_config(self, tmp_path: Path) -> None:
+        """Test deprecated load_default_config function."""
+        config_file = tmp_path / "kreuzberg.toml"
+        config_file.write_text("force_ocr = true")
+
+        with patch("kreuzberg._config.find_config_file") as mock_find:
+            mock_find.return_value = config_file
+
+            result = load_default_config()
+
+            assert isinstance(result, ExtractionConfig)
+            assert result.force_ocr is True
+
+
+class TestLegacyFunctions:
+    """Test legacy/internal configuration functions."""
+
+    def test_merge_file_config(self) -> None:
+        """Test _merge_file_config function."""
+        config_dict: dict[str, Any] = {"existing": "value"}
+        file_config = {
+            "force_ocr": True,
+            "max_chars": 1000,
+            "chunk_content": False,
+            "unknown_field": "ignored",
+        }
+
+        _merge_file_config(config_dict, file_config)
+
+        assert config_dict["force_ocr"] is True
+        assert config_dict["chunk_content"] is False
+        assert "unknown_field" not in config_dict
+        assert config_dict["existing"] == "value"
+
+    def test_merge_file_config_empty(self) -> None:
+        """Test _merge_file_config with empty file config."""
+        config_dict: dict[str, Any] = {"existing": "value"}
+
+        _merge_file_config(config_dict, {})
+
+        assert config_dict == {"existing": "value"}
+
+    def test_merge_cli_args(self) -> None:
+        """Test _merge_cli_args function."""
+        config_dict: dict[str, Any] = {}
+        cli_args: dict[str, Any] = {
+            "force_ocr": True,
+            "chunk_content": None,  # Should be ignored
+            "max_chars": 2000,
+            "extract_tables": True,
+            "ocr_backend": "tesseract",
+        }
+
+        _merge_cli_args(config_dict, cli_args)
+
+        assert config_dict["force_ocr"] is True
+        assert "chunk_content" not in config_dict
+        assert config_dict["max_chars"] == 2000
+        assert config_dict["extract_tables"] is True
+        assert config_dict["ocr_backend"] == "tesseract"
+
+    def test_build_ocr_config_from_cli_tesseract(self) -> None:
+        """Test _build_ocr_config_from_cli with Tesseract config."""
+        cli_args = {"tesseract_config": {"language": "eng", "psm": 6}}
+
+        result = _build_ocr_config_from_cli("tesseract", cli_args)
+
+        assert isinstance(result, TesseractConfig)
+        assert result.language == "eng"
+        assert result.psm.value == 6  # PSM value is not converted to enum in _build_ocr_config_from_cli
+
+    def test_build_ocr_config_from_cli_easyocr(self) -> None:
+        """Test _build_ocr_config_from_cli with EasyOCR config."""
+        cli_args = {"easyocr_config": {"language": ["en", "fr"]}}
+
+        result = _build_ocr_config_from_cli("easyocr", cli_args)
+
+        assert isinstance(result, EasyOCRConfig)
+        assert result.language == ["en", "fr"]
+
+    def test_build_ocr_config_from_cli_paddleocr(self) -> None:
+        """Test _build_ocr_config_from_cli with PaddleOCR config."""
+        cli_args = {"paddleocr_config": {"language": "en", "use_gpu": False}}
+
+        result = _build_ocr_config_from_cli("paddleocr", cli_args)
+
+        assert isinstance(result, PaddleOCRConfig)
+        assert result.language == "en"
+        assert result.use_gpu is False
+
+    def test_build_ocr_config_from_cli_no_config(self) -> None:
+        """Test _build_ocr_config_from_cli with no config."""
+        cli_args: dict[str, Any] = {}
+
+        result = _build_ocr_config_from_cli("tesseract", cli_args)
+
+        assert result is None
+
+    def test_configure_ocr_backend(self) -> None:
+        """Test _configure_ocr_backend function."""
+        config_dict = {"ocr_backend": "tesseract"}
+        file_config: dict[str, Any] = {"tesseract": {"language": "eng", "psm": 3}}
+        cli_args: dict[str, Any] = {}
+
+        _configure_ocr_backend(config_dict, file_config, cli_args)
+
+        assert "ocr_config" in config_dict
+        assert isinstance(config_dict["ocr_config"], TesseractConfig)
+
+    def test_configure_ocr_backend_cli_priority(self) -> None:
+        """Test that CLI config takes priority over file config."""
+        config_dict = {"ocr_backend": "tesseract"}
+        file_config: dict[str, Any] = {"tesseract": {"language": "eng"}}
+        cli_args: dict[str, Any] = {"tesseract_config": {"language": "fra"}}
+
+        _configure_ocr_backend(config_dict, file_config, cli_args)
+
+        assert isinstance(config_dict["ocr_config"], TesseractConfig)
+        assert config_dict["ocr_config"].language == "fra"
+
+    def test_configure_ocr_backend_none(self) -> None:
+        """Test OCR backend configuration when backend is None."""
+        config_dict = {"ocr_backend": None}
+        file_config: dict[str, Any] = {}
+        cli_args: dict[str, Any] = {}
+
+        _configure_ocr_backend(config_dict, file_config, cli_args)
+
+        assert "ocr_config" not in config_dict
+
+    def test_configure_gmft(self) -> None:
+        """Test _configure_gmft function."""
+        config_dict = {"extract_tables": True}
+        file_config: dict[str, Any] = {"gmft": {"verbosity": 2, "detector_base_threshold": 0.7}}
+        cli_args: dict[str, Any] = {}
+
+        _configure_gmft(config_dict, file_config, cli_args)
+
+        assert "gmft_config" in config_dict
+        assert isinstance(config_dict["gmft_config"], GMFTConfig)
+        assert config_dict["gmft_config"].verbosity == 2
+
+    def test_configure_gmft_cli_priority(self) -> None:
+        """Test that CLI GMFT config takes priority."""
+        config_dict = {"extract_tables": True}
+        file_config: dict[str, Any] = {"gmft": {"detector_base_threshold": 0.5}}
+        cli_args: dict[str, Any] = {"gmft_config": {"detector_base_threshold": 0.9}}
+
+        _configure_gmft(config_dict, file_config, cli_args)
+
+        assert isinstance(config_dict["gmft_config"], GMFTConfig)
+        assert config_dict["gmft_config"].detector_base_threshold == 0.9
+
+    def test_configure_gmft_no_extract_tables(self) -> None:
+        """Test GMFT configuration when extract_tables is False."""
+        config_dict = {"extract_tables": False}
+        file_config: dict[str, Any] = {"gmft": {"verbosity": 2}}
+        cli_args: dict[str, Any] = {}
+
+        _configure_gmft(config_dict, file_config, cli_args)
+
+        assert "gmft_config" not in config_dict
+
+    def test_build_extraction_config_integration(self) -> None:
+        """Test full integration of build_extraction_config."""
+        file_config = {
+            "force_ocr": False,
+            "max_chars": 1000,
+            "ocr_backend": "tesseract",
+            "tesseract": {"language": "eng", "psm": 3},
+            "gmft": {"verbosity": 1},
+        }
+        cli_args = {
+            "force_ocr": True,
+            "extract_tables": True,
+            "tesseract_config": {"language": "fra"},
+        }
+
+        result = build_extraction_config(file_config, cli_args)
+
+        assert result.force_ocr is True  # CLI override
+        assert result.max_chars == 1000  # File value
+        assert result.ocr_backend == "tesseract"  # File value
+        assert result.extract_tables is True  # CLI value
+        assert result.ocr_config is not None
+        assert isinstance(result.ocr_config, TesseractConfig)
+        assert result.ocr_config.language == "fra"  # CLI override
+
+    def test_find_default_config_deprecated(self) -> None:
+        """Test deprecated find_default_config function."""
+        with patch("kreuzberg._config.find_config_file") as mock_find:
+            mock_find.return_value = Path("/fake/config.toml")
+
+            result = find_default_config()
+
+            assert result == Path("/fake/config.toml")
+            mock_find.assert_called_once_with()
 
 
 class TestConfigIntegration:
@@ -399,3 +783,47 @@ force_ocr = false
 
         config = discover_and_load_config(tmp_path)
         assert config.force_ocr is True  # Should use kreuzberg.toml value
+
+    def test_complex_config_merging(self) -> None:
+        """Test complex configuration merging scenario."""
+        # File config (from kreuzberg.toml)
+        file_config = {
+            "force_ocr": False,
+            "chunk_content": True,
+            "max_chars": 1000,
+            "ocr_backend": "tesseract",
+            "tesseract": {"language": "eng", "psm": 3},
+            "gmft": {"verbosity": 1, "detector_base_threshold": 0.5},
+        }
+
+        # CLI arguments override
+        cli_args = {
+            "force_ocr": True,  # Override
+            "extract_tables": True,  # New setting
+            "tesseract_config": {
+                "language": "eng+fra"  # Override
+            },
+            "gmft_config": {
+                "verbosity": 2  # Override
+            },
+        }
+
+        result = build_extraction_config(file_config, cli_args)
+
+        # Check CLI overrides
+        assert result.force_ocr is True
+        assert result.extract_tables is True
+
+        # Check file values preserved
+        assert result.chunk_content is True
+        assert result.max_chars == 1000
+
+        # Check OCR config merging
+        assert isinstance(result.ocr_config, TesseractConfig)
+        assert result.ocr_config.language == "eng+fra"  # CLI override
+        assert result.ocr_config.psm.value == 3  # File value
+
+        # Check GMFT config
+        assert isinstance(result.gmft_config, GMFTConfig)
+        assert result.gmft_config.verbosity == 2  # CLI override
+        # Note: detector_base_threshold defaults to 0.9 when not specified

@@ -132,15 +132,15 @@ async def extract_tables_from_pdf():
     # Process extracted tables
     print(f"Found {len(result.tables)} tables")
     for i, table in enumerate(result.tables):
-        print(f"Table {i+1} on page {table.page_number}:")
-        print(table.text)  # Markdown formatted table
+        print(f"Table {i+1} on page {table['page_number']}:")
+        print(table["text"])  # Markdown formatted table
 
         # Work with the pandas DataFrame
-        df = table.df
+        df = table["df"]
         print(f"Table shape: {df.shape}")
 
         # The cropped table image is also available
-        # table.cropped_image.save(f"table_{i+1}.png")
+        # table['cropped_image'].save(f"table_{i+1}.png")
 
     # With custom GMFT configuration
     custom_config = ExtractionConfig(

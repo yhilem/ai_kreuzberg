@@ -237,10 +237,10 @@ result = await extract_file("document_with_tables.pdf", config=config)
 
 # Access extracted tables
 for i, table in enumerate(result.tables):
-    print(f"Table {i+1} on page {table.page_number}:")
-    print(table.text)  # Markdown formatted table text
+    print(f"Table {i+1} on page {table['page_number']}:")
+    print(table["text"])  # Markdown formatted table text
     # You can also access the pandas DataFrame directly
-    df = table.df
+    df = table["df"]
     print(df.shape)  # (rows, columns)
 ```
 

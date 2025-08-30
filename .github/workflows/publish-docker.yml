@@ -23,11 +23,10 @@ on:
 jobs:
   test-images:
     uses: ./.github/workflows/docker-e2e-tests.yml
-    if: ${{ github.event_name == 'release' }}  # Only test on releases, skip for manual runs
 
   build-and-publish:
-    needs: [test-images]
-    if: ${{ always() && (needs.test-images.result == 'success' || needs.test-images.result == 'skipped') && (github.event_name == 'workflow_dispatch' || github.event_name == 'release') }}
+    needs: test-images
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'release' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read

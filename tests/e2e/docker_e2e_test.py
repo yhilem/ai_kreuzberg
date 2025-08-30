@@ -33,14 +33,11 @@ import pytest
 pytestmark = pytest.mark.skip(reason="This is a standalone E2E script, not a pytest test")
 
 DOCKER_IMAGES = {
+    "base": "kreuzberg:base",
     "core": "kreuzberg:core",
-    "easyocr": "kreuzberg:easyocr",
-    "paddle": "kreuzberg:paddle",
-    "gmft": "kreuzberg:gmft",
-    "all": "kreuzberg:all",
 }
 
-OPTIONAL_IMAGES = {"paddle", "gmft", "all"}
+OPTIONAL_IMAGES = set()
 
 SECURITY_CONFIG = {
     "max_container_runtime": 300,
@@ -229,14 +226,8 @@ def test_file_extraction(image_name: str, test_file: str) -> bool:
 def test_ocr_extraction(image_name: str, image_variant: str) -> bool:
     """Test OCR extraction based on image variant."""
 
-    test_files = {
-        "core": "ocr-image.jpg",
-        "easyocr": "ocr-image.jpg",
-        "paddle": "invoice_image.png",
-        "gmft": "ocr-image.jpg",
-    }
-
-    test_file = test_files.get(image_variant, "ocr-image.jpg")
+    # Both base and core images have tesseract OCR
+    test_file = "ocr-image.jpg"
     test_file_path = TEST_FILES_DIR / test_file
 
     if not test_file_path.exists():
@@ -473,9 +464,6 @@ def run_tests_for_image(image_variant: str, image_name: str) -> dict[str, bool]:
     results["volume_security"] = test_volume_security(image_name)
     results["resource_limits"] = test_resource_limits(image_name)
     results["malicious_input"] = test_malicious_input_handling(image_name)
-
-    if image_variant == "gmft":
-        results["table_extraction"] = test_table_extraction(image_name)
 
     return results
 

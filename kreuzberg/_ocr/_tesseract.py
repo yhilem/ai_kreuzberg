@@ -1209,7 +1209,7 @@ class TesseractBackend(OCRBackend[TesseractConfig]):
 
             temp_fd, temp_path = tempfile.mkstemp(suffix=run_config["ext"])
             os.close(temp_fd)
-            os.unlink(temp_path)
+            Path(temp_path).unlink()
             output_base = temp_path.replace(run_config["ext"], "")
 
             try:
@@ -1526,7 +1526,7 @@ class TesseractProcessPool:
             max_processes: Maximum number of processes.
             memory_limit_gb: Memory limit in GB.
         """
-        from kreuzberg._utils._process_pool import ProcessPoolManager
+        from kreuzberg._utils._process_pool import ProcessPoolManager  # noqa: PLC0415
 
         self.config = config or TesseractConfig()
         self.process_manager = ProcessPoolManager(

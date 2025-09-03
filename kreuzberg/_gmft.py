@@ -621,7 +621,7 @@ async def _extract_tables_isolated_async(
             while True:
                 try:
                     return result_queue.get(timeout=0.1)
-                except queue.Empty:
+                except queue.Empty:  # noqa: PERF203
                     if not process.is_alive():
                         if process.exitcode == -signal.SIGSEGV:
                             raise ParsingError(

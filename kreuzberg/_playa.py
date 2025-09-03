@@ -143,9 +143,9 @@ def _parse_date_string(date_str: str) -> str:
             second = date_str[12:14]
             time_part = f"T{hour}:{minute}:{second}"
         if time_part:
-            dt = datetime.strptime(f"{year}-{month}-{day}{time_part}", "%Y-%m-%dT%H:%M:%S")
-            return dt.replace(tzinfo=timezone.utc).isoformat()
-        dt = datetime.strptime(f"{year}-{month}-{day}", "%Y-%m-%d")
+            dt = datetime.strptime(f"{year}-{month}-{day}{time_part}", "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
+            return dt.isoformat()
+        dt = datetime.strptime(f"{year}-{month}-{day}", "%Y-%m-%d").replace(tzinfo=timezone.utc)
         return dt.replace(tzinfo=timezone.utc).isoformat()
     return date_str
 

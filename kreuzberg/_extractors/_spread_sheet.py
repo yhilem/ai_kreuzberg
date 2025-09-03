@@ -10,7 +10,7 @@ from io import StringIO
 from pathlib import Path
 from typing import Any
 
-import pandas as pd
+import polars as pl
 from anyio import Path as AsyncPath
 from PIL import Image
 from python_calamine import CalamineWorkbook
@@ -195,11 +195,13 @@ class SpreadSheetExtractor(Extractor):
             if not data or not any(row for row in data):
                 return f"## {sheet_name}\n\n*Empty sheet*"
 
-            df = pd.DataFrame(data)
+            df = pl.DataFrame(data)
 
-            df = df.dropna(how="all").dropna(axis=1, how="all")
+            # Drop rows and columns that are all null
+            df = df.filter(~pl.all_horizontal(pl.all().is_null()))
+            df = df.select([col for col in df.columns if not df[col].is_null().all()])
 
-            if df.empty:
+            if df.is_empty():
                 return f"## {sheet_name}\n\n*No data*"
 
             placeholder_image = Image.new("RGBA", (1, 1), (0, 0, 0, 0))

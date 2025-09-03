@@ -21,8 +21,8 @@ else:  # pragma: no cover
     from typing import NotRequired
 
 if TYPE_CHECKING:
-    from pandas import DataFrame
     from PIL.Image import Image
+    from polars import DataFrame
 
     from kreuzberg._entity_extraction import SpacyEntityExtractionConfig
     from kreuzberg._gmft import GMFTConfig
@@ -97,8 +97,8 @@ class TableData(TypedDict):
 
     cropped_image: Image
     """The cropped image of the table."""
-    df: DataFrame
-    """The table data as a pandas DataFrame."""
+    df: DataFrame | None
+    """The table data as a polars DataFrame."""
     page_number: int
     """The page number of the table."""
     text: str

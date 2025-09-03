@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import csv
+import io
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -20,8 +20,11 @@ def export_table_to_csv(table: TableData, separator: str = ",") -> str:
     if "df" not in table or table["df"] is None:
         return ""
 
-    csv_output = table["df"].to_csv(sep=separator, index=False, quoting=csv.QUOTE_MINIMAL, lineterminator="\n")
-    return str(csv_output).strip()
+    # Use polars native CSV export
+    buffer = io.StringIO()
+    df = table["df"]
+    df.write_csv(buffer, separator=separator, include_header=True)
+    return buffer.getvalue().strip()
 
 
 def export_table_to_tsv(table: TableData) -> str:
@@ -50,7 +53,7 @@ def enhance_table_markdown(table: TableData) -> str:
 
     df = table["df"]
 
-    if df.empty:
+    if df.is_empty():
         return table.get("text", "")
 
     lines = []
@@ -62,7 +65,7 @@ def enhance_table_markdown(table: TableData) -> str:
 
     float_col_formatting = _analyze_float_columns(df)
 
-    for _, row in df.iterrows():
+    for row in df.iter_rows(named=True):
         formatted_row = _format_table_row(row, df, float_col_formatting)
         lines.append("| " + " | ".join(formatted_row) + " |")
 
@@ -73,7 +76,8 @@ def _generate_separator_row(df: Any) -> str:
     """Generate separator row with proper alignment hints."""
     separators = []
     for col in df.columns:
-        if df[col].dtype in ["int64", "float64"] or _is_numeric_column(df[col]):
+        dtype_str = str(df[col].dtype)
+        if dtype_str in ["Int64", "Float64", "Int32", "Float32"] or _is_numeric_column(df[col]):
             separators.append("---:")
         else:
             separators.append("---")
@@ -84,11 +88,17 @@ def _analyze_float_columns(df: Any) -> dict[str, str]:
     """Analyze float columns to determine formatting strategy."""
     float_col_formatting = {}
     for col in df.columns:
-        if str(df[col].dtype) == "float64":
-            non_null_values = df[col].dropna()
+        dtype_str = str(df[col].dtype)
+        if dtype_str in ["Float64", "Float32"]:
+            non_null_values = df[col].drop_nulls()
             if len(non_null_values) > 0:
-                all_integers = all(val.is_integer() for val in non_null_values)
-                float_col_formatting[col] = "int" if all_integers else "float"
+                # Check if all values are effectively integers
+                try:
+                    values_list = non_null_values.to_list()
+                    all_integers = all(float(val).is_integer() for val in values_list if val is not None)
+                    float_col_formatting[col] = "int" if all_integers else "float"
+                except (ValueError, AttributeError):
+                    float_col_formatting[col] = "float"
             else:
                 float_col_formatting[col] = "int"
     return float_col_formatting
@@ -98,41 +108,47 @@ def _format_table_row(row: Any, df: Any, float_col_formatting: dict[str, str]) -
     """Format a single table row with proper value formatting."""
     formatted_row = []
     for col_name, value in row.items():
-        if value is None or (isinstance(value, float) and str(value) == "nan"):
+        if value is None:
             formatted_row.append("")
-        elif str(df[col_name].dtype) in ["int64", "int32"]:
-            formatted_row.append(str(int(value)))
-        elif isinstance(value, float):
-            if col_name in float_col_formatting and float_col_formatting[col_name] == "int":
-                formatted_row.append(str(int(value)))
-            else:
-                formatted_row.append(f"{value:.2f}")
         else:
-            clean_value = str(value).strip().replace("|", "\\|")
-            formatted_row.append(clean_value)
+            dtype_str = str(df[col_name].dtype)
+            if dtype_str in ["Int64", "Int32"]:
+                formatted_row.append(str(int(value)))
+            elif isinstance(value, float):
+                if col_name in float_col_formatting and float_col_formatting[col_name] == "int":
+                    formatted_row.append(str(int(value)))
+                else:
+                    formatted_row.append(f"{value:.2f}")
+            else:
+                clean_value = str(value).strip().replace("|", "\\|")
+                formatted_row.append(clean_value)
     return formatted_row
 
 
 def _is_numeric_column(series: Any) -> bool:
-    """Check if a pandas Series contains mostly numeric values."""
+    """Check if a polars Series contains mostly numeric values."""
     if len(series) == 0:
         return False
 
     try:
-        if str(series.dtype) in {"int64", "float64", "int32", "float32"}:
+        dtype_str = str(series.dtype)
+        if dtype_str in {"Int64", "Float64", "Int32", "Float32"}:
             return True
 
         sample_size = min(100, len(series))
-        if len(series) > 1000:
-            sample_series = series.dropna().sample(n=sample_size, random_state=42)
-        else:
-            sample_series = series.dropna()
+        series_no_nulls = series.drop_nulls()
+
+        if len(series_no_nulls) == 0:
+            return False
+
+        # Polars doesn't have sample with random_state, so we use slice
+        sample_series = series_no_nulls.slice(0, sample_size) if len(series_no_nulls) > 1000 else series_no_nulls
 
         if len(sample_series) == 0:
             return False
 
         numeric_count = 0
-        for val in sample_series:
+        for val in sample_series.to_list():
             val_str = str(val).replace(",", "").replace("$", "").replace("%", "")
             if val_str and all(c in "0123456789.-+eE" for c in val_str):
                 try:
@@ -172,8 +188,8 @@ def generate_table_summary(tables: list[TableData]) -> dict[str, Any]:
     for table in tables:
         if "df" in table and table["df"] is not None:
             df = table["df"]
-            total_rows += len(df)
-            total_columns += len(df.columns)
+            total_rows += df.height
+            total_columns += df.width
 
         if "page_number" in table:
             page_num = table["page_number"]
@@ -218,12 +234,12 @@ def extract_table_structure_info(table: TableData) -> dict[str, Any]:
 
     df = table["df"]
 
-    if df.empty:
+    if df.is_empty():
         return info
 
-    info["row_count"] = len(df)
-    info["column_count"] = len(df.columns)
-    info["has_headers"] = len(df.columns) > 0
+    info["row_count"] = df.height
+    info["column_count"] = df.width
+    info["has_headers"] = df.width > 0
 
     for col in df.columns:
         if _is_numeric_column(df[col]):
@@ -231,10 +247,10 @@ def extract_table_structure_info(table: TableData) -> dict[str, Any]:
         else:
             info["text_columns"] += 1
 
-    total_cells = len(df) * len(df.columns)
+    total_cells = df.height * df.width
     if total_cells > 0:
-        empty_cells = df.isnull().sum().sum()
-        info["empty_cells"] = int(empty_cells)
+        empty_cells = df.null_count().sum().item()
+        info["empty_cells"] = empty_cells
         info["data_density"] = (total_cells - empty_cells) / total_cells
 
     return info

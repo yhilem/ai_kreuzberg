@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Final
 
 import anyio
 import html_to_markdown
-import pandas as pd
+import polars as pl
 from anyio import Path as AsyncPath
 from anyio import run_process
 from bs4 import BeautifulSoup
@@ -519,7 +519,7 @@ class TesseractBackend(OCRBackend[TesseractConfig]):
                 markdown = to_markdown(table_data)
 
                 try:
-                    df = await run_sync(pd.DataFrame, table_data[1:], columns=table_data[0])
+                    df = await run_sync(pl.DataFrame, table_data[1:], schema=table_data[0])
                 except (ImportError, IndexError):
                     df = None
 
@@ -901,7 +901,7 @@ class TesseractBackend(OCRBackend[TesseractConfig]):
                 markdown = to_markdown(table_data)
 
                 try:
-                    df = pd.DataFrame(table_data[1:], columns=table_data[0])
+                    df = pl.DataFrame(table_data[1:], schema=table_data[0])
                 except (ImportError, IndexError):
                     df = None
 
@@ -961,7 +961,7 @@ class TesseractBackend(OCRBackend[TesseractConfig]):
                 max_y = max(w["top"] + w["height"] for w in words)
 
                 try:
-                    df = await run_sync(pd.DataFrame, table_data[1:], columns=table_data[0])
+                    df = await run_sync(pl.DataFrame, table_data[1:], schema=table_data[0])
                 except (ImportError, IndexError):
                     df = None
 

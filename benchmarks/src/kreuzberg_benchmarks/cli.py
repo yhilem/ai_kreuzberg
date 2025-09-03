@@ -381,9 +381,9 @@ def tesseract(
     else:
         [f.strip() for f in formats.split(",")]
 
-    results = {}
+    results: dict[str, Any] = {}
 
-    async def run_benchmarks():
+    async def run_benchmarks() -> dict[str, Any]:
         console.print("\n[bold]Format Comparison[/bold]")
         for name, file_path in test_files.items():
             if not file_path.exists():

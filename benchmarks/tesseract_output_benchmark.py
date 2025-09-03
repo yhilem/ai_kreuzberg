@@ -162,8 +162,8 @@ class TesseractOutputBenchmark:
     def benchmark_table_detection_thresholds(
         self,
         table_image_path: Path,
-        column_thresholds: List[int] = None,
-        row_thresholds: List[float] = None,
+        column_thresholds: List[int] | None = None,
+        row_thresholds: List[float] | None = None,
     ) -> Dict[str, BenchmarkResult]:
         """Benchmark table detection with different threshold parameters."""
         if column_thresholds is None:
@@ -288,7 +288,7 @@ class TesseractOutputBenchmark:
 
         return timings
 
-    def print_comparison_report(self, comparison: FormatComparison):
+    def print_comparison_report(self, comparison: FormatComparison) -> None:
         """Print a formatted comparison report."""
         table = Table(title="Tesseract Output Format Comparison")
         table.add_column("Format", style="bold")
@@ -333,10 +333,10 @@ class TesseractOutputBenchmark:
         for i, (fmt, result) in enumerate(sorted_formats, 1):
             self.console.print(f"  {i}. {fmt}: {result.duration:.3f}s")
 
-    def save_results(self, results: Any, output_path: Path):
+    def save_results(self, results: Any, output_path: Path) -> None:
         """Save benchmark results to JSON."""
 
-        def serialize(obj):
+        def serialize(obj: Any) -> Any:
             if isinstance(obj, Path):
                 return str(obj)
             elif isinstance(obj, BenchmarkResult):
@@ -366,7 +366,7 @@ class TesseractOutputBenchmark:
             json.dump(results, f, indent=2, default=serialize)
 
 
-async def main():
+async def main() -> dict[str, Any]:
     """Run comprehensive Tesseract benchmarks."""
     console = Console()
     benchmark = TesseractOutputBenchmark(console)
@@ -379,7 +379,7 @@ async def main():
         "complex_table": Path("tests/test_source_files/tables/complex_document.png"),
     }
 
-    results = {}
+    results: dict[str, Any] = {}
 
     console.print("\n[bold blue]Format Comparison Benchmarks[/bold blue]\n")
 

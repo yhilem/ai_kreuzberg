@@ -146,7 +146,7 @@ def _parse_date_string(date_str: str) -> str:
             dt = datetime.strptime(f"{year}-{month}-{day}{time_part}", "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
             return dt.isoformat()
         dt = datetime.strptime(f"{year}-{month}-{day}", "%Y-%m-%d").replace(tzinfo=timezone.utc)
-        return dt.replace(tzinfo=timezone.utc).isoformat()
+        return dt.isoformat()
     return date_str
 
 

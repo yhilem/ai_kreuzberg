@@ -27,7 +27,7 @@ from typing_extensions import Self
 
 from kreuzberg._mime_types import HTML_MIME_TYPE, MARKDOWN_MIME_TYPE, PLAIN_TEXT_MIME_TYPE
 from kreuzberg._ocr._base import OCRBackend
-from kreuzberg._ocr._table_extractor import TesseractTableExtractor
+from kreuzberg._ocr._table_extractor import extract_words, reconstruct_table, to_markdown
 from kreuzberg._types import ExtractionResult, HTMLToMarkdownConfig, TableData
 from kreuzberg._utils._string import normalize_spaces
 from kreuzberg._utils._sync import run_sync
@@ -296,11 +296,10 @@ class TesseractBackend(OCRBackend[TesseractConfig]):
             try:
                 await run_sync(save_image.save, str(image_path), format="PNG")
             except OSError as e:
-                if "cannot write mode" in str(e):
-                    save_image = image.convert("RGB")
-                    await run_sync(save_image.save, str(image_path), format="PNG")
-                else:
+                if "cannot write mode" not in str(e):
                     raise
+                save_image = image.convert("RGB")
+                await run_sync(save_image.save, str(image_path), format="PNG")
             try:
                 result = await self.process_file(image_path, **kwargs)
 
@@ -483,39 +482,36 @@ class TesseractBackend(OCRBackend[TesseractConfig]):
         Returns:
             ExtractionResult with extracted content and tables.
         """
-        from kreuzberg._utils._sync import run_sync  # noqa: PLC0415
-
         text_result = self._extract_text_from_tsv(tsv_content)
 
-        extractor = TesseractTableExtractor(
-            column_threshold=table_column_threshold,
-            row_threshold_ratio=table_row_threshold_ratio,
-            min_confidence=table_min_confidence,
-        )
-
         try:
-            words = extractor.extract_words(tsv_content)
-            if words:
-                table_data = extractor.reconstruct_table(words)
-                if table_data and len(table_data) > 1:
-                    markdown = extractor.to_markdown(table_data)
-
-                    try:
-                        import pandas as pd  # noqa: PLC0415
-
-                        df = await run_sync(pd.DataFrame, table_data[1:], columns=table_data[0])
-                    except (ImportError, IndexError):
-                        df = None
-
-                    table: TableData = {"text": markdown, "df": df, "page_number": 1, "cropped_image": None}  # type: ignore[typeddict-item]
-
-                    return ExtractionResult(
-                        content=text_result.content,
-                        mime_type=text_result.mime_type,
-                        metadata=text_result.metadata,
-                        tables=[table],
-                        chunks=text_result.chunks,
+            if (
+                (words := extract_words(tsv_content, min_confidence=table_min_confidence))
+                and (
+                    table_data := reconstruct_table(
+                        words,
+                        column_threshold=table_column_threshold,
+                        row_threshold_ratio=table_row_threshold_ratio,
                     )
+                )
+                and len(table_data) > 1
+            ):
+                markdown = to_markdown(table_data)
+
+                try:
+                    df = await run_sync(pd.DataFrame, table_data[1:], columns=table_data[0])
+                except (ImportError, IndexError):
+                    df = None
+
+                table: TableData = {"text": markdown, "df": df, "page_number": 1, "cropped_image": None}  # type: ignore[typeddict-item]
+
+                return ExtractionResult(
+                    content=text_result.content,
+                    mime_type=text_result.mime_type,
+                    metadata=text_result.metadata,
+                    tables=[table],
+                    chunks=text_result.chunks,
+                )
         except (ValueError, KeyError, ImportError):
             pass
 
@@ -873,21 +869,18 @@ class TesseractBackend(OCRBackend[TesseractConfig]):
         if not tsv_data:
             return []
 
-        extractor = TesseractTableExtractor(
-            column_threshold=column_threshold,
-            row_threshold_ratio=row_threshold_ratio,
-            min_confidence=min_confidence,
-        )
-
-        words = extractor.extract_words(tsv_data)
-        if not words:
+        if not (words := extract_words(tsv_data, min_confidence=min_confidence)):
             return []
 
         tables: list[TableData] = []
         try:
-            table_data = extractor.reconstruct_table(words)
+            table_data = reconstruct_table(
+                words,
+                column_threshold=column_threshold,
+                row_threshold_ratio=row_threshold_ratio,
+            )
             if table_data and len(table_data) > 1:  # ~keep At least header + one data row
-                markdown = extractor.to_markdown(table_data)
+                markdown = to_markdown(table_data)
 
                 min_x = min(w["left"] for w in words)
                 max_x = max(w["left"] + w["width"] for w in words)

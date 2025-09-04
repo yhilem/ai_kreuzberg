@@ -23,7 +23,7 @@ jobs:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version-file: "pyproject.toml"
 
@@ -65,7 +65,7 @@ jobs:
           enable-cache: true
 
       - name: Install Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         id: setup-python
         with:
           python-version: "3.13"
@@ -153,7 +153,7 @@ jobs:
           enable-cache: true
 
       - name: Install Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         id: setup-python
         with:
           python-version: ${{ matrix.python }}

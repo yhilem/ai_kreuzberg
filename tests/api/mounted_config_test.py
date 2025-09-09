@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
@@ -13,8 +12,7 @@ if TYPE_CHECKING:
     from litestar.testing import AsyncTestClient
 
 
-REGRESSION_DATA_DIR = Path(__file__).parent.parent / "regression_data"
-USER_CONFIG_FILE = Path(__file__).parent.parent.parent / "data-from-user" / "kreuzberg.toml"
+TEST_DATA_DIR = Path(__file__).parent.parent / "test_source_files"
 
 
 @pytest.fixture
@@ -22,10 +20,7 @@ def mounted_config_dir(tmp_path: Path) -> Path:
     app_dir = tmp_path / "app"
     app_dir.mkdir()
 
-    if USER_CONFIG_FILE.exists():
-        shutil.copy(USER_CONFIG_FILE, app_dir / "kreuzberg.toml")
-    else:
-        config_content = """# User's production configuration
+    config_content = """# User's production configuration
 force_ocr = true
 chunk_content = false
 extract_tables = false
@@ -39,24 +34,24 @@ auto_detect_document_type = false
 language = "eng"
 psm = 4  # Single column variable sizes - user's specific setting
 """
-        (app_dir / "kreuzberg.toml").write_text(config_content)
+    (app_dir / "kreuzberg.toml").write_text(config_content)
 
     return app_dir
 
 
 @pytest.fixture
 def google_doc_pdf() -> Path:
-    return REGRESSION_DATA_DIR / "google-doc-document.pdf"
+    return TEST_DATA_DIR / "google-doc-document.pdf"
 
 
 @pytest.fixture
 def xerox_pdf() -> Path:
-    return REGRESSION_DATA_DIR / "Xerox_AltaLink_series_mfp_sag_en-US 2.pdf"
+    return TEST_DATA_DIR / "Xerox_AltaLink_series_mfp_sag_en-US 2.pdf"
 
 
 @pytest.fixture
 def test_xls() -> Path:
-    return REGRESSION_DATA_DIR / "testXls.xls"
+    return TEST_DATA_DIR / "testXls.xls"
 
 
 @pytest.mark.anyio

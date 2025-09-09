@@ -14,13 +14,13 @@ if TYPE_CHECKING:
     from kreuzberg._types import ExtractionResult
 
 
-REGRESSION_DATA_DIR = Path(__file__).parent / "regression_data"
+TEST_DATA_DIR = Path(__file__).parent / "test_source_files"
 
 
 @pytest.mark.anyio
 async def test_batch_extract_bytes_with_pdfs() -> None:
-    google_doc_pdf = REGRESSION_DATA_DIR / "google-doc-document.pdf"
-    xerox_pdf = REGRESSION_DATA_DIR / "Xerox_AltaLink_series_mfp_sag_en-US 2.pdf"
+    google_doc_pdf = TEST_DATA_DIR / "google-doc-document.pdf"
+    xerox_pdf = TEST_DATA_DIR / "Xerox_AltaLink_series_mfp_sag_en-US 2.pdf"
 
     contents = []
 
@@ -56,7 +56,7 @@ async def test_batch_extract_bytes_with_pdfs() -> None:
 
 @pytest.mark.anyio
 async def test_batch_extract_bytes_with_xls() -> None:
-    test_xls = REGRESSION_DATA_DIR / "testXls.xls"
+    test_xls = TEST_DATA_DIR / "testXls.xls"
 
     with test_xls.open("rb") as f:
         xls_content = f.read()

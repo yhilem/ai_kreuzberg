@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 import pytest
 
 from kreuzberg import batch_extract_file, extract_file, extract_file_sync
-from kreuzberg._config import load_config_from_path
 from kreuzberg._types import ExtractionConfig, PSMMode, TesseractConfig
 
 if TYPE_CHECKING:
@@ -15,15 +14,11 @@ if TYPE_CHECKING:
     from kreuzberg._types import ExtractionResult
 
 
-REGRESSION_DATA_DIR = Path(__file__).parent / "regression_data"
-USER_CONFIG_FILE = Path(__file__).parent.parent / "data-from-user" / "kreuzberg.toml"
+TEST_DATA_DIR = Path(__file__).parent / "test_source_files"
 
 
 @pytest.fixture
 def user_config() -> ExtractionConfig:
-    if USER_CONFIG_FILE.exists():
-        return load_config_from_path(str(USER_CONFIG_FILE))
-
     tesseract_config = TesseractConfig(
         language="eng",
         psm=PSMMode.SINGLE_COLUMN,
@@ -44,17 +39,17 @@ def user_config() -> ExtractionConfig:
 
 @pytest.fixture
 def google_doc_pdf() -> Path:
-    return REGRESSION_DATA_DIR / "google-doc-document.pdf"
+    return TEST_DATA_DIR / "google-doc-document.pdf"
 
 
 @pytest.fixture
 def xerox_pdf() -> Path:
-    return REGRESSION_DATA_DIR / "Xerox_AltaLink_series_mfp_sag_en-US 2.pdf"
+    return TEST_DATA_DIR / "Xerox_AltaLink_series_mfp_sag_en-US 2.pdf"
 
 
 @pytest.fixture
 def test_xls() -> Path:
-    return REGRESSION_DATA_DIR / "testXls.xls"
+    return TEST_DATA_DIR / "testXls.xls"
 
 
 @pytest.mark.anyio

@@ -12,22 +12,22 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 
-REGRESSION_DATA_DIR = Path(__file__).parent / "regression_data"
+TEST_DATA_DIR = Path(__file__).parent / "test_source_files"
 
 
 @pytest.fixture
 def google_doc_pdf() -> Path:
-    return REGRESSION_DATA_DIR / "google-doc-document.pdf"
+    return TEST_DATA_DIR / "google-doc-document.pdf"
 
 
 @pytest.fixture
 def xerox_pdf() -> Path:
-    return REGRESSION_DATA_DIR / "Xerox_AltaLink_series_mfp_sag_en-US 2.pdf"
+    return TEST_DATA_DIR / "Xerox_AltaLink_series_mfp_sag_en-US 2.pdf"
 
 
 @pytest.fixture
 def test_xls() -> Path:
-    return REGRESSION_DATA_DIR / "testXls.xls"
+    return TEST_DATA_DIR / "testXls.xls"
 
 
 @pytest.mark.anyio

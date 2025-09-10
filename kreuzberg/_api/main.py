@@ -149,6 +149,15 @@ def _merge_configs_cached(
     return ExtractionConfig(**config_dict)
 
 
+def _make_hashable(obj: Any) -> Any:
+    """Convert nested dicts/lists to hashable tuples."""
+    if isinstance(obj, dict):
+        return tuple(sorted((k, _make_hashable(v)) for k, v in obj.items()))
+    if isinstance(obj, list):
+        return tuple(_make_hashable(item) for item in obj)
+    return obj
+
+
 def merge_configs(
     static_config: ExtractionConfig | None,
     query_params: dict[str, Any],
@@ -156,7 +165,7 @@ def merge_configs(
 ) -> ExtractionConfig:
     """Merge configurations with precedence: header > query > static > default."""
     query_tuple = tuple(sorted(query_params.items())) if query_params else ()
-    header_tuple = tuple(sorted(header_config.items())) if header_config else None
+    header_tuple = _make_hashable(header_config) if header_config else None
 
     return _merge_configs_cached(static_config, query_tuple, header_tuple)
 

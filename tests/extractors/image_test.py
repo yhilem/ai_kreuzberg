@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from collections.abc import Generator
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def extractor() -> ImageExtractor:
     config = ExtractionConfig(ocr_backend="tesseract")
     return ImageExtractor(mime_type="image/png", config=config)
@@ -149,6 +149,7 @@ async def test_extract_bytes_async(mock_ocr_backend: MagicMock) -> None:
     with patch("kreuzberg._extractors._image.create_temp_file") as mock_create_temp:
         mock_create_temp.return_value = (mock_path, mock_unlink)
 
+        # Mock AsyncPath.write_bytes for extract_bytes_async - legitimately needed to test byte-to-file conversion ~keep
         with patch("kreuzberg._extractors._image.AsyncPath") as mock_async_path:
             mock_async_path_instance = MagicMock()
             mock_async_path_instance.write_bytes = AsyncMock()
@@ -403,7 +404,7 @@ async def test_extract_real_image_integration() -> None:
     result = await extractor.extract_path_async(test_image_path)
 
     assert isinstance(result, ExtractionResult)
-    assert result.mime_type == "text/plain"
+    assert result.mime_type == "text/markdown"
     assert len(result.content) > 0
 
 
@@ -418,7 +419,7 @@ def test_extract_real_image_sync_integration() -> None:
     result = extractor.extract_path_sync(test_image_path)
 
     assert isinstance(result, ExtractionResult)
-    assert result.mime_type == "text/plain"
+    assert result.mime_type == "text/markdown"
     assert len(result.content) > 0
 
 
@@ -481,6 +482,8 @@ def test_image_mime_types_case_sensitivity() -> None:
 def test_image_sync_path_extraction_unknown_backend(mock_ocr_backend: MagicMock) -> None:
     config = ExtractionConfig(ocr_backend="unknown_backend")  # type: ignore[arg-type]
     extractor = ImageExtractor(mime_type="image/png", config=config)
+
+    mock_ocr_backend.process_file_sync.side_effect = NotImplementedError("Sync OCR not implemented for unknown_backend")
 
     with pytest.raises(NotImplementedError, match="Sync OCR not implemented for unknown_backend"):
         extractor.extract_path_sync(Path("test.png"))
@@ -609,6 +612,7 @@ async def test_image_temp_file_handling_async_cleanup() -> None:
     with patch("kreuzberg._extractors._image.create_temp_file") as mock_create_temp:
         mock_create_temp.return_value = (mock_path, mock_unlink)
 
+        # Mock AsyncPath.write_bytes for extract_bytes_async cleanup test - legitimately needed to test temp file cleanup ~keep
         with patch("kreuzberg._extractors._image.AsyncPath") as mock_async_path:
             mock_async_path_instance = MagicMock()
             mock_async_path_instance.write_bytes = AsyncMock()

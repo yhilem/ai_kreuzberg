@@ -6,6 +6,7 @@ from json import dumps, loads
 from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 import msgspec
+from typing_extensions import TypedDict
 
 from kreuzberg import (
     EasyOCRConfig,
@@ -24,11 +25,28 @@ from kreuzberg._config import discover_config
 if TYPE_CHECKING:
     from litestar.datastructures import UploadFile
 
+
+class HealthResponse(TypedDict):
+    """Response model for health check endpoint."""
+
+    status: str
+
+
+class ConfigurationResponse(TypedDict):
+    """Response model for configuration endpoint."""
+
+    message: str
+    config: dict[str, Any] | None
+
+
 try:
     from litestar import Litestar, Request, Response, get, post
     from litestar.contrib.opentelemetry import OpenTelemetryConfig, OpenTelemetryPlugin
     from litestar.enums import RequestEncodingType
     from litestar.logging import StructLoggingConfig
+    from litestar.openapi.config import OpenAPIConfig
+    from litestar.openapi.spec.contact import Contact
+    from litestar.openapi.spec.license import License
     from litestar.params import Body
     from litestar.status_codes import (
         HTTP_400_BAD_REQUEST,
@@ -71,7 +89,6 @@ def exception_handler(request: Request[Any, Any, Any], exception: KreuzbergError
 
 
 def general_exception_handler(request: Request[Any, Any, Any], exception: Exception) -> Response[Any]:
-    """Temporary handler to catch ALL exceptions for debugging."""
     error_type = type(exception).__name__
     error_message = str(exception)
     traceback_str = traceback.format_exc()
@@ -127,7 +144,6 @@ def _merge_configs_cached(
     query_params: tuple[tuple[str, Any], ...],
     header_config: tuple[tuple[str, Any], ...] | None,
 ) -> ExtractionConfig:
-    """Cached implementation of merge_configs with hashable parameters."""
     base_config = static_config or ExtractionConfig()
     config_dict = base_config.to_dict()
 
@@ -150,7 +166,6 @@ def _merge_configs_cached(
 
 
 def _make_hashable(obj: Any) -> Any:
-    """Convert nested dicts/lists to hashable tuples."""
     if isinstance(obj, dict):
         return tuple(sorted((k, _make_hashable(v)) for k, v in obj.items()))
     if isinstance(obj, list):
@@ -163,7 +178,6 @@ def merge_configs(
     query_params: dict[str, Any],
     header_config: dict[str, Any] | None,
 ) -> ExtractionConfig:
-    """Merge configurations with precedence: header > query > static > default."""
     query_tuple = tuple(sorted(query_params.items())) if query_params else ()
     header_tuple = _make_hashable(header_config) if header_config else None
 
@@ -186,14 +200,35 @@ async def handle_files_upload(  # noqa: PLR0913
     auto_detect_language: str | bool | None = None,
     pdf_password: str | None = None,
 ) -> list[ExtractionResult]:
-    """Extracts text content from uploaded files with optional runtime configuration.
+    """Extract text, metadata, and structured data from uploaded documents.
 
-    Configuration can be provided via:
-    1. Query parameters for common settings
-    2. X-Extraction-Config header for complex nested configurations (JSON format)
-    3. Static configuration file (kreuzberg.toml or pyproject.toml)
+    This endpoint processes multiple file uploads and extracts comprehensive information including:
+    - Text content with metadata
+    - Tables (if enabled)
+    - Named entities (if enabled)
+    - Keywords (if enabled)
+    - Language detection (if enabled)
 
-    Precedence: Header config > Query params > Static config > Defaults
+    Supports various file formats including PDF, Office documents, images, and more.
+    Maximum file size: 1GB per file.
+
+    Args:
+        request: The HTTP request object
+        data: List of files to process (multipart form data)
+        chunk_content: Enable text chunking for large documents
+        max_chars: Maximum characters per chunk (default: 1000)
+        max_overlap: Character overlap between chunks (default: 200)
+        extract_tables: Extract tables from documents
+        extract_entities: Extract named entities from text
+        extract_keywords: Extract keywords from text
+        keyword_count: Number of keywords to extract (default: 10)
+        force_ocr: Force OCR processing even for text-based documents
+        ocr_backend: OCR engine to use (tesseract, easyocr, paddleocr)
+        auto_detect_language: Enable automatic language detection
+        pdf_password: Password for encrypted PDF files
+
+    Returns:
+        List of extraction results, one per uploaded file
     """
     static_config = discover_config()
 
@@ -227,14 +262,25 @@ async def handle_files_upload(  # noqa: PLR0913
 
 
 @get("/health", operation_id="HealthCheck")
-async def health_check() -> dict[str, str]:
-    """A simple health check endpoint."""
+async def health_check() -> HealthResponse:
+    """Check the health status of the API.
+
+    Returns:
+        Simple status response indicating the API is operational
+    """
     return {"status": "ok"}
 
 
 @get("/config", operation_id="GetConfiguration")
-async def get_configuration() -> dict[str, Any]:
-    """Get the current configuration."""
+async def get_configuration() -> ConfigurationResponse:
+    """Get the current extraction configuration.
+
+    Returns the loaded configuration from kreuzberg.toml file if available,
+    or indicates that no configuration file was found.
+
+    Returns:
+        Configuration data with status message
+    """
     config = discover_config()
     if config is None:
         return {"message": "No configuration file found", "config": None}
@@ -245,12 +291,30 @@ async def get_configuration() -> dict[str, Any]:
     }
 
 
+openapi_config = OpenAPIConfig(
+    title="Kreuzberg API",
+    version="3.14.0",
+    description="Document intelligence framework API for extracting text, metadata, and structured data from diverse file formats",
+    contact=Contact(
+        name="Kreuzberg",
+        url="https://github.com/Goldziher/kreuzberg",
+    ),
+    license=License(
+        name="MIT",
+        identifier="MIT",
+    ),
+    use_handler_docstrings=True,
+    create_examples=True,
+)
+
 app = Litestar(
     route_handlers=[handle_files_upload, health_check, get_configuration],
     plugins=[OpenTelemetryPlugin(OpenTelemetryConfig())],
-    logging_config=StructLoggingConfig(),  # Use default config
+    logging_config=StructLoggingConfig(),
+    openapi_config=openapi_config,
     exception_handlers={
         KreuzbergError: exception_handler,
-        Exception: general_exception_handler,  # Catch all exceptions for debugging
+        Exception: general_exception_handler,
     },
+    request_max_body_size=1024 * 1024 * 1024,  # 1GB limit for large file uploads
 )

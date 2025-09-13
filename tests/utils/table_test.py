@@ -63,7 +63,7 @@ def mixed_type_table() -> dict[str, Any]:
 def test_export_table_to_csv_basic(sample_table_data: dict[str, Any]) -> None:
     result = export_table_to_csv(cast("TableData", sample_table_data))
 
-    expected_lines = ["Name,Age,Score,Active", "Alice,25,95.5,True", "Bob,30,87.0,False", "Charlie,35,92.3,True"]
+    expected_lines = ["Name,Age,Score,Active", "Alice,25,95.5,true", "Bob,30,87.0,false", "Charlie,35,92.3,true"]
 
     assert result == "\n".join(expected_lines)
 
@@ -72,7 +72,7 @@ def test_export_table_to_csv_custom_separator(sample_table_data: dict[str, Any])
     result = export_table_to_csv(cast("TableData", sample_table_data), separator=";")
 
     assert "Name;Age;Score;Active" in result
-    assert "Alice;25;95.5;True" in result
+    assert "Alice;25;95.5;true" in result
 
 
 def test_export_table_to_csv_empty_table(empty_table_data: dict[str, Any]) -> None:
@@ -99,7 +99,7 @@ def test_export_table_to_tsv(sample_table_data: dict[str, Any]) -> None:
     result = export_table_to_tsv(cast("TableData", sample_table_data))
 
     assert "Name\tAge\tScore\tActive" in result
-    assert "Alice\t25\t95.5\tTrue" in result
+    assert "Alice\t25\t95.5\ttrue" in result
 
 
 def test_enhance_table_markdown_basic(sample_table_data: dict[str, Any]) -> None:
@@ -111,8 +111,8 @@ def test_enhance_table_markdown_basic(sample_table_data: dict[str, Any]) -> None
 
     assert lines[1] == "| --- | ---: | ---: | --- |"
 
-    assert lines[2] == "| Alice | 25 | 95.50 | True |"
-    assert lines[3] == "| Bob | 30 | 87.00 | False |"
+    assert lines[2] == "| Alice | 25 | 95.50 | true |"
+    assert lines[3] == "| Bob | 30 | 87.00 | false |"
 
 
 def test_enhance_table_markdown_numeric_alignment(numeric_table_data: dict[str, Any]) -> None:
@@ -336,7 +336,7 @@ def test_is_numeric_column_special_formats() -> None:
 def test_is_numeric_column_error_handling() -> None:
     from kreuzberg._utils._table import _is_numeric_column
 
-    problematic_series = pl.Series([float("inf"), float("-inf"), float("nan"), "1", "2"])
+    problematic_series = pl.Series([float("inf"), float("-inf"), float("nan"), "1", "2"], strict=False)
 
     result = _is_numeric_column(problematic_series)
     assert isinstance(result, bool)

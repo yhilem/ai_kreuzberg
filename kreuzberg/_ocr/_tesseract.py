@@ -28,6 +28,7 @@ from kreuzberg._ocr._base import OCRBackend
 from kreuzberg._ocr._table_extractor import extract_words, reconstruct_table, to_markdown
 from kreuzberg._types import ExtractionResult, HTMLToMarkdownConfig, PSMMode, TableData, TesseractConfig
 from kreuzberg._utils._cache import get_ocr_cache
+from kreuzberg._utils._process_pool import ProcessPoolManager
 from kreuzberg._utils._string import normalize_spaces
 from kreuzberg._utils._sync import run_sync
 from kreuzberg._utils._tmp import create_temp_file
@@ -467,7 +468,7 @@ class TesseractBackend(OCRBackend[TesseractConfig]):
             last_para = -1
 
             for line_key in sorted(lines.keys()):
-                page_num, block_num, par_num, line_num = line_key
+                _page_num, block_num, par_num, _line_num = line_key
 
                 if block_num != last_block:
                     if text_parts:  # ~keep
@@ -1297,8 +1298,6 @@ class TesseractProcessPool:
         max_processes: int | None = None,
         memory_limit_gb: float | None = None,
     ) -> None:
-        from kreuzberg._utils._process_pool import ProcessPoolManager  # noqa: PLC0415
-
         self.config = config or TesseractConfig()
         self.process_manager = ProcessPoolManager(
             max_processes=max_processes,

@@ -72,9 +72,11 @@ async def test_is_mkldnn_supported(mocker: MockerFixture) -> None:
 async def test_init_paddle_ocr(backend: PaddleBackend, mock_find_spec: Mock, mocker: MockerFixture) -> None:
     PaddleBackend._paddle_ocr = None
 
-    mock_paddleocr = mocker.patch("kreuzberg._ocr._paddleocr.PaddleOCR")
+    mock_paddleocr = Mock()
     mock_instance = Mock()
     mock_paddleocr.return_value = mock_instance
+
+    mocker.patch("kreuzberg._ocr._paddleocr._import_paddleocr", return_value=(Mock(), mock_paddleocr))
 
     await backend._init_paddle_ocr()
 
@@ -107,7 +109,7 @@ async def test_init_paddle_ocr_with_gpu_package(
     await backend._init_paddle_ocr()
 
     mock_paddleocr.assert_called_once()
-    call_args, call_kwargs = mock_paddleocr.call_args
+    _call_args, call_kwargs = mock_paddleocr.call_args
 
     assert call_kwargs.get("enable_mkldnn") is False
 
@@ -126,7 +128,7 @@ async def test_init_paddle_ocr_with_language(
         await backend._init_paddle_ocr(language="fra")
 
         mock_paddleocr.assert_called_once()
-        call_args, call_kwargs = mock_paddleocr.call_args
+        _call_args, call_kwargs = mock_paddleocr.call_args
         assert call_kwargs.get("lang") == "french"
 
 
@@ -152,7 +154,7 @@ async def test_init_paddle_ocr_with_custom_options(
     await backend._init_paddle_ocr(**custom_options)
 
     mock_paddleocr.assert_called_once()
-    call_args, call_kwargs = mock_paddleocr.call_args
+    _call_args, call_kwargs = mock_paddleocr.call_args
 
     assert call_kwargs.get("text_det_thresh") == 0.4
     assert call_kwargs.get("text_det_box_thresh") == 0.6
@@ -185,7 +187,7 @@ async def test_init_paddle_ocr_with_model_dirs(
     await backend._init_paddle_ocr(**custom_options)
 
     mock_paddleocr.assert_called_once()
-    call_args, call_kwargs = mock_paddleocr.call_args
+    _call_args, call_kwargs = mock_paddleocr.call_args
 
     assert call_kwargs.get("det_model_dir") == "/path/to/det/model"
     assert call_kwargs.get("rec_model_dir") == "/path/to/rec/model"

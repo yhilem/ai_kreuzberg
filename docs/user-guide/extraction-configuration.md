@@ -57,6 +57,13 @@ detector_base_threshold = 0.9
 remove_null_rows = true
 enable_multi_header = true
 
+# DPI and Image Processing configuration
+target_dpi = 150                  # Target DPI for document processing
+max_image_dimension = 25000       # Maximum pixel dimension before auto-scaling
+auto_adjust_dpi = true           # Automatically adjust DPI for large documents
+min_dpi = 72                     # Minimum DPI threshold
+max_dpi = 600                    # Maximum DPI threshold
+
 # Language detection configuration
 [language_detection]
 multilingual = true
@@ -90,6 +97,13 @@ auto_detect_language = true
 auto_detect_document_type = true
 document_classification_mode = "text"
 type_confidence_threshold = 0.5
+
+# DPI and Image Processing
+target_dpi = 150
+max_image_dimension = 25000
+auto_adjust_dpi = true
+min_dpi = 72
+max_dpi = 600
 
 [tool.kreuzberg.tesseract]
 language = "eng"
@@ -535,6 +549,67 @@ python -m spacy download fr_core_news_sm   # French
 ```
 
 Available spaCy models include: `en_core_web_sm`, `de_core_news_sm`, `fr_core_news_sm`, `es_core_news_sm`, `pt_core_news_sm`, `it_core_news_sm`, `nl_core_news_sm`, `zh_core_web_sm`, `ja_core_news_sm`, `ko_core_news_sm`, `ru_core_news_sm`, and many others.
+
+### DPI and Image Processing
+
+Kreuzberg provides intelligent DPI (dots per inch) configuration to optimize document processing quality and performance. This feature automatically handles image scaling for large documents while maintaining OCR quality.
+
+```python
+from kreuzberg import extract_file, ExtractionConfig
+
+# Default DPI configuration (optimized for most documents)
+result = await extract_file("large_document.pdf")
+
+# Custom DPI configuration for high-quality documents
+config = ExtractionConfig(
+    target_dpi=200,  # Higher quality for detailed documents
+    max_image_dimension=30000,  # Allow larger images
+    auto_adjust_dpi=True,  # Automatically scale down if too large
+    min_dpi=100,  # Higher minimum for quality
+    max_dpi=400,  # Lower maximum to control processing time
+)
+result = await extract_file("technical_drawing.pdf", config=config)
+
+# Fast processing configuration for large batches
+config = ExtractionConfig(
+    target_dpi=120,  # Lower DPI for faster processing
+    max_image_dimension=15000,  # Smaller maximum size
+    auto_adjust_dpi=True,  # Still allow automatic scaling
+)
+result = await extract_file("large_batch_document.pdf", config=config)
+```
+
+#### DPI Configuration Options
+
+- **`target_dpi`** (default: 150): The desired DPI for document processing. Higher values provide better quality but slower processing.
+
+- **`max_image_dimension`** (default: 25000): Maximum pixel dimension (width or height) before automatic scaling kicks in.
+
+- **`auto_adjust_dpi`** (default: True): Automatically reduce DPI for oversized documents to stay within memory and processing limits.
+
+- **`min_dpi`** / **`max_dpi`** (defaults: 72/600): Bounds for automatic DPI adjustment to ensure quality remains within acceptable ranges.
+
+#### When to Adjust DPI Settings
+
+**Increase DPI for:**
+
+- Technical documents with small text or fine details
+- Documents that will undergo further image processing
+- High-quality archival processing
+
+**Decrease DPI for:**
+
+- Large batch processing where speed is important
+- Documents with simple layouts and large text
+- Memory-constrained environments
+
+**Use auto-adjustment for:**
+
+- Mixed document types with varying sizes
+- Unknown document dimensions
+- Production environments processing diverse content
+
+The DPI system prevents "Image too large" errors while maintaining optimal quality-performance balance.
 
 ### Batch Processing
 

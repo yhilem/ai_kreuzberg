@@ -332,6 +332,65 @@ text_config = ExtractionConfig(ocr_backend=None)
 
 This provides significant speedup (78% of PDFs have text layers and extract in \<0.01s)
 
+## Image Processing and DPI Configuration
+
+Kreuzberg automatically handles image size optimization to prevent OCR failures while maintaining quality. The DPI configuration system ensures optimal processing regardless of document size.
+
+### Automatic DPI Management
+
+By default, Kreuzberg automatically adjusts image resolution to prevent "Image too large" errors:
+
+```python
+from kreuzberg import extract_file, ExtractionConfig
+
+# Default configuration with automatic DPI adjustment
+result = await extract_file("large_document.pdf")  # Handles oversized pages automatically
+```
+
+### Custom DPI Configuration
+
+For specific use cases, you can customize DPI settings:
+
+```python
+from kreuzberg import extract_file, ExtractionConfig
+
+# Custom DPI settings for high-quality processing
+config = ExtractionConfig(
+    target_dpi=200,  # Higher DPI for better OCR accuracy
+    max_image_dimension=30000,  # Allow larger images before scaling
+    auto_adjust_dpi=True,  # Still auto-adjust if too large
+    min_dpi=100,  # Higher minimum DPI
+    max_dpi=400,  # Lower maximum DPI to prevent memory issues
+)
+
+result = await extract_file("technical_drawing.pdf", config=config)
+```
+
+### DPI Configuration Guidelines
+
+- **target_dpi (150)**: Optimal balance between quality and performance
+- **max_image_dimension (25000)**: Prevents memory exhaustion on large documents
+- **auto_adjust_dpi (True)**: Automatically scales down oversized images
+- **min_dpi (72)**: Minimum resolution for readable text
+- **max_dpi (600)**: Maximum resolution before diminishing returns
+
+### Performance vs Quality Trade-offs
+
+```python
+# Speed-optimized configuration
+speed_config = ExtractionConfig(
+    target_dpi=100,  # Lower DPI for faster processing
+    max_image_dimension=15000,  # Smaller images for speed
+)
+
+# Quality-optimized configuration
+quality_config = ExtractionConfig(
+    target_dpi=300,  # Higher DPI for better accuracy
+    max_image_dimension=40000,  # Allow larger images for detail preservation
+    min_dpi=150,  # Higher minimum for small text
+)
+```
+
 ## Best Practices
 
 - **Language Selection**: Always specify the correct language for your documents to improve OCR accuracy
@@ -345,6 +404,11 @@ This provides significant speedup (78% of PDFs have text layers and extract in \
     - Disable language model for clean documents (`language_model_ngram_on=False`)
     - Disable dictionary correction for technical documents
 - **Image Quality**: For best results, ensure images are:
-    - High resolution (at least 300 DPI)
+    - High resolution (at least 300 DPI recommended, 150 DPI minimum)
     - Well-lit with good contrast
     - Not skewed or rotated (unless using `PSMMode.AUTO`)
+- **DPI Configuration**:
+    - Use default settings for most documents (automatically optimized)
+    - Increase `target_dpi` for documents with small text or fine details
+    - Decrease `target_dpi` for faster processing of simple documents
+    - Leave `auto_adjust_dpi=True` to prevent memory issues with large documents

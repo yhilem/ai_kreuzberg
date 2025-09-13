@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 
 import anyio
-import pandas as pd
+import polars as pl
 import pytest
 from PIL import Image
 
@@ -60,7 +60,7 @@ def test_extract_tables_in_process_success(sample_pdf: Path, mock_gmft_modules: 
     config_dict = asdict(config).copy()
     result_queue: Any = mp.Queue()
 
-    mock_df = pd.DataFrame({"col1": [1, 2], "col2": [3, 4]})
+    mock_df = pl.DataFrame({"col1": [1, 2], "col2": [3, 4]})
 
     mock_page = MagicMock()
     mock_page.page_number = 1
@@ -93,9 +93,7 @@ def test_extract_tables_in_process_success(sample_pdf: Path, mock_gmft_modules: 
         _extract_tables_in_process(str(sample_pdf), config_dict, result_queue)
 
         success, result = result_queue.get(timeout=1)
-        if not success:
-            pass
-        assert success is True
+        assert success is True, f"GMFT extraction failed: {result}"
         assert len(result) == 1
         assert result[0]["page_number"] == 1
         assert "col1" in result[0]["text"]
@@ -209,7 +207,7 @@ def test_extract_tables_isolated_success(sample_pdf: Path) -> None:
         mock_ctx = MagicMock()
         mock_get_context.return_value = mock_ctx
 
-        df = pd.DataFrame({"col1": [1, 2], "col2": [3, 4]})
+        df = pl.DataFrame({"col1": [1, 2], "col2": [3, 4]})
 
         img = Image.new("RGB", (100, 100), color="white")
         img_buffer = io.BytesIO()
@@ -220,8 +218,8 @@ def test_extract_tables_isolated_success(sample_pdf: Path) -> None:
             {
                 "cropped_image_bytes": img_bytes,
                 "page_number": 1,
-                "text": df.to_markdown(),
-                "df_csv": df.to_csv(index=False),
+                "text": df.write_csv(),
+                "df_csv": df.write_csv(),
             }
         ]
 
@@ -272,7 +270,7 @@ async def test_extract_tables_isolated_async_success(sample_pdf: Path) -> None:
         mock_ctx = MagicMock()
         mock_get_context.return_value = mock_ctx
 
-        df = pd.DataFrame({"col1": [1, 2], "col2": [3, 4]})
+        df = pl.DataFrame({"col1": [1, 2], "col2": [3, 4]})
 
         img = Image.new("RGB", (100, 100), color="white")
         img_buffer = io.BytesIO()
@@ -283,8 +281,8 @@ async def test_extract_tables_isolated_async_success(sample_pdf: Path) -> None:
             {
                 "cropped_image_bytes": img_bytes,
                 "page_number": 1,
-                "text": df.to_markdown(),
-                "df_csv": df.to_csv(index=False),
+                "text": df.write_csv(),
+                "df_csv": df.write_csv(),
             }
         ]
 

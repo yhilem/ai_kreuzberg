@@ -357,7 +357,7 @@ def _extract_tables_in_process(
                         "cropped_image_bytes": img_bytes.getvalue(),
                         "page_number": cropped_table.page.page_number,
                         "text": _dataframe_to_markdown(data_frame),
-                        "df_columns": data_frame.columns.tolist(),
+                        "df_columns": data_frame.columns,
                         "df_csv": csv_data if csv_data else None,
                     }
                 )

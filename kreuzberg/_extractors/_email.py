@@ -120,8 +120,9 @@ class EmailExtractor(Extractor):
     def _extract_email_attachments(
         self, parsed_email: dict[str, Any], text_parts: list[str], metadata: dict[str, Any]
     ) -> None:
-        if parsed_email.get("attachments"):
-            attachment_names = [att.get("name", "unknown") for att in parsed_email["attachments"]]
+        attachments = parsed_email.get("attachments")
+        if attachments and isinstance(attachments, list):
+            attachment_names = [att.get("name") or "unknown" for att in attachments]
             metadata["attachments"] = attachment_names
             if attachment_names:
                 text_parts.append(f"\nAttachments: {', '.join(attachment_names)}")

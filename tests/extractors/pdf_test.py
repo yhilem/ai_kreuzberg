@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, NoReturn
 from unittest.mock import patch
@@ -23,7 +24,7 @@ if TYPE_CHECKING:
 IS_CI = os.environ.get("CI", "false").lower() == "true"
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def extractor() -> PDFExtractor:
     return PDFExtractor(mime_type="application/pdf", config=DEFAULT_CONFIG)
 
@@ -419,7 +420,7 @@ def test_pdf_password_attempts_with_parse_with_password_attempts(test_article: P
     assert len(document.pages) > 0
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def pdf_extractor() -> PDFExtractor:
     config = ExtractionConfig()
     return PDFExtractor("application/pdf", config)
@@ -606,6 +607,9 @@ async def test_pdf_extract_path_async_searchable_text(
     mock_apply_quality = mocker.patch.object(pdf_extractor, "_apply_quality_processing")
     mock_apply_quality.side_effect = lambda x: x
 
+    # Mock extract_tables to prevent trying to parse invalid PDF
+    mocker.patch("kreuzberg._gmft.extract_tables", return_value=[])
+
     result = await pdf_extractor.extract_path_async(test_file)
 
     assert result.content == "Extracted searchable text"
@@ -616,8 +620,7 @@ async def test_pdf_extract_path_async_searchable_text(
 async def test_pdf_extract_path_async_force_ocr(
     pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture
 ) -> None:
-    pdf_extractor.config.force_ocr = True
-    pdf_extractor.config.ocr_backend = "tesseract"
+    pdf_extractor.config = replace(pdf_extractor.config, force_ocr=True, ocr_backend="tesseract")
 
     test_file = tmp_path / "test.pdf"
     test_file.write_bytes(b"dummy pdf content")
@@ -633,6 +636,9 @@ async def test_pdf_extract_path_async_force_ocr(
     mock_apply_quality = mocker.patch.object(pdf_extractor, "_apply_quality_processing")
     mock_apply_quality.side_effect = lambda x: x
 
+    # Mock extract_tables to prevent trying to parse invalid PDF
+    mocker.patch("kreuzberg._gmft.extract_tables", return_value=[])
+
     result = await pdf_extractor.extract_path_async(test_file)
 
     assert result.content == "OCR extracted text"
@@ -643,7 +649,7 @@ async def test_pdf_extract_path_async_force_ocr(
 async def test_pdf_extract_path_async_with_tables(
     pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture
 ) -> None:
-    pdf_extractor.config.extract_tables = True
+    pdf_extractor.config = replace(pdf_extractor.config, extract_tables=True)
 
     test_file = tmp_path / "test.pdf"
     test_file.write_bytes(b"dummy pdf content")
@@ -662,6 +668,9 @@ async def test_pdf_extract_path_async_with_tables(
 
     mock_generate_summary = mocker.patch("kreuzberg._extractors._pdf.generate_table_summary")
     mock_generate_summary.return_value = {"table_count": 2, "pages_with_tables": 2, "total_rows": 10}
+
+    mock_convert_images = mocker.patch.object(pdf_extractor, "_convert_pdf_to_images")
+    mock_convert_images.return_value = []
 
     mock_apply_quality = mocker.patch.object(pdf_extractor, "_apply_quality_processing")
     mock_apply_quality.side_effect = lambda x: x
@@ -684,7 +693,7 @@ async def test_pdf_extract_path_async_searchable_fails(
     mock_extract_searchable = mocker.patch.object(pdf_extractor, "_extract_pdf_searchable_text")
     mock_extract_searchable.side_effect = ParsingError("PDF parsing failed")
 
-    pdf_extractor.config.ocr_backend = "tesseract"
+    pdf_extractor.config = replace(pdf_extractor.config, ocr_backend="tesseract")
     mock_extract_ocr = mocker.patch.object(pdf_extractor, "_extract_pdf_text_with_ocr")
     mock_extract_ocr.return_value = ExtractionResult(
         content="OCR fallback content", mime_type="text/plain", metadata={}, chunks=[]
@@ -696,6 +705,9 @@ async def test_pdf_extract_path_async_searchable_fails(
     mock_apply_quality = mocker.patch.object(pdf_extractor, "_apply_quality_processing")
     mock_apply_quality.side_effect = lambda x: x
 
+    # Mock extract_tables to prevent trying to parse invalid PDF
+    mocker.patch("kreuzberg._gmft.extract_tables", return_value=[])
+
     result = await pdf_extractor.extract_path_async(test_file)
 
     assert result.content == "OCR fallback content"
@@ -706,7 +718,7 @@ async def test_pdf_extract_path_async_searchable_fails(
 async def test_pdf_extract_path_async_no_extraction_possible(
     pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture
 ) -> None:
-    pdf_extractor.config.ocr_backend = None
+    pdf_extractor.config = replace(pdf_extractor.config, ocr_backend=None)
 
     test_file = tmp_path / "test.pdf"
     test_file.write_bytes(b"dummy pdf content")
@@ -719,6 +731,9 @@ async def test_pdf_extract_path_async_no_extraction_possible(
 
     mock_apply_quality = mocker.patch.object(pdf_extractor, "_apply_quality_processing")
     mock_apply_quality.side_effect = lambda x: x
+
+    # Mock extract_tables to prevent trying to parse invalid PDF
+    mocker.patch("kreuzberg._gmft.extract_tables", return_value=[])
 
     result = await pdf_extractor.extract_path_async(test_file)
 
@@ -757,7 +772,7 @@ def test_pdf_extract_path_sync_parsing_error(
     mock_extract_searchable = mocker.patch.object(pdf_extractor, "_extract_pdf_searchable_text_sync")
     mock_extract_searchable.side_effect = ParsingError("Sync parsing failed")
 
-    pdf_extractor.config.ocr_backend = "tesseract"
+    pdf_extractor.config = replace(pdf_extractor.config, ocr_backend="tesseract")
     mock_extract_ocr = mocker.patch.object(pdf_extractor, "_extract_pdf_with_ocr_sync")
     mock_extract_ocr.return_value = "OCR sync content"
 
@@ -776,7 +791,7 @@ def test_pdf_extract_path_sync_parsing_error(
 def test_pdf_extract_path_sync_tables_import_error(
     pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture
 ) -> None:
-    pdf_extractor.config.extract_tables = True
+    pdf_extractor.config = replace(pdf_extractor.config, extract_tables=True)
 
     test_file = tmp_path / "test.pdf"
     test_file.write_bytes(b"dummy pdf content")
@@ -803,7 +818,7 @@ def test_pdf_extract_path_sync_tables_import_error(
 def test_pdf_extract_path_sync_invalid_text_ocr_fallback(
     pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture
 ) -> None:
-    pdf_extractor.config.ocr_backend = "tesseract"
+    pdf_extractor.config = replace(pdf_extractor.config, ocr_backend="tesseract")
 
     test_file = tmp_path / "test.pdf"
     test_file.write_bytes(b"dummy pdf content")
@@ -864,7 +879,7 @@ def test_pdf_class_constants_values(pdf_extractor: PDFExtractor) -> None:
 async def test_pdf_extract_path_async_table_import_error(
     pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture
 ) -> None:
-    pdf_extractor.config.extract_tables = True
+    pdf_extractor.config = replace(pdf_extractor.config, extract_tables=True)
 
     test_file = tmp_path / "test.pdf"
     test_file.write_bytes(b"dummy pdf content")

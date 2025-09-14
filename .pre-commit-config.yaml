@@ -11,7 +11,7 @@ repos:
       - id: name-tests-test
         args:
           - --pytest
-        exclude: factories|test_utils|completion.py|test_data
+        exclude: factories|test_utils|completion.py|test_data|docker_e2e.py
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-toml

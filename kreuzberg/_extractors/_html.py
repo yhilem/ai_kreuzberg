@@ -14,6 +14,7 @@ from PIL import Image
 from kreuzberg._extractors._base import MAX_SINGLE_IMAGE_SIZE, Extractor
 from kreuzberg._mime_types import HTML_MIME_TYPE, MARKDOWN_MIME_TYPE
 from kreuzberg._types import ExtractedImage, ExtractionResult, HTMLToMarkdownConfig
+from kreuzberg._utils._html_streaming import should_use_streaming
 from kreuzberg._utils._string import safe_decode
 from kreuzberg._utils._sync import run_maybe_async, run_sync
 
@@ -47,6 +48,11 @@ class HTMLExtractor(Extractor):
         config_dict = config.to_dict()
 
         html_content = safe_decode(content)
+
+        use_streaming, chunk_size = should_use_streaming(len(content))
+        config_dict["stream_processing"] = use_streaming
+        config_dict["chunk_size"] = chunk_size
+
         result = html_to_markdown.convert_to_markdown(html_content, **config_dict)
 
         extraction_result = ExtractionResult(content=result, mime_type=MARKDOWN_MIME_TYPE, metadata={})

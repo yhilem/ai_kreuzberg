@@ -1139,8 +1139,6 @@ class HTMLToMarkdownConfig:
     """Use <br> tags for line breaks in table cells instead of spaces."""
     bullets: str = "*+-"
     """Characters to use for unordered list bullets."""
-    chunk_size: int = 2048
-    """Size of chunks when stream_processing is enabled."""
     code_language: str = ""
     """Default language identifier for fenced code blocks."""
     code_language_callback: Callable[[Any], str] | None = None
@@ -1177,14 +1175,10 @@ class HTMLToMarkdownConfig:
     """Enable HTML preprocessing to clean messy HTML."""
     preprocessing_preset: Literal["minimal", "standard", "aggressive"] = "standard"
     """Preprocessing level for cleaning HTML."""
-    progress_callback: Callable[[int, int], None] | None = None
-    """Callback function for progress updates (current, total)."""
     remove_forms: bool = True
     """Remove form elements during preprocessing."""
     remove_navigation: bool = True
     """Remove navigation elements during preprocessing."""
-    stream_processing: bool = False
-    """Enable streaming mode for processing large HTML documents."""
     strip: list[str] | None = None
     """List of HTML tags to remove from output."""
     strip_newlines: bool = False

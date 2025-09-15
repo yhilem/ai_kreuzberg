@@ -29,6 +29,7 @@ from kreuzberg._ocr._base import OCRBackend
 from kreuzberg._ocr._table_extractor import extract_words, reconstruct_table, to_markdown
 from kreuzberg._types import ExtractionResult, HTMLToMarkdownConfig, PSMMode, TableData, TesseractConfig
 from kreuzberg._utils._cache import get_ocr_cache
+from kreuzberg._utils._html_streaming import should_use_streaming
 from kreuzberg._utils._process_pool import ProcessPoolManager, get_optimal_worker_count
 from kreuzberg._utils._string import normalize_spaces
 from kreuzberg._utils._sync import run_sync
@@ -532,6 +533,10 @@ class TesseractBackend(OCRBackend[TesseractConfig]):
         config_dict = config.to_dict()
         config_dict["custom_converters"] = all_converters
 
+        use_streaming, chunk_size = should_use_streaming(len(hocr_content.encode()))
+        config_dict["stream_processing"] = use_streaming
+        config_dict["chunk_size"] = chunk_size
+
         try:
             markdown_content = html_to_markdown.convert_to_markdown(hocr_content, **config_dict)
             markdown_content = normalize_spaces(markdown_content)
@@ -679,9 +684,15 @@ class TesseractBackend(OCRBackend[TesseractConfig]):
                 strip=["meta", "title"],
             )
 
+            config_dict = html_config.to_dict()
+
+            use_streaming, chunk_size = should_use_streaming(len(hocr_content.encode()))
+            config_dict["stream_processing"] = use_streaming
+            config_dict["chunk_size"] = chunk_size
+
             markdown_content = html_to_markdown.convert_to_markdown(
                 hocr_content,
-                **html_config.to_dict(),
+                **config_dict,
             )
 
             markdown_content = normalize_spaces(markdown_content)

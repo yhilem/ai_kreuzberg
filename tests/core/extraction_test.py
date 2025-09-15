@@ -21,7 +21,6 @@ from kreuzberg.extraction import (
 
 
 def test_default_config_is_extraction_config() -> None:
-    """Test that DEFAULT_CONFIG is an ExtractionConfig instance."""
     assert isinstance(DEFAULT_CONFIG, ExtractionConfig)
     assert DEFAULT_CONFIG.use_cache is True
     assert DEFAULT_CONFIG.chunk_content is False
@@ -29,7 +28,6 @@ def test_default_config_is_extraction_config() -> None:
 
 @pytest.mark.anyio
 async def test_extract_bytes_with_valid_mime_type() -> None:
-    """Test extract_bytes with valid content and mime type."""
     content = b"Hello, World!"
     mime_type = "text/plain"
 
@@ -44,7 +42,6 @@ async def test_extract_bytes_with_valid_mime_type() -> None:
 
 @pytest.mark.anyio
 async def test_extract_bytes_with_unknown_mime_type() -> None:
-    """Test extract_bytes falls back to safe_decode for unknown mime types."""
     content = b"Unknown content type"
     mime_type = "application/unknown"
 
@@ -56,7 +53,6 @@ async def test_extract_bytes_with_unknown_mime_type() -> None:
 
 
 def test_extract_bytes_sync_with_valid_mime_type() -> None:
-    """Test extract_bytes_sync with valid content and mime type."""
     content = b"Hello, World!"
     mime_type = "text/plain"
 
@@ -68,7 +64,6 @@ def test_extract_bytes_sync_with_valid_mime_type() -> None:
 
 
 def test_extract_bytes_sync_with_unknown_mime_type() -> None:
-    """Test extract_bytes_sync falls back to safe_decode for unknown mime types."""
     content = b"Unknown content type"
     mime_type = "application/unknown"
 
@@ -81,7 +76,6 @@ def test_extract_bytes_sync_with_unknown_mime_type() -> None:
 
 @pytest.mark.anyio
 async def test_extract_file_nonexistent_file() -> None:
-    """Test extract_file raises ValidationError for nonexistent file."""
     nonexistent_path = "/nonexistent/file.txt"
 
     with pytest.raises(ValidationError, match="The file does not exist"):
@@ -89,7 +83,6 @@ async def test_extract_file_nonexistent_file() -> None:
 
 
 def test_extract_file_sync_nonexistent_file() -> None:
-    """Test extract_file_sync raises ValidationError for nonexistent file."""
     nonexistent_path = "/nonexistent/file.txt"
 
     with pytest.raises(ValidationError, match="The file does not exist"):
@@ -98,7 +91,6 @@ def test_extract_file_sync_nonexistent_file() -> None:
 
 @pytest.mark.anyio
 async def test_extract_file_with_cache_disabled(tmp_path: Path) -> None:
-    """Test extract_file with caching disabled."""
     test_file = tmp_path / "test.txt"
     test_file.write_text("Test content")
 
@@ -110,7 +102,6 @@ async def test_extract_file_with_cache_disabled(tmp_path: Path) -> None:
 
 
 def test_extract_file_sync_with_cache_disabled(tmp_path: Path) -> None:
-    """Test extract_file_sync with caching disabled."""
     test_file = tmp_path / "test.txt"
     test_file.write_text("Test content")
 
@@ -123,7 +114,6 @@ def test_extract_file_sync_with_cache_disabled(tmp_path: Path) -> None:
 
 @pytest.mark.anyio
 async def test_extract_file_with_unknown_mime_type(tmp_path: Path) -> None:
-    """Test extract_file with unknown mime type falls back to reading as text."""
     test_file = tmp_path / "test.unknown"
     test_file.write_text("Unknown file type content")
 
@@ -135,7 +125,6 @@ async def test_extract_file_with_unknown_mime_type(tmp_path: Path) -> None:
 
 
 def test_extract_file_sync_with_unknown_mime_type(tmp_path: Path) -> None:
-    """Test extract_file_sync with unknown mime type falls back to reading as text."""
     test_file = tmp_path / "test.unknown"
     test_file.write_text("Unknown file type content")
 
@@ -147,7 +136,6 @@ def test_extract_file_sync_with_unknown_mime_type(tmp_path: Path) -> None:
 
 
 def test_handle_chunk_content() -> None:
-    """Test _handle_chunk_content function."""
     content = "This is a long text that should be chunked into smaller pieces for processing."
     config = ExtractionConfig(max_chars=20, max_overlap=5)
 
@@ -163,7 +151,6 @@ def test_handle_chunk_content() -> None:
 
 @pytest.mark.anyio
 async def test_extract_bytes_with_chunking() -> None:
-    """Test extract_bytes with chunking enabled."""
     content = b"This is a long text that should be chunked into smaller pieces for processing."
     mime_type = "text/plain"
     config = ExtractionConfig(chunk_content=True, max_chars=20, max_overlap=5)
@@ -175,7 +162,6 @@ async def test_extract_bytes_with_chunking() -> None:
 
 
 def test_extract_bytes_sync_with_chunking() -> None:
-    """Test extract_bytes_sync with chunking enabled."""
     content = b"This is a long text that should be chunked into smaller pieces for processing."
     mime_type = "text/plain"
     config = ExtractionConfig(chunk_content=True, max_chars=20, max_overlap=5)
@@ -188,7 +174,6 @@ def test_extract_bytes_sync_with_chunking() -> None:
 
 @pytest.mark.anyio
 async def test_extract_bytes_with_language_detection() -> None:
-    """Test extract_bytes with language detection enabled."""
     content = b"This is some English text for language detection."
     mime_type = "text/plain"
     config = ExtractionConfig(auto_detect_language=True, language_detection_config=LanguageDetectionConfig())
@@ -202,7 +187,6 @@ async def test_extract_bytes_with_language_detection() -> None:
 
 
 def test_extract_bytes_sync_with_language_detection() -> None:
-    """Test extract_bytes_sync with language detection enabled."""
     content = b"This is some English text for language detection."
     mime_type = "text/plain"
     config = ExtractionConfig(auto_detect_language=True, language_detection_config=LanguageDetectionConfig())
@@ -217,7 +201,6 @@ def test_extract_bytes_sync_with_language_detection() -> None:
 
 @pytest.mark.anyio
 async def test_extract_bytes_with_entity_extraction_success() -> None:
-    """Test extract_bytes with successful entity extraction."""
     content = b"John works at Apple Inc. in California."
     mime_type = "text/plain"
     config = ExtractionConfig(extract_entities=True)
@@ -233,7 +216,6 @@ async def test_extract_bytes_with_entity_extraction_success() -> None:
 
 @pytest.mark.anyio
 async def test_extract_bytes_with_entity_extraction_runtime_error() -> None:
-    """Test extract_bytes handles RuntimeError in entity extraction gracefully."""
     content = b"Some text for entity extraction."
     mime_type = "text/plain"
     config = ExtractionConfig(extract_entities=True)
@@ -247,7 +229,6 @@ async def test_extract_bytes_with_entity_extraction_runtime_error() -> None:
 
 
 def test_extract_bytes_sync_with_entity_extraction_runtime_error() -> None:
-    """Test extract_bytes_sync handles RuntimeError in entity extraction gracefully."""
     content = b"Some text for entity extraction."
     mime_type = "text/plain"
     config = ExtractionConfig(extract_entities=True)
@@ -262,7 +243,6 @@ def test_extract_bytes_sync_with_entity_extraction_runtime_error() -> None:
 
 @pytest.mark.anyio
 async def test_extract_bytes_with_keyword_extraction_success() -> None:
-    """Test extract_bytes with successful keyword extraction."""
     content = b"Machine learning and artificial intelligence are important technologies."
     mime_type = "text/plain"
     config = ExtractionConfig(extract_keywords=True, keyword_count=5)
@@ -278,7 +258,6 @@ async def test_extract_bytes_with_keyword_extraction_success() -> None:
 
 @pytest.mark.anyio
 async def test_extract_bytes_with_keyword_extraction_runtime_error() -> None:
-    """Test extract_bytes handles RuntimeError in keyword extraction gracefully."""
     content = b"Some text for keyword extraction."
     mime_type = "text/plain"
     config = ExtractionConfig(extract_keywords=True)
@@ -292,7 +271,6 @@ async def test_extract_bytes_with_keyword_extraction_runtime_error() -> None:
 
 
 def test_extract_bytes_sync_with_keyword_extraction_runtime_error() -> None:
-    """Test extract_bytes_sync handles RuntimeError in keyword extraction gracefully."""
     content = b"Some text for keyword extraction."
     mime_type = "text/plain"
     config = ExtractionConfig(extract_keywords=True)
@@ -307,7 +285,6 @@ def test_extract_bytes_sync_with_keyword_extraction_runtime_error() -> None:
 
 @pytest.mark.anyio
 async def test_extract_bytes_with_auto_detect_document_type() -> None:
-    """Test extract_bytes with auto document type detection enabled."""
     content = b"This is a document with specific formatting."
     mime_type = "text/plain"
     config = ExtractionConfig(auto_detect_document_type=True)
@@ -328,7 +305,6 @@ async def test_extract_bytes_with_auto_detect_document_type() -> None:
 
 @pytest.mark.anyio
 async def test_validate_and_post_process_async_with_validators() -> None:
-    """Test _validate_and_post_process_async with custom validators."""
     result = ExtractionResult(content="Test content", mime_type="text/plain", metadata={}, chunks=[])
 
     async_validator = AsyncMock()
@@ -345,7 +321,6 @@ async def test_validate_and_post_process_async_with_validators() -> None:
 
 @pytest.mark.anyio
 async def test_validate_and_post_process_async_with_post_processors() -> None:
-    """Test _validate_and_post_process_async with post processing hooks."""
     result = ExtractionResult(content="Test content", mime_type="text/plain", metadata={}, chunks=[])
 
     modified_result = ExtractionResult(
@@ -368,7 +343,6 @@ async def test_validate_and_post_process_async_with_post_processors() -> None:
 
 
 def test_validate_and_post_process_sync_with_validators() -> None:
-    """Test _validate_and_post_process_sync with custom validators."""
     result = ExtractionResult(content="Test content", mime_type="text/plain", metadata={}, chunks=[])
 
     validator = Mock()
@@ -381,7 +355,6 @@ def test_validate_and_post_process_sync_with_validators() -> None:
 
 
 def test_validate_and_post_process_sync_with_post_processors() -> None:
-    """Test _validate_and_post_process_sync with post processing hooks."""
     result = ExtractionResult(content="Test content", mime_type="text/plain", metadata={}, chunks=[])
 
     modified_result = ExtractionResult(
@@ -403,7 +376,6 @@ def test_validate_and_post_process_sync_with_post_processors() -> None:
 
 
 def test_validate_and_post_process_helper_with_all_features() -> None:
-    """Test _validate_and_post_process_helper with all features enabled."""
     result = ExtractionResult(
         content="This is test content for processing.", mime_type="text/plain", metadata={}, chunks=[]
     )

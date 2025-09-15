@@ -1292,15 +1292,15 @@ wheels = [
 
 [[package]]
 name = "html-to-markdown"
-version = "1.11.0"
+version = "1.12.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "nh3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3a/ed/64340f8e71a0268c0c8c16f2c4db06dd5251ee40b9bd8dadd2a6b0bbe003/html_to_markdown-1.11.0.tar.gz", hash = "sha256:45a6b020e17ad98df1fcb2e12553a5897f78a2f6555b5a85756bde5942e14268", size = 35645, upload-time = "2025-09-13T10:02:05.61Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a4/5f/1d1524a1b16a418ed2ec98c878a4e1a13260f2422718ef198b476ef69b3d/html_to_markdown-1.12.0.tar.gz", hash = "sha256:7404fc50b5158131301f26416344003ead574df34485c987687807c9e7cddf9e", size = 38937, upload-time = "2025-09-15T09:50:25.943Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a5/4c/8ee387e8bdc72b7acfafdc8f8f7eb5861cb0318927ca42d2313379d99832/html_to_markdown-1.11.0-py3-none-any.whl", hash = "sha256:cccf632d1ee05b1f136bc3034219d4cc0e480a318cb6d7fbac4032afb2828fd1", size = 32155, upload-time = "2025-09-13T10:02:03.764Z" },
+    { url = "https://files.pythonhosted.org/packages/a0/70/d449a7d9ea0e653ad312b0319a93440423a6d2a12b5714352e514b511947/html_to_markdown-1.12.0-py3-none-any.whl", hash = "sha256:c048f0f64f21152ee47e80e4225d795c2acb3d396e9cea95f9116069e6d24626", size = 34483, upload-time = "2025-09-15T09:50:24.607Z" },
 ]
 
 [package.optional-dependencies]
@@ -1776,7 +1776,7 @@ requires-dist = [
     { name = "exceptiongroup", marker = "python_full_version < '3.11'", specifier = ">=1.2.2" },
     { name = "fast-langdetect", marker = "extra == 'langdetect'", specifier = ">=0.3.2" },
     { name = "gmft", marker = "extra == 'gmft'", specifier = ">=0.4.2" },
-    { name = "html-to-markdown", extras = ["lxml"], specifier = ">=1.11.0" },
+    { name = "html-to-markdown", extras = ["lxml"], specifier = ">=1.12.0" },
     { name = "keybert", marker = "extra == 'entity-extraction'", specifier = ">=0.9.0" },
     { name = "kreuzberg", extras = ["additional-extensions", "api", "chunking", "cli", "crypto", "document-classification", "easyocr", "entity-extraction", "gmft", "langdetect", "paddleocr"], marker = "extra == 'all'" },
     { name = "litestar", extras = ["standard", "structlog", "opentelemetry"], marker = "extra == 'api'", specifier = ">=2.17.0" },
@@ -2372,7 +2372,7 @@ wheels = [
 
 [[package]]
 name = "mkdocs-material"
-version = "9.6.19"
+version = "9.6.20"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "babel" },
@@ -2388,9 +2388,9 @@ dependencies = [
     { name = "pymdown-extensions" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/44/94/eb0fca39b19c2251b16bc759860a50f232655c4377116fa9c0e7db11b82c/mkdocs_material-9.6.19.tar.gz", hash = "sha256:80e7b3f9acabfee9b1f68bd12c26e59c865b3d5bbfb505fd1344e970db02c4aa", size = 4038202, upload-time = "2025-09-07T17:46:40.468Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ba/ee/6ed7fc739bd7591485c8bec67d5984508d3f2733e708f32714c21593341a/mkdocs_material-9.6.20.tar.gz", hash = "sha256:e1f84d21ec5fb730673c4259b2e0d39f8d32a3fef613e3a8e7094b012d43e790", size = 4037822, upload-time = "2025-09-15T08:48:01.816Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/02/23/a2551d1038bedc2771366f65ff3680bb3a89674cd7ca6140850c859f1f71/mkdocs_material-9.6.19-py3-none-any.whl", hash = "sha256:7492d2ac81952a467ca8a10cac915d6ea5c22876932f44b5a0f4f8e7d68ac06f", size = 9240205, upload-time = "2025-09-07T17:46:36.484Z" },
+    { url = "https://files.pythonhosted.org/packages/67/d8/a31dd52e657bf12b20574706d07df8d767e1ab4340f9bfb9ce73950e5e59/mkdocs_material-9.6.20-py3-none-any.whl", hash = "sha256:b8d8c8b0444c7c06dd984b55ba456ce731f0035c5a1533cc86793618eb1e6c82", size = 9193367, upload-time = "2025-09-15T08:47:58.722Z" },
 ]
 
 [package.optional-dependencies]

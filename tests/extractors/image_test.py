@@ -149,7 +149,6 @@ def test_get_extension_from_unsupported_mime_type() -> None:
 
 @pytest.mark.anyio
 async def test_extract_bytes_async(mock_ocr_backend: MagicMock) -> None:
-    """Test that extract_bytes_async processes image bytes correctly."""
     config = ExtractionConfig(ocr_backend="tesseract")
     extractor = ImageExtractor(mime_type="image/png", config=config)
 

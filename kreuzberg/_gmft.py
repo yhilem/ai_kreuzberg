@@ -312,6 +312,11 @@ def _extract_tables_in_process(
         from gmft.formatters.tatr import TATRFormatConfig  # noqa: PLC0415
         from gmft.pdf_bindings.pdfium import PyPDFium2Document  # noqa: PLC0415
 
+        if "cell_required_confidence" in config_dict:
+            cell_config = config_dict["cell_required_confidence"]
+            if isinstance(cell_config, dict) and cell_config:
+                config_dict["cell_required_confidence"] = {int(k): v for k, v in cell_config.items()}
+
         config = GMFTConfig(**config_dict)
 
         formatter = AutoTableFormatter(  # type: ignore[no-untyped-call]

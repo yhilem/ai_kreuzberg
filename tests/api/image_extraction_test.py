@@ -27,7 +27,10 @@ async def test_api_image_extraction_from_html(test_client: Any) -> None:
     if images:
         img0 = images[0]
         assert img0["format"] == "png"
-        assert img0["data"].startswith("data:image/png;base64,")
+        assert (
+            img0["data"]
+            == "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+        )
         assert img0["description"] == "Red dot"
 
 

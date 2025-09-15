@@ -149,7 +149,7 @@ class TestImageExtractionErrorHandling:
             ExtractedImage(data=b"test2", format="png", filename="test2.png"),
         ]
 
-        with patch("kreuzberg._ocr.get_ocr_backend") as mock_get_backend:
+        with patch("kreuzberg._extractors._base.get_ocr_backend") as mock_get_backend:
             mock_backend = MagicMock()
 
             async def failing_process(*args: Any, **kwargs: Any) -> None:
@@ -165,7 +165,7 @@ class TestImageExtractionErrorHandling:
         for result in results:
             assert result.ocr_result.content == ""
             assert result.skipped_reason
-            assert "OCR failed" in result.skipped_reason
+            assert "Backend error: RuntimeError: OCR engine crashed" in result.skipped_reason
 
     def test_empty_image_data(self) -> None:
         config = ExtractionConfig(extract_images=True)
@@ -237,7 +237,9 @@ class TestImageExtractionErrorHandling:
                 assert result.images == []
 
         html_extractor = HTMLExtractor(mime_type="text/html", config=config)
-        result = html_extractor.extract_bytes_sync(b"<html><img src='data:image/png;base64,test'/></html>")
+        result = html_extractor.extract_bytes_sync(
+            b"<html><body><p>Text content</p><img src='data:image/png;base64,test'/></body></html>"
+        )
         assert result.images == []
 
         ppt_extractor = PresentationExtractor(

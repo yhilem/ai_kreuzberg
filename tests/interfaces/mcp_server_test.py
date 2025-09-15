@@ -1,5 +1,3 @@
-"""Tests for MCP server batch processing functionality."""
-
 from __future__ import annotations
 
 import base64
@@ -34,7 +32,6 @@ from kreuzberg.exceptions import ValidationError
 
 
 def test_batch_extract_document_single_file(tmp_path: Path) -> None:
-    """Test batch document extraction with a single file."""
     test_file = tmp_path / "test.txt"
     test_file.write_text("Hello, world!")
 
@@ -56,7 +53,6 @@ def test_batch_extract_document_single_file(tmp_path: Path) -> None:
 
 
 def test_batch_extract_document_multiple_files(tmp_path: Path) -> None:
-    """Test batch document extraction with multiple files."""
     test_files = []
     for i in range(3):
         test_file = tmp_path / f"test{i}.txt"
@@ -85,7 +81,6 @@ def test_batch_extract_document_multiple_files(tmp_path: Path) -> None:
 
 
 def test_batch_extract_bytes_single_item() -> None:
-    """Test batch bytes extraction with a single item."""
     content = b"Hello, world!"
     content_base64 = base64.b64encode(content).decode("ascii")
     content_items = [{"content_base64": content_base64, "mime_type": "text/plain"}]
@@ -108,7 +103,6 @@ def test_batch_extract_bytes_single_item() -> None:
 
 
 def test_batch_extract_bytes_multiple_items() -> None:
-    """Test batch bytes extraction with multiple items."""
     content_items = []
     for i in range(3):
         content = f"Content {i}".encode()
@@ -137,7 +131,6 @@ def test_batch_extract_bytes_multiple_items() -> None:
 
 
 def test_batch_extract_document_with_config_parameters(tmp_path: Path) -> None:
-    """Test that configuration parameters are passed correctly."""
     test_file = tmp_path / "test.txt"
     test_file.write_text("Test content")
     test_files = [str(test_file)]
@@ -169,7 +162,6 @@ def test_batch_extract_document_with_config_parameters(tmp_path: Path) -> None:
 
 
 def test_batch_extract_bytes_with_config_parameters() -> None:
-    """Test that configuration parameters are passed correctly for bytes extraction."""
     content = b"Test content"
     content_base64 = base64.b64encode(content).decode("ascii")
     content_items = [{"content_base64": content_base64, "mime_type": "text/plain"}]
@@ -201,7 +193,6 @@ def test_batch_extract_bytes_with_config_parameters() -> None:
 
 
 def test_extract_bytes_invalid_base64() -> None:
-    """Test that extract_bytes raises ValidationError for invalid base64."""
     invalid_base64 = "not_valid_base64!"
 
     with pytest.raises(ValidationError) as exc_info:
@@ -213,7 +204,6 @@ def test_extract_bytes_invalid_base64() -> None:
 
 
 def test_extract_bytes_invalid_base64_long_content() -> None:
-    """Test that extract_bytes handles long invalid base64 with preview truncation."""
     invalid_base64 = "invalid!@#$%^&*()_base64_content_that_is_definitely_longer_than_fifty_characters"
 
     with pytest.raises(ValidationError) as exc_info:
@@ -226,7 +216,6 @@ def test_extract_bytes_invalid_base64_long_content() -> None:
 
 
 def test_batch_extract_bytes_empty_list() -> None:
-    """Test that batch_extract_bytes raises ValidationError for empty content_items."""
     with pytest.raises(ValidationError) as exc_info:
         batch_extract_bytes([])
 
@@ -235,7 +224,6 @@ def test_batch_extract_bytes_empty_list() -> None:
 
 
 def test_batch_extract_bytes_not_a_list() -> None:
-    """Test that batch_extract_bytes raises ValidationError when content_items is not a list."""
     with pytest.raises(ValidationError) as exc_info:
         batch_extract_bytes("not_a_list")
 
@@ -244,7 +232,6 @@ def test_batch_extract_bytes_not_a_list() -> None:
 
 
 def test_batch_extract_bytes_item_not_dict() -> None:
-    """Test that batch_extract_bytes raises ValidationError when an item is not a dictionary."""
     content_items = ["not_a_dict"]
 
     with pytest.raises(ValidationError) as exc_info:
@@ -257,7 +244,6 @@ def test_batch_extract_bytes_item_not_dict() -> None:
 
 
 def test_batch_extract_bytes_missing_content_base64_key() -> None:
-    """Test that batch_extract_bytes raises ValidationError when content_base64 key is missing."""
     content_items = [{"mime_type": "text/plain"}]
 
     with pytest.raises(ValidationError) as exc_info:
@@ -269,7 +255,6 @@ def test_batch_extract_bytes_missing_content_base64_key() -> None:
 
 
 def test_batch_extract_bytes_missing_mime_type_key() -> None:
-    """Test that batch_extract_bytes raises ValidationError when mime_type key is missing."""
     content = b"Hello, world!"
     content_base64 = base64.b64encode(content).decode("ascii")
     content_items = [{"content_base64": content_base64}]
@@ -283,7 +268,6 @@ def test_batch_extract_bytes_missing_mime_type_key() -> None:
 
 
 def test_batch_extract_bytes_invalid_base64_content() -> None:
-    """Test that batch_extract_bytes raises ValidationError for invalid base64 content."""
     content_items = [{"content_base64": "not_valid_base64!", "mime_type": "text/plain"}]
 
     with pytest.raises(ValidationError) as exc_info:
@@ -297,7 +281,6 @@ def test_batch_extract_bytes_invalid_base64_content() -> None:
 
 
 def test_batch_extract_bytes_invalid_base64_multiple_items() -> None:
-    """Test that batch_extract_bytes raises ValidationError for invalid base64 in multiple items scenario."""
     content = b"Valid content"
     valid_content_base64 = base64.b64encode(content).decode("ascii")
     content_items = [
@@ -315,7 +298,6 @@ def test_batch_extract_bytes_invalid_base64_multiple_items() -> None:
 
 
 def test_batch_extract_bytes_mixed_validation_errors() -> None:
-    """Test various validation errors in batch_extract_bytes with mixed scenarios."""
     content_items = [
         {"content_base64": "dGVzdA==", "mime_type": "text/plain"},
         {"mime_type": "text/plain"},
@@ -328,7 +310,6 @@ def test_batch_extract_bytes_mixed_validation_errors() -> None:
 
 
 def test_batch_extract_bytes_error_context_preservation() -> None:
-    """Test that error context is properly preserved in ValidationError exceptions."""
     content_items = [
         42,
         {"invalid": "structure"},
@@ -344,7 +325,6 @@ def test_batch_extract_bytes_error_context_preservation() -> None:
 
 
 def test_invalid_psm_mode_handling() -> None:
-    """Test that invalid PSM mode values raise ValidationError with proper context."""
     from kreuzberg._mcp.server import _create_config_with_overrides
 
     with pytest.raises(ValidationError) as exc_info:
@@ -359,7 +339,6 @@ def test_invalid_psm_mode_handling() -> None:
 
 
 def test_path_traversal_validation_relative_paths(tmp_path: Path) -> None:
-    """Test that path traversal attempts are detected and blocked."""
     test_file = tmp_path / "test.txt"
     test_file.write_text("Test content")
 
@@ -379,7 +358,6 @@ def test_path_traversal_validation_relative_paths(tmp_path: Path) -> None:
 
 
 def test_path_validation_nonexistent_file() -> None:
-    """Test that nonexistent files are properly rejected."""
     with pytest.raises(ValidationError) as exc_info:
         _validate_file_path("/nonexistent/file.txt")
 
@@ -388,7 +366,6 @@ def test_path_validation_nonexistent_file() -> None:
 
 
 def test_path_validation_directory_not_file(tmp_path: Path) -> None:
-    """Test that directories are rejected (must be files)."""
     test_dir = tmp_path / "test_dir"
     test_dir.mkdir()
 
@@ -399,7 +376,6 @@ def test_path_validation_directory_not_file(tmp_path: Path) -> None:
 
 
 def test_path_validation_valid_absolute_path(tmp_path: Path) -> None:
-    """Test that valid absolute paths are accepted."""
     test_file = tmp_path / "test.txt"
     test_file.write_text("Test content")
 
@@ -408,7 +384,6 @@ def test_path_validation_valid_absolute_path(tmp_path: Path) -> None:
 
 
 def test_batch_size_limit_documents(tmp_path: Path) -> None:
-    """Test that batch size limits are enforced for document extraction."""
     test_files = []
     for i in range(MAX_BATCH_SIZE + 1):
         test_file = tmp_path / f"test{i}.txt"
@@ -424,7 +399,6 @@ def test_batch_size_limit_documents(tmp_path: Path) -> None:
 
 
 def test_batch_size_limit_bytes() -> None:
-    """Test that batch size limits are enforced for bytes extraction."""
     content_items = []
     for i in range(MAX_BATCH_SIZE + 1):
         content = f"Content {i}".encode()
@@ -440,7 +414,6 @@ def test_batch_size_limit_bytes() -> None:
 
 
 def test_empty_batch_validation_documents() -> None:
-    """Test that empty file paths list is rejected."""
     with pytest.raises(ValidationError) as exc_info:
         batch_extract_document([])
 
@@ -449,7 +422,6 @@ def test_empty_batch_validation_documents() -> None:
 
 
 def test_base64_validation_empty_string() -> None:
-    """Test base64 validation with empty string."""
     with pytest.raises(ValidationError) as exc_info:
         _validate_base64_content("", "test_context")
 
@@ -458,7 +430,6 @@ def test_base64_validation_empty_string() -> None:
 
 
 def test_base64_validation_whitespace_only() -> None:
-    """Test base64 validation with whitespace-only content."""
     whitespace_content = "   \t\n   "
 
     with pytest.raises(ValidationError) as exc_info:
@@ -469,7 +440,6 @@ def test_base64_validation_whitespace_only() -> None:
 
 
 def test_base64_validation_invalid_characters() -> None:
-    """Test base64 validation with invalid characters."""
     invalid_content = "invalid!@#$%characters"
 
     with pytest.raises(ValidationError) as exc_info:
@@ -484,7 +454,6 @@ def test_base64_validation_invalid_characters() -> None:
 
 
 def test_base64_validation_valid_content() -> None:
-    """Test base64 validation with valid content."""
     content = b"Hello, world!"
     content_base64 = base64.b64encode(content).decode("ascii")
 
@@ -493,7 +462,6 @@ def test_base64_validation_valid_content() -> None:
 
 
 def test_tesseract_config_edge_cases() -> None:
-    """Test Tesseract configuration with various edge cases."""
     from kreuzberg._mcp.server import _create_config_with_overrides
 
     config = _create_config_with_overrides(ocr_backend="tesseract", tesseract_psm=PSMMode.SINGLE_COLUMN.value)
@@ -507,7 +475,6 @@ def test_tesseract_config_edge_cases() -> None:
 
 
 def test_extract_document_path_validation(tmp_path: Path) -> None:
-    """Test that extract_document validates file paths."""
     test_file = tmp_path / "test.txt"
     test_file.write_text("Test content")
 
@@ -529,7 +496,6 @@ def test_extract_document_path_validation(tmp_path: Path) -> None:
 
 
 def test_batch_extract_error_context_enhancement() -> None:
-    """Test that batch processing adds proper context to validation errors."""
     invalid_paths = ["nonexistent1.txt", "nonexistent2.txt"]
 
     with pytest.raises(ValidationError) as exc_info:
@@ -549,7 +515,6 @@ def test_batch_extract_error_context_enhancement() -> None:
 
 
 def test_extract_simple_basic_functionality(tmp_path: Path) -> None:
-    """Test extract_simple with basic functionality."""
     test_file = tmp_path / "test.txt"
     test_file.write_text("Hello, simple extraction!")
 
@@ -573,7 +538,6 @@ def test_extract_simple_basic_functionality(tmp_path: Path) -> None:
 
 
 def test_extract_simple_with_mime_type(tmp_path: Path) -> None:
-    """Test extract_simple with explicit mime type."""
     test_file = tmp_path / "test.pdf"
     test_file.write_bytes(b"fake pdf content")
 
@@ -593,7 +557,6 @@ def test_extract_simple_with_mime_type(tmp_path: Path) -> None:
 
 
 def test_extract_simple_path_validation_error(tmp_path: Path) -> None:
-    """Test that extract_simple validates file paths."""
     with pytest.raises(ValidationError) as exc_info:
         extract_simple("nonexistent_file.txt")
 
@@ -606,7 +569,6 @@ def test_extract_simple_path_validation_error(tmp_path: Path) -> None:
 
 
 def test_extract_simple_uses_default_config(tmp_path: Path) -> None:
-    """Test that extract_simple uses default configuration."""
     test_file = tmp_path / "test.txt"
     test_file.write_text("Test content")
 
@@ -626,7 +588,6 @@ def test_extract_simple_uses_default_config(tmp_path: Path) -> None:
 
 
 def test_get_default_config() -> None:
-    """Test get_default_config returns proper JSON."""
     result = get_default_config()
 
     import json
@@ -646,7 +607,6 @@ def test_get_default_config() -> None:
 
 
 def test_get_discovered_config_with_config() -> None:
-    """Test get_discovered_config when configuration exists."""
     from kreuzberg._types import ExtractionConfig
 
     mock_config = ExtractionConfig(force_ocr=True, chunk_content=True, extract_tables=True, ocr_backend="easyocr")
@@ -667,7 +627,6 @@ def test_get_discovered_config_with_config() -> None:
 
 
 def test_get_discovered_config_no_config() -> None:
-    """Test get_discovered_config when no configuration file found."""
     with patch("kreuzberg._mcp.server.discover_config") as mock_discover:
         mock_discover.return_value = None
 
@@ -677,7 +636,6 @@ def test_get_discovered_config_no_config() -> None:
 
 
 def test_get_available_backends() -> None:
-    """Test get_available_backends returns expected backends."""
     result = get_available_backends()
 
     assert result == "tesseract, easyocr, paddleocr"
@@ -685,7 +643,6 @@ def test_get_available_backends() -> None:
 
 
 def test_get_supported_formats() -> None:
-    """Test get_supported_formats returns format information."""
     result = get_supported_formats()
 
     assert isinstance(result, str)
@@ -697,7 +654,6 @@ def test_get_supported_formats() -> None:
 
 
 def test_extract_and_summarize_basic(tmp_path: Path) -> None:
-    """Test extract_and_summarize prompt function."""
     test_file = tmp_path / "document.txt"
     test_file.write_text("This is a test document for summarization.")
 
@@ -726,7 +682,6 @@ def test_extract_and_summarize_basic(tmp_path: Path) -> None:
 
 
 def test_extract_and_summarize_path_validation(tmp_path: Path) -> None:
-    """Test that extract_and_summarize validates file paths."""
     with pytest.raises(ValidationError) as exc_info:
         extract_and_summarize("../nonexistent.txt")
 
@@ -734,17 +689,21 @@ def test_extract_and_summarize_path_validation(tmp_path: Path) -> None:
 
 
 def test_extract_structured_basic(tmp_path: Path) -> None:
-    """Test extract_structured prompt function."""
     test_file = tmp_path / "document.txt"
     test_file.write_text("This is a structured document.")
 
     with patch("kreuzberg._mcp.server.extract_file_sync") as mock_extract:
+        from kreuzberg._types import Entity
+
         mock_result = ExtractionResult(
             content="This is a structured document.",
             mime_type="text/plain",
             metadata={},
             chunks=[],
-            entities=[],
+            entities=[
+                Entity(text="John Doe", type="PERSON", start=0, end=8),
+                Entity(text="New York", type="LOCATION", start=10, end=18),
+            ],
             keywords=[("document", 0.9), ("structured", 0.8)],
             tables=[{"text": "table", "cropped_image": None, "df": None, "page_number": 1}],  # type: ignore[typeddict-item]
         )
@@ -772,7 +731,6 @@ def test_extract_structured_basic(tmp_path: Path) -> None:
 
 
 def test_extract_structured_no_additional_data(tmp_path: Path) -> None:
-    """Test extract_structured when no entities/keywords/tables are found."""
     test_file = tmp_path / "simple.txt"
     test_file.write_text("Simple content.")
 
@@ -803,7 +761,6 @@ def test_extract_structured_no_additional_data(tmp_path: Path) -> None:
 
 
 def test_extract_structured_empty_entities_keywords_tables(tmp_path: Path) -> None:
-    """Test extract_structured with empty lists for entities, keywords, and tables."""
     test_file = tmp_path / "document.txt"
     test_file.write_text("Simple content.")
 
@@ -834,7 +791,6 @@ def test_extract_structured_empty_entities_keywords_tables(tmp_path: Path) -> No
 
 
 def test_extract_structured_config_parameters(tmp_path: Path) -> None:
-    """Test that extract_structured uses correct configuration."""
     test_file = tmp_path / "document.txt"
     test_file.write_text("Test document")
 
@@ -858,7 +814,6 @@ def test_extract_structured_config_parameters(tmp_path: Path) -> None:
 
 
 def test_create_config_with_overrides_no_base_config() -> None:
-    """Test config creation when no base config is discovered."""
     with patch("kreuzberg._mcp.server.discover_config") as mock_discover:
         mock_discover.return_value = None
 
@@ -870,7 +825,6 @@ def test_create_config_with_overrides_no_base_config() -> None:
 
 
 def test_create_config_with_overrides_with_base_config() -> None:
-    """Test config creation when base config exists."""
     from kreuzberg._types import ExtractionConfig
 
     base_config = ExtractionConfig(
@@ -894,7 +848,6 @@ def test_create_config_with_overrides_with_base_config() -> None:
 
 
 def test_create_config_tesseract_lang_only() -> None:
-    """Test Tesseract config creation with language only."""
     with patch("kreuzberg._mcp.server.discover_config") as mock_discover:
         mock_discover.return_value = None
 
@@ -905,7 +858,6 @@ def test_create_config_tesseract_lang_only() -> None:
 
 
 def test_create_config_tesseract_psm_only() -> None:
-    """Test Tesseract config creation with PSM only."""
     with patch("kreuzberg._mcp.server.discover_config") as mock_discover:
         mock_discover.return_value = None
 
@@ -916,7 +868,6 @@ def test_create_config_tesseract_psm_only() -> None:
 
 
 def test_create_config_tesseract_output_format_only() -> None:
-    """Test Tesseract config creation with output format only."""
     with patch("kreuzberg._mcp.server.discover_config") as mock_discover:
         mock_discover.return_value = None
 
@@ -927,7 +878,6 @@ def test_create_config_tesseract_output_format_only() -> None:
 
 
 def test_create_config_tesseract_table_detection_only() -> None:
-    """Test Tesseract config creation with table detection only."""
     with patch("kreuzberg._mcp.server.discover_config") as mock_discover:
         mock_discover.return_value = None
 
@@ -938,7 +888,6 @@ def test_create_config_tesseract_table_detection_only() -> None:
 
 
 def test_create_config_tesseract_all_parameters() -> None:
-    """Test Tesseract config creation with all parameters."""
     with patch("kreuzberg._mcp.server.discover_config") as mock_discover:
         mock_discover.return_value = None
 
@@ -958,7 +907,6 @@ def test_create_config_tesseract_all_parameters() -> None:
 
 
 def test_create_config_tesseract_merge_with_existing() -> None:
-    """Test merging Tesseract config with existing TesseractConfig."""
     from kreuzberg._types import ExtractionConfig
 
     existing_tesseract_config = TesseractConfig(language="eng", psm=PSMMode.SINGLE_BLOCK, output_format="text")
@@ -981,7 +929,6 @@ def test_create_config_tesseract_merge_with_existing() -> None:
 
 
 def test_create_config_non_tesseract_backend() -> None:
-    """Test that Tesseract parameters are ignored for non-tesseract backends."""
     with patch("kreuzberg._mcp.server.discover_config") as mock_discover:
         mock_discover.return_value = None
 
@@ -996,7 +943,6 @@ def test_create_config_non_tesseract_backend() -> None:
 
 
 def test_create_config_invalid_psm_mode() -> None:
-    """Test handling of invalid PSM mode values."""
     with patch("kreuzberg._mcp.server.discover_config") as mock_discover:
         mock_discover.return_value = None
 
@@ -1012,7 +958,6 @@ def test_create_config_invalid_psm_mode() -> None:
 
 
 def test_create_config_tesseract_psm_false_value() -> None:
-    """Test that tesseract_psm=0 (valid PSM mode) is handled correctly."""
     with patch("kreuzberg._mcp.server.discover_config") as mock_discover:
         mock_discover.return_value = None
 
@@ -1026,7 +971,6 @@ def test_create_config_tesseract_psm_false_value() -> None:
 
 
 def test_create_config_enable_table_detection_false() -> None:
-    """Test that enable_table_detection=False is handled correctly."""
     with patch("kreuzberg._mcp.server.discover_config") as mock_discover:
         mock_discover.return_value = None
 
@@ -1038,7 +982,6 @@ def test_create_config_enable_table_detection_false() -> None:
 
 
 def test_create_config_with_non_tesseract_ocr_config() -> None:
-    """Test merging when existing config has non-TesseractConfig ocr_config."""
     from kreuzberg._types import EasyOCRConfig, ExtractionConfig
 
     base_config = ExtractionConfig(
@@ -1059,7 +1002,6 @@ def test_create_config_with_non_tesseract_ocr_config() -> None:
 
 
 def test_validate_file_path_os_error() -> None:
-    """Test _validate_file_path handles OSError properly."""
     with patch("pathlib.Path.resolve") as mock_resolve:
         mock_resolve.side_effect = OSError("Permission denied")
 
@@ -1072,7 +1014,6 @@ def test_validate_file_path_os_error() -> None:
 
 
 def test_validate_file_path_value_error() -> None:
-    """Test _validate_file_path handles ValueError properly."""
     with patch("pathlib.Path.resolve") as mock_resolve:
         mock_resolve.side_effect = ValueError("Invalid path characters")
 
@@ -1085,7 +1026,6 @@ def test_validate_file_path_value_error() -> None:
 
 
 def test_validate_file_path_absolute_path_allowed(tmp_path: Path) -> None:
-    """Test that absolute paths are allowed."""
     test_file = tmp_path / "test.txt"
     test_file.write_text("Test content")
 
@@ -1094,7 +1034,6 @@ def test_validate_file_path_absolute_path_allowed(tmp_path: Path) -> None:
 
 
 def test_main_function() -> None:
-    """Test main function calls mcp.run()."""
     with patch("kreuzberg._mcp.server.mcp.run") as mock_run:
         main()
 
@@ -1102,7 +1041,6 @@ def test_main_function() -> None:
 
 
 def test_base64_validation_binascii_error() -> None:
-    """Test base64 validation specifically handles binascii.Error."""
     import binascii
 
     with patch("base64.b64decode") as mock_decode:
@@ -1117,7 +1055,6 @@ def test_base64_validation_binascii_error() -> None:
 
 
 def test_extract_document_with_all_tesseract_params(tmp_path: Path) -> None:
-    """Test extract_document with all Tesseract parameters."""
     test_file = tmp_path / "test.txt"
     test_file.write_text("Test content")
 
@@ -1149,7 +1086,6 @@ def test_extract_document_with_all_tesseract_params(tmp_path: Path) -> None:
 
 
 def test_extract_bytes_with_all_tesseract_params() -> None:
-    """Test extract_bytes with all Tesseract parameters."""
     content = b"Test content"
     content_base64 = base64.b64encode(content).decode("ascii")
 

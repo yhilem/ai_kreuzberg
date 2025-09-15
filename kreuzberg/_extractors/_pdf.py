@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import contextlib
 import io
 import logging
@@ -41,7 +40,7 @@ from kreuzberg._utils._errors import create_error_context, should_retry
 from kreuzberg._utils._image_preprocessing import calculate_optimal_dpi
 from kreuzberg._utils._resource_managers import pdf_document, pdf_document_sync, pdf_resources_sync
 from kreuzberg._utils._string import normalize_spaces
-from kreuzberg._utils._sync import run_maybe_async, run_taskgroup_batched
+from kreuzberg._utils._sync import run_maybe_async, run_taskgroup, run_taskgroup_batched
 from kreuzberg._utils._table import generate_table_summary
 from kreuzberg._utils._tmp import temporary_file, temporary_file_sync
 from kreuzberg.exceptions import ParsingError
@@ -231,7 +230,7 @@ class PDFExtractor(Extractor):
                 img_counter += 1
 
         if tasks:
-            results = await asyncio.gather(*tasks)
+            results = await run_taskgroup(*tasks)
             return [img for img in results if img is not None]
 
         return []

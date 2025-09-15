@@ -18,14 +18,12 @@ if TYPE_CHECKING:
 
 @pytest.fixture(autouse=True)
 def clear_language_detection_cache() -> Generator[None, None, None]:
-    """Clear the detect_languages LRU cache before each test."""
     detect_languages.cache_clear()
     yield
     detect_languages.cache_clear()
 
 
 def test_create_fast_langdetect_config_when_library_missing() -> None:
-    """Test _create_fast_langdetect_config when fast-langdetect is missing."""
     config = LanguageDetectionConfig()
 
     with (
@@ -38,7 +36,6 @@ def test_create_fast_langdetect_config_when_library_missing() -> None:
 
 
 def test_create_fast_langdetect_config_with_basic_config() -> None:
-    """Test _create_fast_langdetect_config with basic configuration."""
     config = LanguageDetectionConfig(allow_fallback=True)
 
     mock_fast_config_class = Mock()
@@ -56,7 +53,6 @@ def test_create_fast_langdetect_config_with_basic_config() -> None:
 
 
 def test_create_fast_langdetect_config_with_cache_dir() -> None:
-    """Test _create_fast_langdetect_config with cache directory specified."""
     config = LanguageDetectionConfig(allow_fallback=False, cache_dir="/tmp/langdetect")
 
     mock_fast_config_class = Mock()
@@ -74,7 +70,6 @@ def test_create_fast_langdetect_config_with_cache_dir() -> None:
 
 
 def test_create_fast_langdetect_config_without_cache_dir() -> None:
-    """Test _create_fast_langdetect_config with cache_dir=None."""
     config = LanguageDetectionConfig(allow_fallback=True, cache_dir=None)
 
     mock_fast_config_class = Mock()
@@ -92,7 +87,6 @@ def test_create_fast_langdetect_config_without_cache_dir() -> None:
 
 
 def test_detect_languages_when_library_missing() -> None:
-    """Test detect_languages raises MissingDependencyError when fast-langdetect is missing."""
     text = "This is some English text."
 
     with patch("kreuzberg._language_detection.HAS_FAST_LANGDETECT", False):
@@ -105,7 +99,6 @@ def test_detect_languages_when_library_missing() -> None:
 
 
 def test_detect_languages_when_detect_function_missing() -> None:
-    """Test detect_languages raises MissingDependencyError when detect function is None."""
     text = "This is some English text."
 
     with (
@@ -121,7 +114,6 @@ def test_detect_languages_when_detect_function_missing() -> None:
 
 
 def test_detect_languages_when_detect_multilingual_function_missing() -> None:
-    """Test detect_languages raises MissingDependencyError when detect_multilingual is None."""
     text = "This is some English text."
 
     with (
@@ -138,7 +130,6 @@ def test_detect_languages_when_detect_multilingual_function_missing() -> None:
 
 
 def test_detect_languages_single_language_success() -> None:
-    """Test detect_languages with single language detection success."""
     text = "This is some English text."
     mock_detect_result = {"lang": "EN", "score": 0.99}
 
@@ -158,7 +149,6 @@ def test_detect_languages_single_language_success() -> None:
 
 
 def test_detect_languages_single_language_no_lang_key() -> None:
-    """Test detect_languages with single language detection but no lang key."""
     text = "This is some text."
     mock_detect_result = {"score": 0.50}
 
@@ -177,7 +167,6 @@ def test_detect_languages_single_language_no_lang_key() -> None:
 
 
 def test_detect_languages_single_language_empty_lang() -> None:
-    """Test detect_languages with single language detection but empty lang."""
     text = "This is some text."
     mock_detect_result = {"lang": "", "score": 0.50}
 
@@ -196,7 +185,6 @@ def test_detect_languages_single_language_empty_lang() -> None:
 
 
 def test_detect_languages_single_language_none_result() -> None:
-    """Test detect_languages with single language detection returning None."""
     text = "This is some text."
     mock_detect = Mock(return_value=None)
     mock_detect_multilingual = Mock()
@@ -213,7 +201,6 @@ def test_detect_languages_single_language_none_result() -> None:
 
 
 def test_detect_languages_multilingual_success() -> None:
-    """Test detect_languages with multilingual detection success."""
     text = "Hello world. Bonjour le monde."
     config = LanguageDetectionConfig(multilingual=True, top_k=3)
 
@@ -239,7 +226,6 @@ def test_detect_languages_multilingual_success() -> None:
 
 
 def test_detect_languages_multilingual_with_low_memory() -> None:
-    """Test detect_languages with multilingual detection and low memory mode."""
     text = "Hello world. Bonjour le monde."
     config = LanguageDetectionConfig(multilingual=True, low_memory=True, top_k=2)
 
@@ -260,7 +246,6 @@ def test_detect_languages_multilingual_with_low_memory() -> None:
 
 
 def test_detect_languages_multilingual_results_missing_lang() -> None:
-    """Test detect_languages with multilingual results that have missing lang keys."""
     text = "Mixed language text."
     config = LanguageDetectionConfig(multilingual=True)
 
@@ -285,7 +270,6 @@ def test_detect_languages_multilingual_results_missing_lang() -> None:
 
 
 def test_detect_languages_with_default_config() -> None:
-    """Test detect_languages with default config (config=None)."""
     text = "This is English text."
     mock_detect_result = {"lang": "EN", "score": 0.95}
 
@@ -304,7 +288,6 @@ def test_detect_languages_with_default_config() -> None:
 
 
 def test_detect_languages_with_low_memory_single_language() -> None:
-    """Test detect_languages with low_memory=True for single language detection."""
     text = "This is English text."
     config = LanguageDetectionConfig(low_memory=True)
     mock_detect_result = {"lang": "EN", "score": 0.95}
@@ -324,7 +307,6 @@ def test_detect_languages_with_low_memory_single_language() -> None:
 
 
 def test_detect_languages_exception_handling() -> None:
-    """Test detect_languages handles exceptions gracefully."""
     text = "This is some text."
 
     mock_detect = Mock(side_effect=RuntimeError("Detection failed"))
@@ -342,7 +324,6 @@ def test_detect_languages_exception_handling() -> None:
 
 
 def test_detect_languages_multilingual_exception_handling() -> None:
-    """Test detect_languages handles exceptions in multilingual mode gracefully."""
     text = "Mixed language text."
     config = LanguageDetectionConfig(multilingual=True)
 
@@ -361,7 +342,6 @@ def test_detect_languages_multilingual_exception_handling() -> None:
 
 
 def test_detect_languages_caching_behavior() -> None:
-    """Test detect_languages uses LRU cache correctly."""
     text = "This is English text."
     mock_detect_result = {"lang": "EN", "score": 0.95}
 
@@ -383,7 +363,6 @@ def test_detect_languages_caching_behavior() -> None:
 
 
 def test_detect_languages_cache_different_configs() -> None:
-    """Test detect_languages caches differently for different configs."""
     text = "This is English text."
     mock_detect_result = {"lang": "EN", "score": 0.95}
 

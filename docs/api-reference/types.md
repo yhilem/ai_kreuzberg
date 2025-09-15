@@ -78,6 +78,12 @@ Configuration for enhanced JSON document processing:
 
 ::: kreuzberg.JSONExtractionConfig
 
+## HTML to Markdown Configuration
+
+Configuration options for converting HTML content to Markdown:
+
+::: kreuzberg.HTMLToMarkdownConfig
+
 ## PSMMode (Page Segmentation Mode)
 
 ::: kreuzberg.PSMMode

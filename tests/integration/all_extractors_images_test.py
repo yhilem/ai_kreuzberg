@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from pathlib import Path
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -12,9 +13,6 @@ from kreuzberg._extractors._pandoc import PandocExtractor
 from kreuzberg._extractors._pdf import PDFExtractor
 from kreuzberg._extractors._presentation import PresentationExtractor
 from kreuzberg._types import ExtractedImage
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 
 @pytest.mark.anyio
@@ -131,7 +129,6 @@ class TestAllExtractorsImageIntegration:
             with patch("kreuzberg._extractors._pandoc.AsyncPath") as mock_async_path:
 
                 async def mock_read_text(encoding: str | None = None) -> str:
-                    # Return JSON for metadata files, markdown for content files
                     path_str = str(mock_async_path.call_args[0][0])
                     if path_str.endswith(".json"):
                         return '{"title": "Test Document", "author": "Test Author"}'
@@ -180,13 +177,12 @@ class TestAllExtractorsImageIntegration:
             result = await extractor.extract_bytes_async(b"fake_email_data")
 
         assert len(result.images) == 1
-        assert result.images[0].format == "jpeg"
+        assert result.images[0].format == "jpg"
         assert result.images[0].filename == "photo.jpg"
         assert result.images[0].data == b"fake_jpeg_data"
 
-    async def test_pdf_extractor_complete_pipeline(self, tmp_path: Path) -> None:
-        pdf_path = tmp_path / "test.pdf"
-        pdf_path.write_bytes(b"%PDF-1.4\n%%EOF")
+    async def test_pdf_extractor_complete_pipeline(self) -> None:
+        pdf_path = Path(__file__).parent.parent / "test_source_files" / "searchable.pdf"
 
         config = ExtractionConfig(
             extract_images=True,

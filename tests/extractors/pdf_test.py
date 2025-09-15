@@ -19,6 +19,8 @@ from kreuzberg.extraction import DEFAULT_CONFIG
 from tests.conftest import pdfs_with_tables
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
     from pytest_mock import MockerFixture
 
 IS_CI = os.environ.get("CI", "false").lower() == "true"
@@ -539,8 +541,15 @@ def test_pdf_validation_custom_threshold(pdf_extractor: PDFExtractor) -> None:
 async def test_pdf_extract_bytes_async_basic(
     pdf_extractor: PDFExtractor, sample_pdf_content: bytes, mocker: MockerFixture
 ) -> None:
-    mock_create_temp_file = mocker.patch("kreuzberg._extractors._pdf.create_temp_file")
-    mock_create_temp_file.return_value = ("/tmp/test.pdf", mocker.AsyncMock())
+    from contextlib import asynccontextmanager
+    from pathlib import Path
+
+    @asynccontextmanager
+    async def mock_temp_file(extension: str, content: bytes | None = None) -> AsyncGenerator[Path, None]:
+        yield Path("/tmp/test.pdf")
+
+    mock_temporary_file = mocker.patch("kreuzberg._extractors._pdf.temporary_file")
+    mock_temporary_file.side_effect = mock_temp_file
 
     # Mock AsyncPath.write_bytes for extract_bytes_async - legitimately needed to test byte-to-file conversion ~keep
     mock_async_path = mocker.patch("kreuzberg._extractors._pdf.AsyncPath")
@@ -558,7 +567,7 @@ async def test_pdf_extract_bytes_async_basic(
 
     assert result.content == "Test content"
     assert result.metadata == {"pages": 1}
-    mock_create_temp_file.assert_called_once_with(".pdf")
+    mock_temporary_file.assert_called_once_with(".pdf", sample_pdf_content)
 
 
 def test_pdf_extract_bytes_sync_basic(

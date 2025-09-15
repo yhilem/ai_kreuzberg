@@ -344,7 +344,10 @@ async def test_extract_images_from_html_base64(test_client: AsyncTestClient[Any]
     assert len(data[0]["images"]) == 1
     img0 = data[0]["images"][0]
     assert img0["format"] == "png"
-    assert img0["data"].startswith("data:image/png;base64,")
+    assert (
+        img0["data"]
+        == "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+    )
     assert img0["description"] == "Red dot"
 
 

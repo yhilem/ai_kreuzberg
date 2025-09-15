@@ -430,7 +430,7 @@ async def test_extract_with_discovered_config(test_client: AsyncTestClient[Any],
 
     test_config = ExtractionConfig(chunk_content=True, max_chars=1000, max_overlap=200)
 
-    with patch("kreuzberg._api.main.discover_config", return_value=test_config):
+    with patch("kreuzberg._api.main.discover_config_cached", return_value=test_config):
         with patch("kreuzberg._api.main.batch_extract_bytes", new_callable=AsyncMock) as mock_extract:
             mock_extract.return_value = [
                 {"content": "Test content", "mime_type": "text/plain", "metadata": {}, "chunks": ["chunk1", "chunk2"]}
@@ -656,7 +656,7 @@ async def test_msgspec_serialization_deterministic(test_client: AsyncTestClient[
 async def test_extract_with_invalid_config_file(test_client: AsyncTestClient[Any], tmp_path: Path) -> None:
     from kreuzberg.exceptions import ValidationError
 
-    with patch("kreuzberg._api.main.discover_config") as mock_discover:
+    with patch("kreuzberg._api.main.discover_config_cached") as mock_discover:
         mock_discover.side_effect = ValidationError(
             "Invalid TOML in configuration file: Expected '=' after key",
             context={"file": "/path/to/kreuzberg.toml", "error": "TOML parse error"},
@@ -698,7 +698,7 @@ async def test_get_config_with_invalid_config_file(test_client: AsyncTestClient[
 async def test_extract_with_invalid_ocr_config(test_client: AsyncTestClient[Any], tmp_path: Path) -> None:
     from kreuzberg.exceptions import ValidationError
 
-    with patch("kreuzberg._api.main.discover_config") as mock_discover:
+    with patch("kreuzberg._api.main.discover_config_cached") as mock_discover:
         mock_discover.side_effect = ValidationError(
             "Invalid configuration for OCR backend 'tesseract': Invalid PSM mode value: 99",
             context={"psm_value": 99, "error": "99 is not a valid PSMMode"},
@@ -720,7 +720,7 @@ async def test_extract_with_invalid_ocr_config(test_client: AsyncTestClient[Any]
 async def test_extract_with_invalid_gmft_config(test_client: AsyncTestClient[Any], tmp_path: Path) -> None:
     from kreuzberg.exceptions import ValidationError
 
-    with patch("kreuzberg._api.main.discover_config") as mock_discover:
+    with patch("kreuzberg._api.main.discover_config_cached") as mock_discover:
         mock_discover.side_effect = ValidationError(
             "Invalid GMFT configuration: Invalid parameter 'invalid_param'",
             context={"gmft_config": {"invalid_param": "value"}, "error": "Unknown parameter"},
@@ -744,7 +744,7 @@ async def test_extract_with_invalid_gmft_config(test_client: AsyncTestClient[Any
 async def test_extract_with_unreadable_config_file(test_client: AsyncTestClient[Any], tmp_path: Path) -> None:
     from kreuzberg.exceptions import ValidationError
 
-    with patch("kreuzberg._api.main.discover_config") as mock_discover:
+    with patch("kreuzberg._api.main.discover_config_cached") as mock_discover:
         mock_discover.side_effect = ValidationError(
             "Failed to read pyproject.toml: Permission denied",
             context={"file": "/path/to/pyproject.toml", "error": "Permission denied"},
@@ -767,7 +767,7 @@ async def test_extract_with_unreadable_config_file(test_client: AsyncTestClient[
 async def test_extract_with_invalid_extraction_config(test_client: AsyncTestClient[Any], tmp_path: Path) -> None:
     from kreuzberg.exceptions import ValidationError
 
-    with patch("kreuzberg._api.main.discover_config") as mock_discover:
+    with patch("kreuzberg._api.main.discover_config_cached") as mock_discover:
         mock_discover.side_effect = ValidationError(
             "Invalid extraction configuration: max_chars must be positive",
             context={"config": {"max_chars": -100}, "error": "Negative max_chars"},
@@ -800,7 +800,7 @@ async def test_extract_pdf_without_tables_with_table_extraction_enabled(
         ),
     )
 
-    with patch("kreuzberg._api.main.discover_config", return_value=test_config):
+    with patch("kreuzberg._api.main.discover_config_cached", return_value=test_config):
         with searchable_pdf.open("rb") as f:
             response = await test_client.post(
                 "/extract", files=[("data", (searchable_pdf.name, f.read(), "application/pdf"))]

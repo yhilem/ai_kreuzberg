@@ -142,6 +142,8 @@ class PresentationExtractor(Extractor):
                 if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
                     try:
                         image = shape.image
+                        if not image.blob or not isinstance(image.blob, bytes):
+                            continue
                         filename = f"slide_{slide_num}_image_{len(images) + 1}.{image.ext}"
 
                         images.append(
@@ -162,6 +164,8 @@ class PresentationExtractor(Extractor):
             if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
                 try:
                     image = shape.image
+                    if not image.blob or not isinstance(image.blob, bytes):
+                        continue
                     filename = f"slide_{slide_num}_group_image_{image_count + len(images) + 1}.{image.ext}"
                     images.append(
                         ExtractedImage(data=image.blob, format=image.ext, filename=filename, page_number=slide_num)

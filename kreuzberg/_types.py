@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from collections.abc import Awaitable, Callable, Iterable, Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -1133,70 +1133,74 @@ class ExtractionConfig(ConfigDict):
 
 @dataclass(unsafe_hash=True, frozen=True, slots=True)
 class HTMLToMarkdownConfig:
-    stream_processing: bool = False
-    """Enable streaming mode for processing large HTML documents."""
-    chunk_size: int = 1024
-    """Size of chunks when stream_processing is enabled."""
-    chunk_callback: Callable[[str], None] | None = None
-    """Callback function invoked for each chunk during stream processing."""
-    progress_callback: Callable[[int, int], None] | None = None
-    """Callback function for progress updates (current, total)."""
-    parser: str | None = "lxml"
-    """BeautifulSoup parser to use. Defaults to 'lxml' for ~30% better performance. Falls back to 'html.parser' if lxml not available."""
     autolinks: bool = True
-    """Convert URLs to clickable links automatically."""
+    """Automatically convert valid URLs to Markdown links."""
+    br_in_tables: bool = False
+    """Use <br> tags for line breaks in table cells instead of spaces."""
     bullets: str = "*+-"
     """Characters to use for unordered list bullets."""
+    chunk_size: int = 2048
+    """Size of chunks when stream_processing is enabled."""
     code_language: str = ""
-    """Default language for code blocks."""
+    """Default language identifier for fenced code blocks."""
     code_language_callback: Callable[[Any], str] | None = None
-    """Callback to determine code language dynamically."""
-    convert: str | Iterable[str] | None = None
-    """HTML tags to convert. If None, all supported tags are converted."""
+    """Function to dynamically determine code block language."""
+    convert: list[str] | None = None
+    """List of HTML tags to convert (None = all supported tags)."""
     convert_as_inline: bool = False
-    """Convert block elements as inline elements."""
-    custom_converters: Mapping[Any, Any] | None = None
-    """Custom converters for specific HTML elements."""
+    """Treat content as inline elements only."""
+    custom_converters: Mapping[str, Callable[..., str]] | None = None
+    """Mapping of HTML tag names to custom converter functions."""
     default_title: bool = False
-    """Use a default title if none is found."""
+    """Use default titles for elements like links."""
     escape_asterisks: bool = True
-    """Escape asterisks in text to prevent unintended emphasis."""
+    """Escape * characters to prevent unintended formatting."""
     escape_misc: bool = True
-    """Escape miscellaneous characters that have special meaning in Markdown."""
+    """Escape miscellaneous characters to prevent Markdown conflicts."""
     escape_underscores: bool = True
-    """Escape underscores in text to prevent unintended emphasis."""
+    """Escape _ characters to prevent unintended formatting."""
     extract_metadata: bool = True
-    """Extract metadata from HTML head section."""
+    """Extract document metadata as comment header."""
     heading_style: Literal["underlined", "atx", "atx_closed"] = "underlined"
     """Style for markdown headings."""
     highlight_style: Literal["double-equal", "html", "bold"] = "double-equal"
     """Style for highlighting text."""
-    keep_inline_images_in: Iterable[str] | None = None
-    """HTML tags where inline images should be preserved."""
+    keep_inline_images_in: list[str] | None = None
+    """Tags where inline images should be preserved."""
+    list_indent_type: Literal["spaces", "tabs"] = "spaces"
+    """Type of indentation to use for lists."""
+    list_indent_width: int = 4
+    """Number of spaces per indentation level (use 2 for Discord/Slack)."""
     newline_style: Literal["spaces", "backslash"] = "spaces"
     """Style for line breaks in markdown."""
-    strip: str | Iterable[str] | None = None
-    """HTML tags to strip completely from output."""
+    preprocess_html: bool = False
+    """Enable HTML preprocessing to clean messy HTML."""
+    preprocessing_preset: Literal["minimal", "standard", "aggressive"] = "standard"
+    """Preprocessing level for cleaning HTML."""
+    progress_callback: Callable[[int, int], None] | None = None
+    """Callback function for progress updates (current, total)."""
+    remove_forms: bool = True
+    """Remove form elements during preprocessing."""
+    remove_navigation: bool = True
+    """Remove navigation elements during preprocessing."""
+    stream_processing: bool = False
+    """Enable streaming mode for processing large HTML documents."""
+    strip: list[str] | None = None
+    """List of HTML tags to remove from output."""
     strip_newlines: bool = False
-    """Strip newlines from the output."""
+    """Remove newlines from HTML input before processing."""
     strong_em_symbol: Literal["*", "_"] = "*"
     """Symbol to use for strong/emphasis formatting."""
     sub_symbol: str = ""
     """Symbol to use for subscript text."""
     sup_symbol: str = ""
     """Symbol to use for superscript text."""
+    whitespace_mode: Literal["normalized", "strict"] = "normalized"
+    """Whitespace handling mode."""
     wrap: bool = False
     """Enable text wrapping."""
     wrap_width: int = 80
-    """Width for text wrapping when wrap is True."""
-    preprocess_html: bool = True
-    """Enable HTML preprocessing to clean up the input."""
-    preprocessing_preset: Literal["minimal", "standard", "aggressive"] = "aggressive"
-    """Preprocessing level for cleaning HTML."""
-    remove_navigation: bool = True
-    """Remove navigation elements from HTML."""
-    remove_forms: bool = True
-    """Remove form elements from HTML."""
+    """Width for text wrapping."""
 
     def to_dict(self) -> dict[str, Any]:
         result = msgspec.to_builtins(self, builtin_types=(type(None),), order="deterministic")

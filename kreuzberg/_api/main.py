@@ -13,10 +13,8 @@ from typing_extensions import TypedDict
 
 from kreuzberg import (
     EasyOCRConfig,
-    ExtractedImage,
     ExtractionConfig,
     ExtractionResult,
-    ImageOCRResult,
     KreuzbergError,
     MissingDependencyError,
     PaddleOCRConfig,
@@ -38,30 +36,6 @@ from kreuzberg._config import discover_config
 
 if TYPE_CHECKING:
     from litestar.datastructures import UploadFile
-
-
-class ExtractedImageDict(TypedDict):
-    """TypedDict for extracted image JSON representation."""
-
-    data: str
-    format: str
-    filename: str | None
-    page_number: int | None
-    dimensions: tuple[int, int] | None
-    colorspace: str | None
-    bits_per_component: int | None
-    is_mask: bool
-    description: str | None
-
-
-class ImageOCRResultDict(TypedDict):
-    """TypedDict for image OCR result JSON representation."""
-
-    image: ExtractedImageDict
-    ocr_result: Any
-    confidence_score: float | None
-    processing_time: float | None
-    skipped_reason: str | None
 
 
 class HealthResponse(TypedDict):
@@ -384,31 +358,6 @@ def _pil_image_encoder(obj: Any) -> str:
     return f"data:image/png;base64,{img_str}"
 
 
-def _extracted_image_encoder(obj: ExtractedImage) -> ExtractedImageDict:
-    encoded_data = base64.b64encode(obj.data).decode()
-    return ExtractedImageDict(
-        data=f"data:image/{obj.format};base64,{encoded_data}",
-        format=obj.format,
-        filename=obj.filename,
-        page_number=obj.page_number,
-        dimensions=obj.dimensions,
-        colorspace=obj.colorspace,
-        bits_per_component=obj.bits_per_component,
-        is_mask=obj.is_mask,
-        description=obj.description,
-    )
-
-
-def _image_ocr_result_encoder(obj: ImageOCRResult) -> ImageOCRResultDict:
-    return ImageOCRResultDict(
-        image=_extracted_image_encoder(obj.image),
-        ocr_result=obj.ocr_result,
-        confidence_score=obj.confidence_score,
-        processing_time=obj.processing_time,
-        skipped_reason=obj.skipped_reason,
-    )
-
-
 openapi_config = OpenAPIConfig(
     title="Kreuzberg API",
     version="3.14.0",
@@ -428,8 +377,6 @@ openapi_config = OpenAPIConfig(
 type_encoders = {
     pl.DataFrame: _polars_dataframe_encoder,
     Image.Image: _pil_image_encoder,
-    ExtractedImage: _extracted_image_encoder,
-    ImageOCRResult: _image_ocr_result_encoder,
 }
 
 app = Litestar(

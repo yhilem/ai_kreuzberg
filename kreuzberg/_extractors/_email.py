@@ -27,6 +27,8 @@ except ImportError:  # pragma: no cover
     html2text = None
 
 _HTML_TAG_PATTERN = re.compile(r"<[^>]+>")
+_UNICODE_QUOTES_PATTERN = re.compile(r"[\u201c\u201d]")
+_UNICODE_SINGLE_QUOTES_PATTERN = re.compile(r"[\u2018\u2019]")
 
 
 class EmailExtractor(Extractor):
@@ -86,7 +88,14 @@ class EmailExtractor(Extractor):
     def _format_email_field(self, field: Any) -> str:
         match field:
             case list():
-                return ", ".join(str(item.get("email", "")) if isinstance(item, dict) else str(item) for item in field)
+                emails = []
+                for item in field:
+                    if isinstance(item, dict):
+                        if email := item.get("email", ""):
+                            emails.append(str(email))
+                    else:
+                        emails.append(str(item))
+                return ", ".join(emails)
             case dict():
                 return str(field.get("email", ""))
             case _:
@@ -111,12 +120,8 @@ class EmailExtractor(Extractor):
                 cleaned = re.sub(r"<style[^>]*>.*?</style>", "", cleaned, flags=re.IGNORECASE | re.DOTALL)
                 clean_html = _HTML_TAG_PATTERN.sub("", cleaned)
                 clean_html = unescape(clean_html)
-                clean_html = (
-                    clean_html.replace("\u201c", '"')
-                    .replace("\u201d", '"')
-                    .replace("\u2019", "'")
-                    .replace("\u2018", "'")
-                )
+                clean_html = _UNICODE_QUOTES_PATTERN.sub('"', clean_html)
+                clean_html = _UNICODE_SINGLE_QUOTES_PATTERN.sub("'", clean_html)
                 text_parts.append(clean_html)
 
     def _extract_email_attachments(
@@ -129,12 +134,12 @@ class EmailExtractor(Extractor):
         for att in attachments:
             name_val: str = "unknown"
             if isinstance(att, dict):
-                n = att.get("name")
+                n = att.get("name") or att.get("filename")
                 if isinstance(n, str) and n:
                     name_val = n
             names.append(name_val)
-        metadata["attachments"] = names
         if names:
+            metadata["attachments"] = names
             text_parts.append("Attachments: " + ", ".join(names))
 
     def _extract_images_from_attachments(self, parsed_email: dict[str, Any]) -> list[ExtractedImage]:
@@ -151,7 +156,8 @@ class EmailExtractor(Extractor):
             if not isinstance(mime, str) or not mime.startswith("image/"):
                 continue
 
-            name = att.get("name") if isinstance(att.get("name"), str) else None
+            name = att.get("name") or att.get("filename")
+            name = name if isinstance(name, str) else None
             data = att.get("data") or att.get("content") or att.get("payload")
             raw: bytes | None = None
             if isinstance(data, (bytes, bytearray)):

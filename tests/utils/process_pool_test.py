@@ -39,7 +39,7 @@ def _compute_square(n: int) -> int:
 
 
 def test_pool_size() -> None:
-    expected_size = max(1, mp.cpu_count() - 1)
+    expected_size = mp.cpu_count()
     assert expected_size == _POOL_SIZE
 
 

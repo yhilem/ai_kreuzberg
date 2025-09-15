@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import base64
+import binascii
+import io
 import logging
 from typing import TYPE_CHECKING, ClassVar
 
 import html_to_markdown
 from anyio import Path as AsyncPath
 from bs4 import BeautifulSoup
+from PIL import Image
 
 from kreuzberg._extractors._base import MAX_SINGLE_IMAGE_SIZE, Extractor
 from kreuzberg._mime_types import HTML_MIME_TYPE, MARKDOWN_MIME_TYPE
@@ -89,6 +92,13 @@ class HTMLExtractor(Extractor):
                         )
                         continue
 
+                    dimensions = None
+                    try:
+                        with Image.open(io.BytesIO(image_data)) as pil_img:
+                            dimensions = pil_img.size
+                    except (OSError, ValueError) as e:
+                        logger.debug("Could not determine image dimensions for %s: %s", format_name, e)
+
                     alt_val = img.get("alt")  # type: ignore[union-attr]
                     desc = alt_val if isinstance(alt_val, str) else None
                     images.append(
@@ -97,25 +107,36 @@ class HTMLExtractor(Extractor):
                             format=format_name,
                             filename=f"embedded_image_{len(images) + 1}.{format_name}",
                             description=desc,
+                            dimensions=dimensions,
                         )
                     )
-                except Exception as e:  # noqa: BLE001
+                except (ValueError, binascii.Error) as e:
                     logger.warning("Failed to extract base64 image: %s", e)
 
-        for svg in soup.find_all("svg"):
+        def extract_svg_safe(svg_element: object) -> ExtractedImage | None:
             try:
-                svg_content = str(svg).encode("utf-8")
-                title_or_aria = svg.get("title") or svg.get("aria-label")  # type: ignore[union-attr]
+                svg_content = str(svg_element).encode("utf-8")
+
+                def _get_attr_safe(obj: object, attr: str) -> str | None:
+                    get_method = getattr(obj, "get", None)
+                    if callable(get_method):
+                        result = get_method(attr)
+                        return result if isinstance(result, str) else None
+                    return None
+
+                title_or_aria = _get_attr_safe(svg_element, "title") or _get_attr_safe(svg_element, "aria-label")
                 desc_svg = title_or_aria if isinstance(title_or_aria, str) else None
-                images.append(
-                    ExtractedImage(
-                        data=svg_content,
-                        format="svg",
-                        filename=f"inline_svg_{len(images) + 1}.svg",
-                        description=desc_svg,
-                    )
+                return ExtractedImage(
+                    data=svg_content,
+                    format="svg",
+                    filename=f"inline_svg_{len(images) + 1}.svg",
+                    description=desc_svg,
                 )
-            except Exception as e:  # noqa: BLE001, PERF203
+            except (UnicodeEncodeError, AttributeError) as e:
                 logger.warning("Failed to extract SVG: %s", e)
+                return None
+
+        svg_images = [extract_svg_safe(svg) for svg in soup.find_all("svg")]
+        images.extend(img for img in svg_images if img is not None)
 
         return images

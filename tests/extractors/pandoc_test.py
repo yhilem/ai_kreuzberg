@@ -230,13 +230,15 @@ def mock_pandoc_version(mocker: MockerFixture) -> None:
 
 @pytest.fixture
 def mock_temp_file(mocker: MockerFixture) -> None:
-    async def mock_create(_: Any) -> tuple[str, Callable[[], Coroutine[None, None, None]]]:
+    async def mock_create(
+        extension: str, content: bytes | None = None
+    ) -> tuple[Path, Callable[[], Coroutine[None, None, None]]]:
         async def mock_unlink() -> None:
             pass
 
-        return "/tmp/test", mock_unlink
+        return Path("/tmp/test"), mock_unlink
 
-    mocker.patch("kreuzberg._extractors._pandoc.create_temp_file", side_effect=mock_create)
+    mocker.patch("kreuzberg._utils._tmp.create_temp_file", side_effect=mock_create)
 
 
 @pytest.fixture
@@ -366,7 +368,7 @@ async def test_handle_extract_metadata_runtime_error(
     extractor = MarkdownExtractor(mime_type="text/x-markdown", config=test_config)
     mock_run_process.side_effect = RuntimeError("Test error")
 
-    with pytest.raises(ParsingError):
+    with pytest.raises(RuntimeError):
         await extractor._handle_extract_metadata(Path("/tmp/test"))
 
     assert mock_run_process.called
@@ -379,7 +381,7 @@ async def test_handle_extract_file_runtime_error(
     extractor = MarkdownExtractor(mime_type="text/x-markdown", config=test_config)
     mock_run_process.side_effect = RuntimeError("Test error")
 
-    with pytest.raises(ParsingError):
+    with pytest.raises(RuntimeError):
         await extractor._handle_extract_file(Path("/tmp/test"))
 
     assert mock_run_process.called
@@ -527,26 +529,22 @@ async def test_pandoc_core_extract_bytes_async_complete(test_config: ExtractionC
 
     with (
         patch.object(extractor, "_get_pandoc_type_from_mime_type", return_value="markdown"),
-        patch("kreuzberg._extractors._pandoc.create_temp_file") as mock_temp_file,
+        patch("kreuzberg._utils._tmp.create_temp_file") as mock_temp_file,
         patch.object(extractor, "extract_path_async") as mock_extract_path,
     ):
         mock_unlink = AsyncMock()
         temp_path = "/tmp/test.md"
         mock_temp_file.return_value = (temp_path, mock_unlink)
 
-        mock_path = AsyncMock()
-        mock_path.write_bytes = AsyncMock()
+        mock_result = ExtractionResult(content="Test", mime_type="text/x-markdown", metadata={})
+        mock_extract_path.return_value = mock_result
 
-        with patch("kreuzberg._extractors._pandoc.AsyncPath", return_value=mock_path):
-            mock_result = ExtractionResult(content="Test", mime_type="text/x-markdown", metadata={})
-            mock_extract_path.return_value = mock_result
+        result = await extractor.extract_bytes_async(content)
 
-            result = await extractor.extract_bytes_async(content)
-
-            assert result == mock_result
-            mock_path.write_bytes.assert_called_once_with(content)
-            mock_extract_path.assert_called_once_with(temp_path)
-            mock_unlink.assert_called_once()
+        assert result == mock_result
+        mock_temp_file.assert_called_once_with(".markdown", content)
+        mock_extract_path.assert_called_once_with(temp_path)
+        mock_unlink.assert_called_once()
 
 
 def test_pandoc_core_extract_bytes_sync_complete(test_config: ExtractionConfig) -> None:
@@ -957,7 +955,7 @@ async def test_pandoc_file_extended_handle_extract_metadata_success(test_config:
 
     with (
         patch.object(extractor, "_get_pandoc_type_from_mime_type", return_value="markdown"),
-        patch("kreuzberg._extractors._pandoc.create_temp_file") as mock_temp_file,
+        patch("kreuzberg._utils._tmp.create_temp_file") as mock_temp_file,
         patch("kreuzberg._extractors._pandoc.run_process") as mock_run_process,
         patch("json.loads", return_value=mock_json_data),
         patch.object(extractor, "_extract_metadata", return_value={"title": "Test Title"}) as mock_extract,
@@ -989,7 +987,7 @@ async def test_pandoc_file_extended_handle_extract_metadata_pandoc_error(test_co
 
     with (
         patch.object(extractor, "_get_pandoc_type_from_mime_type", return_value="markdown"),
-        patch("kreuzberg._extractors._pandoc.create_temp_file") as mock_temp_file,
+        patch("kreuzberg._utils._tmp.create_temp_file") as mock_temp_file,
         patch("kreuzberg._extractors._pandoc.run_process") as mock_run_process,
     ):
         mock_unlink = AsyncMock()
@@ -1014,7 +1012,7 @@ async def test_pandoc_file_extended_handle_extract_file_success(test_config: Ext
 
     with (
         patch.object(extractor, "_get_pandoc_type_from_mime_type", return_value="markdown"),
-        patch("kreuzberg._extractors._pandoc.create_temp_file") as mock_temp_file,
+        patch("kreuzberg._utils._tmp.create_temp_file") as mock_temp_file,
         patch("kreuzberg._extractors._pandoc.run_process") as mock_run_process,
     ):
         mock_unlink = AsyncMock()
@@ -1483,7 +1481,7 @@ def test_pandoc_sync_methods_extract_metadata_sync_json_decode_error(test_config
         mock_file.read.return_value = "invalid json"
         mock_open.return_value.__enter__.return_value = mock_file
 
-        with pytest.raises(ParsingError, match="Failed to extract file data"):
+        with pytest.raises(json.JSONDecodeError):
             extractor._extract_metadata_sync(test_path)
 
         mock_close.assert_called_once_with(mock_fd)
@@ -1505,7 +1503,7 @@ def test_pandoc_sync_methods_extract_metadata_sync_os_error(test_config: Extract
         temp_path = "/tmp/metadata.json"
         mock_mkstemp.return_value = (mock_fd, temp_path)
 
-        with pytest.raises(ParsingError, match="Failed to extract file data"):
+        with pytest.raises(OSError, match="Subprocess error"):
             extractor._extract_metadata_sync(test_path)
 
         mock_close.assert_called_once_with(mock_fd)
@@ -1527,7 +1525,7 @@ def test_pandoc_sync_methods_extract_file_sync_os_error(test_config: ExtractionC
         temp_path = "/tmp/output.md"
         mock_mkstemp.return_value = (mock_fd, temp_path)
 
-        with pytest.raises(ParsingError, match="Failed to extract file data"):
+        with pytest.raises(OSError, match="File error"):
             extractor._extract_file_sync(test_path)
 
         mock_close.assert_called_once_with(mock_fd)
@@ -1568,7 +1566,7 @@ async def test_pandoc_async_errors_handle_extract_metadata_json_decode_error(tes
 
     with (
         patch.object(extractor, "_get_pandoc_type_from_mime_type", return_value="markdown"),
-        patch("kreuzberg._extractors._pandoc.create_temp_file") as mock_temp_file,
+        patch("kreuzberg._utils._tmp.create_temp_file") as mock_temp_file,
         patch("kreuzberg._extractors._pandoc.run_process") as mock_run_process,
     ):
         mock_unlink = AsyncMock()
@@ -1583,7 +1581,7 @@ async def test_pandoc_async_errors_handle_extract_metadata_json_decode_error(tes
         mock_path.read_text.return_value = "invalid json"
 
         with patch("kreuzberg._extractors._pandoc.AsyncPath", return_value=mock_path):
-            with pytest.raises(ParsingError, match="Failed to extract file data"):
+            with pytest.raises(json.JSONDecodeError):
                 await extractor._handle_extract_metadata(test_file)
 
         mock_unlink.assert_called_once()
@@ -1596,14 +1594,14 @@ async def test_pandoc_async_errors_handle_extract_metadata_os_error(test_config:
 
     with (
         patch.object(extractor, "_get_pandoc_type_from_mime_type", return_value="markdown"),
-        patch("kreuzberg._extractors._pandoc.create_temp_file") as mock_temp_file,
+        patch("kreuzberg._utils._tmp.create_temp_file") as mock_temp_file,
         patch("kreuzberg._extractors._pandoc.run_process", side_effect=OSError("Async OS error")),
     ):
         mock_unlink = AsyncMock()
         temp_path = "/tmp/metadata.json"
         mock_temp_file.return_value = (temp_path, mock_unlink)
 
-        with pytest.raises(ParsingError, match="Failed to extract file data"):
+        with pytest.raises(OSError, match="Async OS error"):
             await extractor._handle_extract_metadata(test_file)
 
         mock_unlink.assert_called_once()
@@ -1616,14 +1614,14 @@ async def test_pandoc_async_errors_handle_extract_file_os_error(test_config: Ext
 
     with (
         patch.object(extractor, "_get_pandoc_type_from_mime_type", return_value="markdown"),
-        patch("kreuzberg._extractors._pandoc.create_temp_file") as mock_temp_file,
+        patch("kreuzberg._utils._tmp.create_temp_file") as mock_temp_file,
         patch("kreuzberg._extractors._pandoc.run_process", side_effect=OSError("File OS error")),
     ):
         mock_unlink = AsyncMock()
         temp_path = "/tmp/output.md"
         mock_temp_file.return_value = (temp_path, mock_unlink)
 
-        with pytest.raises(ParsingError, match="Failed to extract file data"):
+        with pytest.raises(OSError, match="File OS error"):
             await extractor._handle_extract_file(test_file)
 
         mock_unlink.assert_called_once()

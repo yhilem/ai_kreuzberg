@@ -94,6 +94,14 @@ strong_em_symbol = "_"
 escape_underscores = false
 wrap = true
 wrap_width = 100
+list_indent_width = 2                # Use 2 spaces for Discord/Slack compatibility
+list_indent_type = "spaces"          # Use spaces instead of tabs
+whitespace_mode = "normalized"       # Handle whitespace intelligently
+br_in_tables = false                 # Use spaces instead of <br> in tables
+highlight_style = "double-equal"     # Style for highlighted text
+newline_style = "spaces"             # Style for line breaks
+preprocess_html = true               # Clean messy HTML before conversion
+preprocessing_preset = "standard"    # Level of HTML cleaning
 ```
 
 ### pyproject.toml Example
@@ -885,7 +893,14 @@ html_config = HTMLToMarkdownConfig(
     escape_underscores=False,
     wrap=True,
     wrap_width=100,
-    preprocessing_preset="standard",
+    list_indent_width=2,  # Discord/Slack compatible spacing
+    list_indent_type="spaces",  # Use spaces for indentation
+    whitespace_mode="normalized",  # Smart whitespace handling
+    br_in_tables=False,  # Use spaces in table cells
+    highlight_style="double-equal",  # ==highlighted== text style
+    newline_style="spaces",  # Line break style
+    preprocess_html=True,  # Clean HTML before conversion
+    preprocessing_preset="standard",  # HTML cleaning level
 )
 
 result = await extract_file(

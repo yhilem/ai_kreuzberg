@@ -510,7 +510,7 @@ class TesseractBackend(OCRBackend[TesseractConfig]):
             escape_asterisks=False,
             escape_underscores=False,
             extract_metadata=False,
-            strip="meta title",
+            strip=["meta", "title"],
         )
 
         tables: list[TableData] = []
@@ -676,7 +676,7 @@ class TesseractBackend(OCRBackend[TesseractConfig]):
                 escape_asterisks=False,
                 escape_underscores=False,
                 extract_metadata=False,
-                strip="meta title",
+                strip=["meta", "title"],
             )
 
             markdown_content = html_to_markdown.convert_to_markdown(

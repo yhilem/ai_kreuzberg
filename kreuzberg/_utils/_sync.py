@@ -1,18 +1,15 @@
 from __future__ import annotations
 
-import asyncio
 from functools import partial
 from inspect import isawaitable, iscoroutinefunction
-from typing import TYPE_CHECKING, Any, TypeVar, cast
+from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar, cast
 
 import anyio
-from anyio import create_task_group
+from anyio import CapacityLimiter, create_task_group
 from anyio.to_thread import run_sync as any_io_run_sync
 
 if TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Awaitable, Callable
-
-from typing import ParamSpec
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -57,24 +54,26 @@ async def run_taskgroup_batched(
         return []
 
     if len(async_tasks) <= batch_size or not use_semaphore:
-        results: list[Any] = []
+        batch_results: list[Any] = []
         for i in range(0, len(async_tasks), batch_size):
             batch = async_tasks[i : i + batch_size]
-            results.extend(await run_taskgroup(*batch))
-        return results
+            batch_results.extend(await run_taskgroup(*batch))
+        return batch_results
 
-    semaphore = asyncio.Semaphore(batch_size)
+    limiter = CapacityLimiter(batch_size)
+    results: list[tuple[int, Any]] = []
 
-    async def run_with_semaphore(task: Awaitable[Any], index: int) -> tuple[int, Any]:
-        async with semaphore:
+    async def run_with_semaphore(task: Awaitable[Any], index: int) -> None:
+        async with limiter:
             result = await task
-            return (index, result)
+            results.append((index, result))
 
-    indexed_tasks = [run_with_semaphore(task, i) for i, task in enumerate(async_tasks)]
-    indexed_results = await asyncio.gather(*indexed_tasks)
+    async with create_task_group() as tg:
+        for i, task in enumerate(async_tasks):
+            tg.start_soon(run_with_semaphore, task, i)
 
-    indexed_results.sort(key=lambda x: x[0])
-    return [result for _, result in indexed_results]
+    results.sort(key=lambda x: x[0])
+    return [result for _, result in results]
 
 
 async def run_maybe_sync(fn: Callable[P, T | Awaitable[T]], *args: P.args, **kwargs: P.kwargs) -> T:

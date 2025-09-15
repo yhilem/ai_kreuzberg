@@ -10,7 +10,6 @@ REAL_WORLD_JSON_DIR = Path(__file__).parent.parent / "test_source_files" / "json
 
 
 def test_json_config_default_values() -> None:
-    """Test JSONExtractionConfig default values."""
     config = JSONExtractionConfig()
 
     assert config.extract_schema is False
@@ -22,7 +21,6 @@ def test_json_config_default_values() -> None:
 
 
 def test_json_config_custom_values() -> None:
-    """Test JSONExtractionConfig with custom values."""
     config = JSONExtractionConfig(
         extract_schema=True,
         custom_text_field_patterns=frozenset({"summary", "note"}),
@@ -41,7 +39,6 @@ def test_json_config_custom_values() -> None:
 
 
 def test_extraction_config_with_json_config() -> None:
-    """Test that ExtractionConfig properly accepts JSONExtractionConfig."""
     json_config = JSONExtractionConfig(extract_schema=True)
     config = ExtractionConfig(json_config=json_config)
 
@@ -50,7 +47,6 @@ def test_extraction_config_with_json_config() -> None:
 
 
 def test_structured_extractor_json_config_property() -> None:
-    """Test that StructuredDataExtractor can access json_config."""
     json_config = JSONExtractionConfig(extract_schema=True)
     config = ExtractionConfig(json_config=json_config)
     extractor = StructuredDataExtractor(JSON_MIME_TYPE, config)
@@ -60,7 +56,6 @@ def test_structured_extractor_json_config_property() -> None:
 
 
 def test_structured_extractor_no_json_config() -> None:
-    """Test that StructuredDataExtractor handles missing json_config."""
     config = ExtractionConfig()
     extractor = StructuredDataExtractor(JSON_MIME_TYPE, config)
 
@@ -68,7 +63,6 @@ def test_structured_extractor_no_json_config() -> None:
 
 
 def test_include_type_info_feature() -> None:
-    """Test include_type_info adds type annotations."""
     json_config = JSONExtractionConfig(include_type_info=True)
     config = ExtractionConfig(json_config=json_config)
     extractor = StructuredDataExtractor(JSON_MIME_TYPE, config)
@@ -83,7 +77,6 @@ def test_include_type_info_feature() -> None:
 
 
 def test_include_type_info_disabled() -> None:
-    """Test that type info is not included when disabled."""
     json_config = JSONExtractionConfig(include_type_info=False)
     config = ExtractionConfig(json_config=json_config)
     extractor = StructuredDataExtractor(JSON_MIME_TYPE, config)
@@ -98,7 +91,6 @@ def test_include_type_info_disabled() -> None:
 
 
 def test_flatten_nested_objects_enabled() -> None:
-    """Test flattening of nested objects when enabled."""
     json_config = JSONExtractionConfig(flatten_nested_objects=True)
     config = ExtractionConfig(json_config=json_config)
     extractor = StructuredDataExtractor(JSON_MIME_TYPE, config)
@@ -110,7 +102,6 @@ def test_flatten_nested_objects_enabled() -> None:
 
 
 def test_flatten_nested_objects_disabled() -> None:
-    """Test that nested objects are not flattened when disabled."""
     json_config = JSONExtractionConfig(flatten_nested_objects=False)
     config = ExtractionConfig(json_config=json_config)
     extractor = StructuredDataExtractor(JSON_MIME_TYPE, config)
@@ -123,7 +114,6 @@ def test_flatten_nested_objects_disabled() -> None:
 
 
 def test_custom_text_field_patterns() -> None:
-    """Test custom text field patterns for metadata extraction."""
     json_config = JSONExtractionConfig(custom_text_field_patterns=frozenset({"summary", "abstract"}))
     config = ExtractionConfig(json_config=json_config)
     extractor = StructuredDataExtractor(JSON_MIME_TYPE, config)
@@ -137,7 +127,6 @@ def test_custom_text_field_patterns() -> None:
 
 
 def test_custom_text_field_patterns_with_nested() -> None:
-    """Test custom patterns work with nested fields in attributes."""
     json_config = JSONExtractionConfig(custom_text_field_patterns=frozenset({"summary"}), flatten_nested_objects=True)
     config = ExtractionConfig(json_config=json_config)
     extractor = StructuredDataExtractor(JSON_MIME_TYPE, config)
@@ -151,7 +140,6 @@ def test_custom_text_field_patterns_with_nested() -> None:
 
 
 def test_schema_extraction_enabled() -> None:
-    """Test schema extraction when enabled."""
     json_config = JSONExtractionConfig(extract_schema=True)
     config = ExtractionConfig(json_config=json_config)
     extractor = StructuredDataExtractor(JSON_MIME_TYPE, config)
@@ -169,7 +157,6 @@ def test_schema_extraction_enabled() -> None:
 
 
 def test_schema_extraction_disabled() -> None:
-    """Test that schema is not extracted when disabled."""
     json_config = JSONExtractionConfig(extract_schema=False)
     config = ExtractionConfig(json_config=json_config)
     extractor = StructuredDataExtractor(JSON_MIME_TYPE, config)
@@ -181,7 +168,6 @@ def test_schema_extraction_disabled() -> None:
 
 
 def test_schema_extraction_max_depth() -> None:
-    """Test that schema extraction respects max_depth."""
     json_config = JSONExtractionConfig(extract_schema=True, max_depth=2)
     config = ExtractionConfig(json_config=json_config)
     extractor = StructuredDataExtractor(JSON_MIME_TYPE, config)
@@ -195,7 +181,6 @@ def test_schema_extraction_max_depth() -> None:
 
 
 def test_array_item_limit() -> None:
-    """Test that array processing respects item limit."""
     json_config = JSONExtractionConfig(extract_schema=True, array_item_limit=3)
     config = ExtractionConfig(json_config=json_config)
     extractor = StructuredDataExtractor(JSON_MIME_TYPE, config)
@@ -209,7 +194,6 @@ def test_array_item_limit() -> None:
 
 
 def test_combined_features() -> None:
-    """Test multiple JSON features working together."""
     json_config = JSONExtractionConfig(
         extract_schema=True,
         include_type_info=True,
@@ -243,7 +227,6 @@ def test_combined_features() -> None:
 
 
 def test_default_text_field_patterns() -> None:
-    """Test that default text field patterns are extracted."""
     config = ExtractionConfig()
     extractor = StructuredDataExtractor(JSON_MIME_TYPE, config)
 
@@ -256,7 +239,6 @@ def test_default_text_field_patterns() -> None:
 
 
 def test_iss_location_json() -> None:
-    """Test extraction of ISS location API response."""
     config = ExtractionConfig()
     extractor = StructuredDataExtractor(JSON_MIME_TYPE, config)
 
@@ -274,7 +256,6 @@ def test_iss_location_json() -> None:
 
 
 def test_github_emojis_json() -> None:
-    """Test extraction of GitHub emojis JSON (large flat object)."""
     json_config = JSONExtractionConfig(extract_schema=True, max_depth=2)
     config = ExtractionConfig(json_config=json_config)
     extractor = StructuredDataExtractor(JSON_MIME_TYPE, config)
@@ -295,7 +276,6 @@ def test_github_emojis_json() -> None:
 
 
 def test_package_json() -> None:
-    """Test extraction of package.json file."""
     json_config = JSONExtractionConfig(
         extract_schema=True,
         flatten_nested_objects=False,
@@ -317,7 +297,6 @@ def test_package_json() -> None:
 
 
 def test_openapi_spec_json() -> None:
-    """Test extraction of OpenAPI specification."""
     json_config = JSONExtractionConfig(
         extract_schema=True, max_depth=3, custom_text_field_patterns=frozenset({"summary", "operationId"})
     )
@@ -348,7 +327,6 @@ def test_openapi_spec_json() -> None:
 
 
 def test_large_json_array_handling() -> None:
-    """Test handling of JSON with large arrays."""
     json_config = JSONExtractionConfig(
         extract_schema=True,
         array_item_limit=5,
@@ -370,7 +348,6 @@ def test_large_json_array_handling() -> None:
 
 
 def test_deeply_nested_json() -> None:
-    """Test extraction of deeply nested JSON structure."""
     json_config = JSONExtractionConfig(extract_schema=True, max_depth=3, flatten_nested_objects=True)
     config = ExtractionConfig(json_config=json_config)
     extractor = StructuredDataExtractor(JSON_MIME_TYPE, config)
@@ -400,7 +377,6 @@ def test_deeply_nested_json() -> None:
 
 
 def test_mixed_type_json() -> None:
-    """Test extraction of JSON with mixed data types."""
     json_config = JSONExtractionConfig(include_type_info=True, extract_schema=True)
     config = ExtractionConfig(json_config=json_config)
     extractor = StructuredDataExtractor(JSON_MIME_TYPE, config)
@@ -440,7 +416,6 @@ def test_mixed_type_json() -> None:
     ],
 )
 def test_real_world_files_exist_and_parse(filename: str, expected_content: str) -> None:
-    """Parametrized test to ensure all real-world files parse correctly."""
     config = ExtractionConfig()
     extractor = StructuredDataExtractor(JSON_MIME_TYPE, config)
 

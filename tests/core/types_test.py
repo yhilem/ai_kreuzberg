@@ -91,7 +91,6 @@ def test_image_ocr_config_post_init_allowed_formats() -> None:
     assert isinstance(config_frozenset.allowed_formats, frozenset)
     assert config_frozenset.allowed_formats == frozenset(["png", "gif"])
 
-    # Test list to frozenset conversion
     config_list = ImageOCRConfig(
         enabled=True,
         allowed_formats=["png", "webp", "tiff"],  # type: ignore[arg-type]
@@ -415,7 +414,6 @@ def test_normalize_metadata_function() -> None:
 def test_extraction_config_post_init_custom_entity_patterns_dict() -> None:
     from kreuzberg._types import ExtractionConfig
 
-    # Test dict to frozenset conversion for custom_entity_patterns
     config = ExtractionConfig(custom_entity_patterns={"PERSON": r"\b[A-Z][a-z]+\b", "EMAIL": r"\S+@\S+"})  # type: ignore[arg-type]
 
     assert isinstance(config.custom_entity_patterns, frozenset)
@@ -426,7 +424,6 @@ def test_extraction_config_post_init_custom_entity_patterns_dict() -> None:
 def test_extraction_config_post_init_image_ocr_formats_list() -> None:
     from kreuzberg._types import ExtractionConfig
 
-    # Test list to frozenset conversion for image_ocr_formats
     config = ExtractionConfig(image_ocr_formats=["png", "jpg", "webp"])  # type: ignore[arg-type]
 
     assert isinstance(config.image_ocr_formats, frozenset)
@@ -436,7 +433,6 @@ def test_extraction_config_post_init_image_ocr_formats_list() -> None:
 def test_extraction_config_nested_to_dict_calls() -> None:
     from kreuzberg._types import ExtractionConfig, HTMLToMarkdownConfig, TesseractConfig
 
-    # Test nested to_dict method calls
     html_config = HTMLToMarkdownConfig(autolinks=False, wrap=True)
     tesseract_config = TesseractConfig(language="deu")
 
@@ -448,7 +444,6 @@ def test_extraction_config_nested_to_dict_calls() -> None:
 
     result = config.to_dict(include_none=True)
 
-    # Verify nested objects were converted to dicts
     assert isinstance(result["ocr_config"], dict)
     assert isinstance(result["html_to_markdown_config"], dict)
     assert result["ocr_config"]["language"] == "deu"
@@ -456,21 +451,15 @@ def test_extraction_config_nested_to_dict_calls() -> None:
 
 
 def test_extraction_result_to_dict_with_nested_config() -> None:
-    """Test that ExtractionResult.to_dict handles nested config objects with to_dict methods."""
     from kreuzberg._types import ExtractionResult, PSMMode, TesseractConfig
 
-    # Create a config with nested objects
     config = TesseractConfig(language="eng", psm=PSMMode.SINGLE_BLOCK)
 
-    # Create result with nested config
     result = ExtractionResult(content="Test content", mime_type="text/plain", metadata={"ocr_config": config})  # type: ignore[typeddict-unknown-key]
 
-    # Call to_dict which should trigger the nested to_dict call
     result_dict = result.to_dict(include_none=False)
 
-    # Verify nested object was converted
     assert "metadata" in result_dict
     assert "ocr_config" in result_dict["metadata"]
-    # The config should be converted to dict
     assert isinstance(result_dict["metadata"]["ocr_config"], dict)
     assert result_dict["metadata"]["ocr_config"]["language"] == "eng"

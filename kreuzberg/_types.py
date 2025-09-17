@@ -7,6 +7,7 @@ from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypedDict
 
+import langcodes
 import msgspec
 
 from kreuzberg._constants import DEFAULT_MAX_CHARACTERS, DEFAULT_MAX_OVERLAP
@@ -695,6 +696,8 @@ class Metadata(TypedDict, total=False):
     """Message or communication content."""
     attributes: NotRequired[dict[str, Any]]
     """Additional attributes extracted from structured data (e.g., custom text fields with dotted keys)."""
+    token_reduction: NotRequired[dict[str, float]]
+    """Token reduction statistics including reduction ratios and counts."""
 
 
 _VALID_METADATA_KEYS = {
@@ -749,6 +752,7 @@ _VALID_METADATA_KEYS = {
     "text",
     "message",
     "attributes",
+    "token_reduction",
 }
 
 
@@ -1009,6 +1013,8 @@ class ExtractionConfig(ConfigDict):
     """Minimum DPI threshold when auto-adjusting DPI."""
     max_dpi: int = 600
     """Maximum DPI threshold when auto-adjusting DPI."""
+    token_reduction: TokenReductionConfig | None = None
+    """Configuration for token reduction to optimize output size while preserving meaning."""
 
     def __post_init__(self) -> None:
         if self.custom_entity_patterns is not None and isinstance(self.custom_entity_patterns, dict):
@@ -1199,3 +1205,29 @@ class HTMLToMarkdownConfig:
     def to_dict(self) -> dict[str, Any]:
         result = msgspec.to_builtins(self, builtin_types=(type(None),), order="deterministic")
         return {k: v for k, v in result.items() if v is not None}
+
+
+@dataclass(unsafe_hash=True, frozen=True, slots=True)
+class TokenReductionConfig:
+    mode: Literal["off", "light", "moderate"] = "off"
+    preserve_markdown: bool = True
+    custom_stopwords: dict[str, list[str]] | None = field(default=None, compare=False, hash=False)
+    language_hint: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.language_hint:
+            hint = self.language_hint.strip()
+
+            if not hint or len(hint) > 50 or any(c in hint for c in "\x00\r\n\t"):
+                object.__setattr__(self, "language_hint", None)
+                return
+
+            try:
+                normalized = langcodes.standardize_tag(hint)
+
+                lang = langcodes.Language.get(normalized).language
+
+                if lang and lang != hint:
+                    object.__setattr__(self, "language_hint", lang)
+            except (ValueError, AttributeError, TypeError):
+                object.__setattr__(self, "language_hint", None)

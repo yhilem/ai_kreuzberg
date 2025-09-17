@@ -69,7 +69,6 @@ def _build_ocr_config_from_cli(
     try:
         match ocr_backend:
             case "tesseract":
-                # Handle PSM mode conversion from int to enum
                 processed_args = backend_args.copy()
                 if "psm" in processed_args and isinstance(processed_args["psm"], int):
                     try:

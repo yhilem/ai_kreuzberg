@@ -44,11 +44,9 @@ HAS_EASYOCR: bool = False
 def _import_easyocr() -> tuple[Any, Any]:
     global HAS_EASYOCR, easyocr, torch
 
-    # If easyocr is already set (either real module or mock), return it
     if easyocr is not None:
         return easyocr, torch
 
-    # If explicitly disabled for testing
     if not HAS_EASYOCR and easyocr is None:
         return None, None
 
@@ -314,7 +312,6 @@ class EasyOCRBackend(OCRBackend[EasyOCRConfig]):
 
     @classmethod
     def _is_gpu_available(cls) -> bool:
-        # Use the module-level torch variable directly to respect patches
         if torch is None:
             return False
         return bool(torch.cuda.is_available())
@@ -324,7 +321,6 @@ class EasyOCRBackend(OCRBackend[EasyOCRConfig]):
         if cls._reader is not None:
             return
 
-        # Validate language first before attempting import
         languages = cls._validate_language_code(kwargs.pop("language", "en"))
 
         easyocr_module, _ = _import_easyocr()
@@ -483,7 +479,6 @@ class EasyOCRBackend(OCRBackend[EasyOCRConfig]):
         if cls._reader is not None:
             return
 
-        # Validate language first before attempting import
         languages = cls._validate_language_code(kwargs.pop("language", "en"))
 
         easyocr_module, _ = _import_easyocr()

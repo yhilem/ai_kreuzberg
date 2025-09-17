@@ -19,6 +19,7 @@ from ._types import (
     SpacyEntityExtractionConfig,
     TableData,
     TesseractConfig,
+    TokenReductionConfig,
 )
 from .exceptions import KreuzbergError, MissingDependencyError, OCRError, ParsingError, ValidationError
 from .extraction import (
@@ -57,6 +58,7 @@ __all__ = [
     "SpacyEntityExtractionConfig",
     "TableData",
     "TesseractConfig",
+    "TokenReductionConfig",
     "ValidationError",
     "__version__",
     "batch_extract_bytes",

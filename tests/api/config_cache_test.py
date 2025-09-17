@@ -1,5 +1,3 @@
-"""Tests for API configuration caching functionality."""
-
 import json
 from pathlib import Path
 from typing import Any
@@ -35,23 +33,16 @@ def test_discover_config_cached_no_config_file(tmp_path: Path) -> None:
 
 
 def test_discover_config_cached_with_kreuzberg_toml(tmp_path: Path) -> None:
-    """Test that discover_config_cached can find and cache configs from kreuzberg.toml."""
-    # For now, just test that the caching mechanism works, not specific config content
     result = discover_config_cached(tmp_path)
-    # Should return None for directories without config files
     assert result is None
 
 
 def test_discover_config_cached_with_pyproject_toml(tmp_path: Path) -> None:
-    """Test that discover_config_cached works with pyproject.toml files."""
-    # For now, just test that the caching mechanism works
     result = discover_config_cached(tmp_path)
-    # Should return None for directories without config files
     assert result is None
 
 
 def test_discover_config_cached_os_error_fallback(tmp_path: Path) -> None:
-    """Test that discover_config_cached falls back gracefully on OS errors."""
     with patch("kreuzberg._api._config_cache.discover_config") as mock_discover:
         mock_discover.return_value = None
         result = discover_config_cached(tmp_path)
@@ -147,17 +138,14 @@ def test_parse_header_config_cached_invalid_json() -> None:
 
 
 def test_get_cache_stats() -> None:
-    # Clear caches first to get consistent stats
     clear_all_caches()
 
-    # Call some cached functions to generate stats
     create_ocr_config_cached("tesseract", {})
     create_gmft_config_cached({})
     parse_header_config_cached("{}")
 
     stats = get_cache_stats()
 
-    # Check that all expected cache sections exist
     expected_sections = [
         "discover_config",
         "ocr_config",
@@ -176,53 +164,43 @@ def test_get_cache_stats() -> None:
 
 
 def test_clear_all_caches() -> None:
-    # Call some cached functions first
     create_ocr_config_cached("tesseract", {})
     create_gmft_config_cached({})
 
-    # Clear all caches
     clear_all_caches()
 
-    # Check that cache sizes are reset to 0
     stats = get_cache_stats()
     for section in stats.values():
         assert section["size"] == 0
 
 
 def test_caching_behavior_ocr_config() -> None:
-    """Test that identical calls return cached results."""
     clear_all_caches()
 
     config_dict = {"language": "deu"}
 
-    # First call should be a cache miss
     result1 = create_ocr_config_cached("tesseract", config_dict)
     stats_after_first = get_cache_stats()
     assert stats_after_first["ocr_config"]["misses"] == 1
     assert stats_after_first["ocr_config"]["hits"] == 0
 
-    # Second identical call should be a cache hit
     result2 = create_ocr_config_cached("tesseract", config_dict)
     stats_after_second = get_cache_stats()
     assert stats_after_second["ocr_config"]["misses"] == 1
     assert stats_after_second["ocr_config"]["hits"] == 1
 
-    # Results should be identical
     assert result1.__dict__ == result2.__dict__
 
 
 def test_caching_behavior_header_parsing() -> None:
-    """Test that identical header parsing calls return cached results."""
     clear_all_caches()
 
     header_value = '{"test": "value"}'
 
-    # First call
     result1 = parse_header_config_cached(header_value)
     stats_after_first = get_cache_stats()
     assert stats_after_first["header_parsing"]["misses"] == 1
 
-    # Second identical call
     result2 = parse_header_config_cached(header_value)
     stats_after_second = get_cache_stats()
     assert stats_after_second["header_parsing"]["hits"] == 1
@@ -231,17 +209,14 @@ def test_caching_behavior_header_parsing() -> None:
 
 
 def test_config_dict_serialization_consistency() -> None:
-    """Test that config dictionaries are serialized consistently for caching."""
     clear_all_caches()
 
-    # These should be treated as identical despite different key ordering
     config1 = {"verbosity": 2, "formatter_base_threshold": 0.1}
     config2 = {"formatter_base_threshold": 0.1, "verbosity": 2}
 
     result1 = create_gmft_config_cached(config1)
     result2 = create_gmft_config_cached(config2)
 
-    # Should get cache hit on second call
     stats = get_cache_stats()
     assert stats["gmft_config"]["hits"] == 1
     assert stats["gmft_config"]["misses"] == 1

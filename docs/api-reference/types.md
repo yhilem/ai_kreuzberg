@@ -84,6 +84,12 @@ Configuration options for converting HTML content to Markdown:
 
 ::: kreuzberg.HTMLToMarkdownConfig
 
+## Token Reduction Configuration
+
+Configuration options for token reduction and text optimization:
+
+::: kreuzberg.TokenReductionConfig
+
 ## PSMMode (Page Segmentation Mode)
 
 ::: kreuzberg.PSMMode

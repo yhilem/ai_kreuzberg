@@ -8,6 +8,7 @@ This guide provides comprehensive documentation for the Kreuzberg document intel
 - [Extraction Configuration](extraction-configuration.md) - Configure the extraction process ([API](../api-reference/types.md#extractionconfig))
 - [Metadata Extraction](metadata-extraction.md) - Document metadata extraction ([API](../api-reference/types.md#metadata))
 - [Content Chunking](chunking.md) - Split documents into manageable chunks
+- [Token Reduction](token-reduction.md) - Optimize text for LLMs and storage ([API](../api-reference/types.md#tokenreductionconfig))
 - [Document Classification](document-classification.md) - Automatic document type detection
 - [OCR Configuration](ocr-configuration.md) - Configure OCR settings ([API](../api-reference/ocr-configuration.md))
 - [OCR Backends](ocr-backends.md) - Choose and configure different OCR engines

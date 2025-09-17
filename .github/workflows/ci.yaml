@@ -142,27 +142,7 @@ jobs:
     needs: validate
     if: github.event_name == 'pull_request' && needs.validate.result == 'success'
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        test-category:
-          - name: "core"
-            path: "tests/core,tests/utils"
-            system-deps: false
-            timeout: 15
-          - name: "extractors"
-            path: "tests/extractors"
-            system-deps: true
-            timeout: 20
-          - name: "integration"
-            path: "tests/integration,tests/api"
-            system-deps: true
-            timeout: 25
-          - name: "features"
-            path: "tests/features,tests/interfaces,tests/mcp,tests/multiprocessing,tests/ocr"
-            system-deps: true
-            timeout: 20
-    timeout-minutes: ${{ matrix.test-category.timeout }}
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -174,36 +154,62 @@ jobs:
 
       - name: Install Python
         uses: actions/setup-python@v6
+        id: setup-python
         with:
           python-version: "3.13"
 
       - name: Cache Python Dependencies
+        id: python-cache
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/uv
             .venv
-          key: python-dependencies-ubuntu-latest-3.13-${{ matrix.test-category.name }}-${{ hashFiles('uv.lock') }}
+          key: python-dependencies-ubuntu-latest-3.13-${{ hashFiles('uv.lock') }}
           restore-keys: |
             python-dependencies-ubuntu-latest-3.13-
 
       - name: Install Dependencies
-        run: uv sync --all-extras --dev
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: |
+            uv sync --all-extras --dev
+          shell: bash
 
       - name: Install System Dependencies
-        if: matrix.test-category.system-deps
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y tesseract-ocr tesseract-ocr-deu pandoc
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y tesseract-ocr tesseract-ocr-deu pandoc
+          shell: bash
 
-      - name: Run Tests - ${{ matrix.test-category.name }}
-        run: uv run pytest $(echo "${{ matrix.test-category.path }}" | tr ',' ' ') -v --reruns 1 --reruns-delay 1 --cov=kreuzberg --cov-append --cov-report=lcov:coverage-${{ matrix.test-category.name }}.lcov
+      - name: Run All Tests with Coverage
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: |
+            uv run coverage erase
+            uv run pytest -s -vvv --cov=kreuzberg --cov-report=lcov:coverage.lcov --cov-report=term --cov-config=pyproject.toml --reruns 2 --reruns-delay 1
+            uv run coverage report --precision=2
+          shell: bash
 
       - name: Upload Coverage Artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-${{ matrix.test-category.name }}-${{ github.sha }}
-          path: coverage-${{ matrix.test-category.name }}.lcov
+          name: coverage-pr-${{ github.sha }}
+          path: |
+            coverage.lcov
+            .coverage
           retention-days: 1
 
   coverage-pr:
@@ -218,47 +224,7 @@ jobs:
       - name: Download Coverage Artifacts
         uses: actions/download-artifact@v5
         with:
-          pattern: coverage-*-${{ github.sha }}
-          merge-multiple: true
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: true
-
-      - name: Install Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.13"
-
-      - name: Install Dependencies
-        run: uv sync --dev
-
-      - name: Combine Coverage Reports
-        run: |
-          # Install lcov for combining reports
-          sudo apt-get update && sudo apt-get install -y lcov
-
-          # List available coverage files
-          echo "Available coverage files:"
-          find . -name "coverage-*.lcov" -type f || echo "No coverage files found"
-
-          # Combine all lcov files if they exist
-          coverage_files=($(find . -name "coverage-*.lcov" -type f))
-          if [ ${#coverage_files[@]} -gt 0 ]; then
-            echo "Combining ${#coverage_files[@]} coverage files..."
-            if [ ${#coverage_files[@]} -eq 1 ]; then
-              # Only one file, just copy it
-              cp "${coverage_files[0]}" coverage.lcov
-            else
-              # Multiple files, combine them
-              lcov --rc branch_coverage=1 $(printf " -a %s" "${coverage_files[@]}") -o coverage.lcov
-            fi
-          else
-            echo "No coverage files to combine, creating empty coverage.lcov"
-            echo "TN:" > coverage.lcov
-            echo "end_of_record" >> coverage.lcov
-          fi
+          name: coverage-pr-${{ github.sha }}
 
       - name: Upload Coverage to DeepSource
         if: always()

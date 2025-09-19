@@ -37,7 +37,7 @@ def _create_fast_langdetect_config(config: LanguageDetectionConfig) -> FastLangD
 
 @lru_cache(maxsize=_CACHE_SIZE)
 def detect_languages(text: str, config: LanguageDetectionConfig | None = None) -> list[str] | None:
-    if not HAS_FAST_LANGDETECT or detect is None or detect_multilingual is None:
+    if not HAS_FAST_LANGDETECT or detect is None:
         raise MissingDependencyError.create_for_package(
             dependency_group="langdetect", functionality="language detection", package_name="fast-langdetect"
         )

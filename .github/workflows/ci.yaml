@@ -46,7 +46,8 @@ jobs:
 
       - name: Install prek
         run: |
-          curl --proto '=https' --tlsv1.2 -LsSf https://github.com/j178/prek/releases/download/v0.2.1/prek-installer.sh | sh
+          # Install prek using uv (recommended method)
+          uv tool install prek
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Load Cached Prek Dependencies

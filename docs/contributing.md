@@ -18,9 +18,13 @@ Thank you for contributing to Kreuzberg!
     uv sync --all-extras --dev
     ```
 
-1. **Install prek hooks**:
+1. **Install prek and hooks**:
 
     ```bash
+    # Install prek using uv (recommended)
+    uv tool install prek
+
+    # Install git hooks
     prek install && prek install --hook-type commit-msg
     ```
 

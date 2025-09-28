@@ -38,7 +38,7 @@ pip install kreuzberg
 
 ### OCR
 
-OCR is an optional feature for extracting text from images and non-searchable PDFs. Kreuzberg supports multiple OCR backends. To understand the differences between these backends, please read the [OCR Backends documentation](../user-guide/ocr-backends.md).
+OCR is an optional feature for extracting text from images and non-searchable PDFs. Kreuzberg supports multiple OCR backends. To understand the differences between these backends, please read the [OCR Configuration documentation](../user-guide/ocr-configuration.md).
 
 #### Tesseract OCR
 

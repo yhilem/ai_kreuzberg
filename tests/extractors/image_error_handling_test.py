@@ -165,7 +165,7 @@ class TestImageExtractionErrorHandling:
         for result in results:
             assert result.ocr_result.content == ""
             assert result.skipped_reason
-            assert "Backend error: ValueError: OCR engine crashed" in result.skipped_reason
+            assert "OCR failed: ValueError: OCR engine crashed" in result.skipped_reason
 
     def test_empty_image_data(self) -> None:
         config = ExtractionConfig(extract_images=True)

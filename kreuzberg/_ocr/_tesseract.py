@@ -1113,6 +1113,10 @@ class TesseractBackend(OCRBackend[TesseractConfig]):
             **run_config["remaining_kwargs"],
             "language": run_config["language"],
             "psm": run_config["psm"],
+            "tesseract_format": run_config["tesseract_format"],
+            "ext": run_config["ext"],
+            "output_format": run_config["output_format"],
+            "enable_table_detection": run_config["enable_table_detection"],
         }
 
         optimal_workers = get_optimal_worker_count(len(paths), cpu_intensive=True)
@@ -1222,12 +1226,20 @@ def _process_image_with_tesseract(
     config_dict: dict[str, Any],
 ) -> dict[str, Any]:
     try:
-        with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as tmp_file:
-            output_base = tmp_file.name.replace(".txt", "")
+        tesseract_format = config_dict.get("tesseract_format", "text")
+        ext = config_dict.get("ext", ".txt")
+        output_format = config_dict.get("output_format", "text")
+        config_dict.get("enable_table_detection", False)
+
+        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp_file:
+            output_base = tmp_file.name.replace(ext, "")
 
         try:
             language = config_dict.get("language", "eng")
             psm = config_dict.get("psm", 3)
+
+            # Convert PSM enum to integer value if needed
+            psm_value = psm.value if hasattr(psm, "value") else psm
 
             command = [
                 "tesseract",
@@ -1236,12 +1248,15 @@ def _process_image_with_tesseract(
                 "-l",
                 language,
                 "--psm",
-                str(psm),
+                str(psm_value),
                 "--oem",
                 "1",
                 "--loglevel",
                 "OFF",
             ]
+
+            if tesseract_format != "text":
+                command.append(tesseract_format)
 
             boolean_options = [
                 "classify_use_pre_adapted_templates",
@@ -1275,9 +1290,16 @@ def _process_image_with_tesseract(
             if result.returncode != 0:
                 raise Exception(f"Tesseract failed with return code {result.returncode}: {result.stderr}")
 
-            output_file = output_base + ".txt"
+            output_file = output_base + ext
             with Path(output_file).open(encoding="utf-8") as f:
                 text = f.read()
+
+            # Process based on output format
+            if output_format == "markdown" and tesseract_format == "hocr":
+                # Import here to avoid circular dependency ~keep
+                from html_to_markdown import convert_to_markdown  # noqa: PLC0415
+
+                text = convert_to_markdown(text, heading_style="atx")
 
             text = normalize_spaces(text)
 
@@ -1289,8 +1311,8 @@ def _process_image_with_tesseract(
             }
 
         finally:
-            for ext in [".txt"]:
-                temp_file = output_base + ext
+            for possible_ext in [ext, ".txt", ".hocr", ".tsv"]:
+                temp_file = output_base + possible_ext
                 temp_path = Path(temp_file)
                 if temp_path.exists():
                     temp_path.unlink()

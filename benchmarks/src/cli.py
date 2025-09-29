@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import sys
+from functools import cache
 from pathlib import Path
 
 import click
@@ -12,8 +13,13 @@ from .benchmark import ComprehensiveBenchmarkRunner
 from .logger import get_logger
 from .types import BenchmarkConfig, DocumentCategory, Framework
 
-console = Console()
 logger = get_logger(__name__)
+
+
+@cache
+def get_console() -> Console:
+    """Get or create the console instance lazily."""
+    return Console()
 
 
 @click.command()
@@ -46,6 +52,7 @@ logger = get_logger(__name__)
 )
 def main(iterations: int, timeout: int, framework: str | None, output: Path) -> None:
     """Run benchmarks for all frameworks."""
+    console = get_console()
     console.print("[bold]Starting Benchmark Suite[/bold]")
     console.print(f"  Iterations: {iterations}")
     console.print(f"  Timeout: {timeout}s")

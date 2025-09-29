@@ -182,7 +182,7 @@ async def test_async_profiler_concurrent_operations() -> None:
     async with AsyncPerformanceProfiler(sampling_interval_ms=25) as metrics:
         results = await asyncio.gather(task_a(), task_b())
 
-    assert results == (1, 2)
+    assert results == [1, 2]
     assert metrics.extraction_time >= 0.05
     assert len(metrics.samples) >= 0
 

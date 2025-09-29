@@ -168,14 +168,18 @@ def _perform_extraction(file: Path | None, extraction_config: ExtractionConfig, 
             input_text = sys.stdin.read()
             input_bytes = input_text.encode("utf-8")
 
-        # Detect MIME type first to avoid Windows magic issues
-        try:
-            import magic  # noqa: PLC0415
-
-            mime_type = magic.from_buffer(input_bytes, mime=True)
-        except (ImportError, OSError, RuntimeError):  # pragma: no cover
-            content_str = input_bytes.decode("utf-8", errors="ignore").lower()
-            mime_type = "text/html" if "<html" in content_str or "<body" in content_str else "text/plain"
+        # Detect MIME type from content
+        content_str = input_bytes.decode("utf-8", errors="ignore").lower()
+        if "<html" in content_str or "<!doctype html" in content_str or "<body" in content_str:
+            mime_type = "text/html"
+        elif (content_str.strip().startswith("{") and content_str.strip().endswith("}")) or (
+            content_str.strip().startswith("[") and content_str.strip().endswith("]")
+        ):
+            mime_type = "application/json"
+        elif content_str.strip().startswith("---") or ":" in content_str[:100]:
+            mime_type = "application/x-yaml"
+        else:
+            mime_type = "text/plain"
 
         # Use progress display if possible, fallback to simple extraction on Windows issues
         try:

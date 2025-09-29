@@ -31,5 +31,7 @@ def detect_languages(text: str, config: LanguageDetectionConfig | None = None) -
             langs = [result["lang"].lower() for result in results if result.get("lang")]
             return langs if langs else None
         return None
+    except (RuntimeError, OSError, MemoryError):
+        raise
     except Exception:  # noqa: BLE001
         return None

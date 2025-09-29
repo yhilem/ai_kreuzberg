@@ -302,6 +302,10 @@ def test_perform_extraction_from_file(tmp_path: Path) -> None:
         mock_extract.assert_called_once_with(str(test_file), config=mock_config)
 
 
+@pytest.mark.xfail(
+    __import__("sys").platform == "win32",
+    reason="Magic library causes access violations on Windows during stdin processing",
+)
 def test_perform_extraction_from_stdin() -> None:
     mock_config = Mock()
     mock_result = ExtractionResult(content="Extracted", mime_type="text/plain")
@@ -330,6 +334,10 @@ def test_perform_extraction_from_stdin() -> None:
             sys.modules.update(original_modules)
 
 
+@pytest.mark.xfail(
+    __import__("sys").platform == "win32",
+    reason="Magic library causes access violations on Windows during stdin processing",
+)
 def test_perform_extraction_from_stdin_text_fallback() -> None:
     mock_config = Mock()
     mock_result = ExtractionResult(content="Extracted", mime_type="text/plain")
@@ -359,6 +367,10 @@ def test_perform_extraction_from_stdin_text_fallback() -> None:
             sys.modules.update(original_modules)
 
 
+@pytest.mark.xfail(
+    __import__("sys").platform == "win32",
+    reason="Magic library causes access violations on Windows during stdin processing",
+)
 def test_perform_extraction_stdin_detect_html() -> None:
     mock_config = Mock()
     mock_result = ExtractionResult(content="Extracted", mime_type="text/html")

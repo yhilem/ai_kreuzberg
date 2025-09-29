@@ -38,6 +38,9 @@ def test_unstructured_import() -> None:
         raise ImportError("unstructured not installed") from None
 
 
+@pytest.mark.skipif(
+    __import__("sys").platform == "win32", reason="Extractor imports cause magic library access violations on Windows"
+)
 def test_extractors_import() -> None:
     from src.extractors import (
         DoclingExtractor,

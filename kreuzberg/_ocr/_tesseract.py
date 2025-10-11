@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import io
+import logging
 import os
 import re
 import subprocess
@@ -14,12 +15,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, Final
 
 import anyio
-import html_to_markdown
 import polars as pl
 from anyio import Path as AsyncPath
 from anyio import run_process
-from bs4 import BeautifulSoup
-from bs4.element import Tag
+from html_to_markdown import HtmlToMarkdownError
+from html_to_markdown._html_to_markdown import convert as rust_convert
 from PIL import Image
 from PIL.Image import Image as PILImage
 from typing_extensions import Self
@@ -29,15 +29,15 @@ from kreuzberg._ocr._base import OCRBackend
 from kreuzberg._ocr._table_extractor import extract_words, reconstruct_table, to_markdown
 from kreuzberg._types import ExtractionResult, HTMLToMarkdownConfig, PSMMode, TableData, TesseractConfig
 from kreuzberg._utils._cache import get_ocr_cache
-from kreuzberg._utils._html_streaming import should_use_streaming
 from kreuzberg._utils._process_pool import ProcessPoolManager, get_optimal_worker_count
 from kreuzberg._utils._string import normalize_spaces
 from kreuzberg._utils._sync import run_sync
 from kreuzberg._utils._tmp import create_temp_file, temporary_file_sync
 from kreuzberg.exceptions import MissingDependencyError, OCRError, ValidationError
 
+logger = logging.getLogger(__name__)
+
 if TYPE_CHECKING:
-    from bs4.element import Tag
     from PIL.Image import Image as PILImage
 
 try:  # pragma: no cover
@@ -514,220 +514,56 @@ class TesseractBackend(OCRBackend[TesseractConfig]):
         table_min_confidence: float = 30.0,
         **_kwargs: Any,
     ) -> ExtractionResult:
+        _ = (
+            enable_table_detection,
+            table_column_threshold,
+            table_row_threshold_ratio,
+            table_min_confidence,
+        )  # parameters retained for compatibility but handled internally by html-to-markdown
+
         config = html_to_markdown_config or HTMLToMarkdownConfig()
-
-        tables: list[TableData] = []
-        if enable_table_detection:
-            soup = BeautifulSoup(hocr_content, "xml")
-            tables = await self._extract_tables_from_hocr(
-                soup,
-                table_column_threshold,
-                table_row_threshold_ratio,
-                table_min_confidence,
-            )
-
-        hocr_converters = self._create_hocr_converters(tables)
-
-        all_converters = dict(hocr_converters)
-        if config.custom_converters:
-            all_converters.update(config.custom_converters)
-
-        config_dict = config.to_dict()
-        config_dict["custom_converters"] = all_converters
-
-        use_streaming, chunk_size = should_use_streaming(len(hocr_content.encode()))
-        config_dict["stream_processing"] = use_streaming
-        config_dict["chunk_size"] = chunk_size
+        conversion_options, _ = config.to_options()
 
         try:
-            markdown_content = html_to_markdown.convert_to_markdown(hocr_content, **config_dict)
+            markdown_content = rust_convert(
+                hocr_content,
+                conversion_options,
+            )
             markdown_content = normalize_spaces(markdown_content)
-        except (ValueError, TypeError, AttributeError):
-            try:
-                soup = BeautifulSoup(hocr_content, "xml")
-                words = soup.find_all("span", class_="ocrx_word")
-                text_parts = []
-                for word in words:
-                    text = word.get_text().strip()
-                    if text:
-                        text_parts.append(text)
+        except (HtmlToMarkdownError, ValueError) as exc:
+            logger.exception("Failed to convert hOCR to Markdown: %s", exc)
+            markdown_content = "[OCR processing failed]"
 
-                if text_parts:
-                    markdown_content = " ".join(text_parts)
-                else:
-                    markdown_content = soup.get_text().strip() or "[No text detected]"
-
-                markdown_content = normalize_spaces(markdown_content)
-            except (ValueError, TypeError, AttributeError):
-                markdown_content = "[OCR processing failed]"
-
-        if tables:
-            table_sections = []
-            for i, table in enumerate(tables):
-                table_sections.append(f"\n## Table {i + 1}\n\n{table['text']}\n")
-
-            if markdown_content.strip():
-                final_content = f"{markdown_content}\n{''.join(table_sections)}"
-            else:
-                final_content = "".join(table_sections).strip()
-        else:
-            final_content = markdown_content
+        tables: list[TableData] = []
 
         return ExtractionResult(
-            content=final_content,
+            content=markdown_content,
             mime_type=MARKDOWN_MIME_TYPE,
             metadata={"source_format": "hocr", "tables_detected": len(tables)},
             chunks=[],
             tables=tables,
         )
 
-    def _create_basic_converters(self) -> dict[str, Any]:
-        def ocrx_word_converter(*, tag: Tag, text: str, **_conv_kwargs: Any) -> str:
-            del tag
-            return f"{text.strip()} "
-
-        def ocr_line_converter(*, tag: Tag, text: str, **_conv_kwargs: Any) -> str:
-            del tag
-            return f"{text.strip()}\n"
-
-        def ocr_par_converter(*, tag: Tag, text: str, **_conv_kwargs: Any) -> str:
-            del tag
-            content = text.strip()
-            if not content:
-                return ""
-            return f"{content}\n\n"
-
-        def ocr_carea_converter(*, tag: Tag, text: str, **_conv_kwargs: Any) -> str:
-            del tag
-            content = text.strip()
-            if not content:
-                return ""
-            return f"{content}\n\n"
-
-        def ocr_page_converter(*, tag: Tag, text: str, **_conv_kwargs: Any) -> str:
-            del tag
-            return text.strip()
-
-        def ocr_separator_converter(*, tag: Tag, text: str, **_conv_kwargs: Any) -> str:
-            del tag, text
-            return "---\n"
-
-        def ocr_photo_converter(*, tag: Tag, text: str, **_conv_kwargs: Any) -> str:
-            del text
-            title = tag.get("title", "")
-            if isinstance(title, str):
-                bbox_match = re.search(r"bbox (\d+) (\d+) (\d+) (\d+)", title)
-                if bbox_match:
-                    x0, y0, x1, y1 = bbox_match.groups()
-                    width = int(x1) - int(x0)
-                    height = int(y1) - int(y0)
-                    return f"*[Image region: {width}x{height} pixels]*\n\n"
-            return "*[Image detected]*\n\n"
-
-        return {
-            "ocrx_word": ocrx_word_converter,
-            "ocr_line": ocr_line_converter,
-            "ocr_par": ocr_par_converter,
-            "ocr_carea": ocr_carea_converter,
-            "ocr_page": ocr_page_converter,
-            "ocr_separator": ocr_separator_converter,
-            "ocr_photo": ocr_photo_converter,
-        }
-
-    def _create_hocr_converters(self, _tables: list[TableData]) -> dict[str, Any]:
-        basic_converters = self._create_basic_converters()
-
-        def generic_div_converter(*, tag: Tag, text: str, **_conv_kwargs: Any) -> str:
-            class_attr = tag.get("class", "")
-            if isinstance(class_attr, list):
-                class_attr = " ".join(class_attr)
-            elif not isinstance(class_attr, str):
-                class_attr = ""
-
-            for class_name in ["ocr_separator", "ocr_photo", "ocr_page", "ocr_carea"]:
-                if class_name in class_attr:
-                    converter_result = basic_converters[class_name](tag=tag, text=text, **_conv_kwargs)
-                    return str(converter_result)
-            return text
-
-        def generic_span_converter(*, tag: Tag, text: str, **_conv_kwargs: Any) -> str:
-            class_attr = tag.get("class", "")
-            if isinstance(class_attr, list):
-                class_attr = " ".join(class_attr)
-            elif not isinstance(class_attr, str):
-                class_attr = ""
-
-            for class_name in ["ocrx_word", "ocr_line"]:
-                if class_name in class_attr:
-                    converter_result = basic_converters[class_name](tag=tag, text=text, **_conv_kwargs)
-                    return str(converter_result)
-            return f"{text.strip()} "
-
-        return {
-            "span": generic_span_converter,
-            "div": generic_div_converter,
-            "p": basic_converters["ocr_par"],
-        }
-
     def _process_hocr_to_markdown_sync(self, hocr_content: str, config: TesseractConfig) -> ExtractionResult:
-        tables: list[TableData] = []
+        _ = config  # retained for interface compatibility
 
-        if config.enable_table_detection:
-            pass
+        html_config = HTMLToMarkdownConfig()
+        conversion_options, _ = html_config.to_options()
 
         try:
-            converters = self._create_hocr_converters(tables)
-
-            html_config = HTMLToMarkdownConfig(
-                custom_converters=converters,
-            )
-
-            config_dict = html_config.to_dict()
-
-            use_streaming, chunk_size = should_use_streaming(len(hocr_content.encode()))
-            config_dict["stream_processing"] = use_streaming
-            config_dict["chunk_size"] = chunk_size
-
-            markdown_content = html_to_markdown.convert_to_markdown(
+            markdown_content = rust_convert(
                 hocr_content,
-                **config_dict,
+                conversion_options,
             )
-
             markdown_content = normalize_spaces(markdown_content)
+        except (HtmlToMarkdownError, ValueError) as exc:
+            logger.exception("Failed to convert hOCR to Markdown (sync path): %s", exc)
+            markdown_content = "[OCR processing failed]"
 
-        except (ValueError, TypeError, AttributeError):
-            try:
-                soup = BeautifulSoup(hocr_content, "xml")
-                words = soup.find_all("span", class_="ocrx_word")
-                text_parts = []
-                for word in words:
-                    text = word.get_text().strip()
-                    if text:
-                        text_parts.append(text)
-
-                if text_parts:
-                    markdown_content = " ".join(text_parts)
-                else:
-                    markdown_content = soup.get_text().strip() or "[No text detected]"
-
-                markdown_content = normalize_spaces(markdown_content)
-            except (ValueError, TypeError, AttributeError):
-                markdown_content = "[OCR processing failed]"
-
-        if tables:
-            table_sections = []
-            for i, table in enumerate(tables):
-                table_sections.append(f"\n## Table {i + 1}\n\n{table['text']}\n")
-
-            if markdown_content.strip():
-                final_content = f"{markdown_content}\n{''.join(table_sections)}"
-            else:
-                final_content = "".join(table_sections).strip()
-        else:
-            final_content = markdown_content
+        tables: list[TableData] = []
 
         return ExtractionResult(
-            content=final_content,
+            content=markdown_content,
             mime_type=MARKDOWN_MIME_TYPE,
             metadata={"source_format": "hocr", "tables_detected": len(tables)},
             chunks=[],
@@ -775,97 +611,6 @@ class TesseractBackend(OCRBackend[TesseractConfig]):
             pass
 
         return text_result
-
-    async def _extract_tables_from_hocr(
-        self,
-        soup: Any,
-        column_threshold: int = 20,
-        row_threshold_ratio: float = 0.5,
-        min_confidence: float = 30.0,
-    ) -> list[TableData]:
-        tsv_data = await self._hocr_to_tsv_data(soup, min_confidence)
-
-        if not tsv_data:
-            return []
-
-        if not (words := extract_words(tsv_data, min_confidence=min_confidence)):
-            return []
-
-        tables: list[TableData] = []
-        try:
-            table_data = reconstruct_table(
-                words,
-                column_threshold=column_threshold,
-                row_threshold_ratio=row_threshold_ratio,
-            )
-            if table_data and len(table_data) > 1:  # ~keep At least header + one data row
-                markdown = to_markdown(table_data)
-
-                min_x = min(w["left"] for w in words)
-                max_x = max(w["left"] + w["width"] for w in words)
-                min_y = min(w["top"] for w in words)
-                max_y = max(w["top"] + w["height"] for w in words)
-
-                try:
-                    df = await run_sync(pl.DataFrame, table_data[1:], schema=table_data[0])
-                except (ImportError, IndexError):  # pragma: no cover
-                    df = None
-
-                dummy_image = Image.new("RGB", (1, 1), "white")
-
-                table: TableData = {
-                    "text": markdown,
-                    "df": df,
-                    "page_number": 1,
-                    "cropped_image": dummy_image,
-                    "metadata": {"bbox": (min_x, min_y, max_x, max_y)},
-                }  # type: ignore[typeddict-unknown-key]
-                tables.append(table)
-        except (ValueError, KeyError, ImportError):  # pragma: no cover
-            pass
-
-        return tables
-
-    async def _hocr_to_tsv_data(self, soup: Any, min_confidence: float) -> str:
-        tsv_lines = ["level\tpage_num\tblock_num\tpar_num\tline_num\tword_num\tleft\ttop\twidth\theight\tconf\ttext"]
-
-        words = soup.find_all("span", class_="ocrx_word")
-        word_num = 1
-
-        for word in words:
-            title = word.get("title", "")
-            text = word.get_text().strip()
-
-            if not text:
-                continue
-
-            bbox_match = re.search(r"bbox (\d+) (\d+) (\d+) (\d+)", title)
-            if not bbox_match:
-                continue
-
-            x0, y0, x1, y1 = map(int, bbox_match.groups())
-
-            conf_match = re.search(r"x_wconf (\d+)", title)
-            confidence = float(conf_match.group(1)) if conf_match else 100.0
-
-            if confidence < min_confidence:
-                continue
-
-            line = word.find_parent(class_="ocr_line")
-            par = word.find_parent(class_="ocr_par")
-            block = word.find_parent(class_="ocr_carea")
-
-            tsv_line = f"5\t1\t{block.get('id', '1').split('_')[-1] if block else 1}\t{par.get('id', '1').split('_')[-1] if par else 1}\t{line.get('id', '1').split('_')[-1] if line else 1}\t{word_num}\t{x0}\t{y0}\t{x1 - x0}\t{y1 - y0}\t{confidence}\t{text}"
-            tsv_lines.append(tsv_line)
-            word_num += 1
-
-        return "\n".join(tsv_lines)
-
-    def _identify_table_regions(self, words: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
-        if not words:
-            return []
-
-        return [words]
 
     @classmethod
     async def _validate_tesseract_version(cls) -> None:
@@ -1309,10 +1054,9 @@ def _process_image_with_tesseract(
 
             # Process based on output format
             if output_format == "markdown" and tesseract_format == "hocr":
-                # Import here to avoid circular dependency ~keep
-                from html_to_markdown import convert_to_markdown  # noqa: PLC0415
-
-                text = convert_to_markdown(text, heading_style="atx")
+                html_config = HTMLToMarkdownConfig(heading_style="atx")
+                options, _ = html_config.to_options()
+                text = rust_convert(text, options)
 
             text = normalize_spaces(text)
 

@@ -1,20 +1,21 @@
 from __future__ import annotations
 
-import base64
-import binascii
-import io
 import logging
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
-import html_to_markdown
 from anyio import Path as AsyncPath
-from bs4 import BeautifulSoup
-from PIL import Image
+from html_to_markdown import HtmlToMarkdownError
+from html_to_markdown._html_to_markdown import (
+    InlineImageConfig,
+    convert_with_inline_images,
+)
+from html_to_markdown._html_to_markdown import (
+    convert as rust_convert,
+)
 
 from kreuzberg._extractors._base import MAX_SINGLE_IMAGE_SIZE, Extractor
 from kreuzberg._mime_types import HTML_MIME_TYPE, MARKDOWN_MIME_TYPE
 from kreuzberg._types import ExtractedImage, ExtractionResult, HTMLToMarkdownConfig
-from kreuzberg._utils._html_streaming import should_use_streaming
 from kreuzberg._utils._string import safe_decode
 from kreuzberg._utils._sync import run_maybe_async, run_sync
 
@@ -41,27 +42,59 @@ class HTMLExtractor(Extractor):
         return result
 
     def extract_bytes_sync(self, content: bytes) -> ExtractionResult:
-        config = self.config.html_to_markdown_config if self.config else None
-        if config is None:
-            config = HTMLToMarkdownConfig()
-
-        config_dict = config.to_dict()
-
+        extraction_config = self.config
         html_content = safe_decode(content)
+        if extraction_config and extraction_config.html_to_markdown_config is not None:
+            html_config = extraction_config.html_to_markdown_config
+        else:
+            html_config = HTMLToMarkdownConfig()
+        conversion_options, _ = html_config.to_options()
 
-        use_streaming, chunk_size = should_use_streaming(len(content))
-        config_dict["stream_processing"] = use_streaming
-        config_dict["chunk_size"] = chunk_size
+        extract_inline_images = bool(extraction_config and extraction_config.extract_images)
+        run_ocr_on_images = bool(
+            extraction_config and extraction_config.extract_images and extraction_config.ocr_extracted_images
+        )
+        inline_image_config = None
+        if extract_inline_images:
+            inline_image_config = InlineImageConfig(
+                max_decoded_size_bytes=MAX_SINGLE_IMAGE_SIZE,
+                filename_prefix=None,
+                capture_svg=True,
+                infer_dimensions=True,
+            )
 
-        result = html_to_markdown.convert_to_markdown(html_content, **config_dict)
+        try:
+            if extract_inline_images:
+                markdown, images_payload, warnings = convert_with_inline_images(
+                    html_content,
+                    options=conversion_options,
+                    image_config=inline_image_config,
+                )
+            else:
+                markdown = rust_convert(
+                    html_content,
+                    conversion_options,
+                )
+                images_payload = []
+                warnings = []
+        except (HtmlToMarkdownError, ValueError) as exc:
+            logger.exception("Failed to convert HTML to Markdown: %s", exc)
+            markdown = ""
+            images_payload = []
+            warnings = []
 
-        extraction_result = ExtractionResult(content=result, mime_type=MARKDOWN_MIME_TYPE, metadata={})
+        for warning in warnings:
+            self._log_inline_warning(warning)
 
-        if self.config.extract_images:
-            extraction_result.images = self._extract_images_from_html(html_content)
-            if self.config.ocr_extracted_images and extraction_result.images:
+        extraction_result = ExtractionResult(content=markdown, mime_type=MARKDOWN_MIME_TYPE, metadata={})
+
+        inline_images = [self._build_extracted_image(image) for image in images_payload]
+        if inline_images:
+            extraction_result.images = inline_images
+            if run_ocr_on_images:
                 extraction_result.image_ocr_results = run_maybe_async(
-                    self._process_images_with_ocr, extraction_result.images
+                    self._process_images_with_ocr,
+                    inline_images,
                 )
 
         return self._apply_quality_processing(extraction_result)
@@ -70,79 +103,36 @@ class HTMLExtractor(Extractor):
         content = path.read_bytes()
         return self.extract_bytes_sync(content)
 
-    def _extract_images_from_html(self, html_content: str) -> list[ExtractedImage]:
-        images: list[ExtractedImage] = []
-        soup = BeautifulSoup(html_content, "xml")
+    @staticmethod
+    def _build_extracted_image(image: dict[str, Any]) -> ExtractedImage:
+        dimensions_value = image.get("dimensions")
+        dimensions = tuple(dimensions_value) if dimensions_value else None
+        return ExtractedImage(
+            data=image["data"],
+            format=image["format"],
+            filename=image.get("filename"),
+            description=image.get("description"),
+            dimensions=dimensions,
+        )
 
-        for img in soup.find_all("img"):
-            src_val = img.get("src")
-            if isinstance(src_val, str) and src_val.startswith("data:image/"):
-                try:
-                    header, data = src_val.split(",", 1)
-                    mime_type = header.split(";")[0].split(":")[1]
-                    format_name = mime_type.split("/")[1]
+    @staticmethod
+    def _log_inline_warning(warning: Any) -> None:
+        if isinstance(warning, dict):
+            index = warning.get("index")
+            message = warning.get("message")
+            if index is not None and message:
+                logger.warning("Inline image %s: %s", index, message)
+            elif message:
+                logger.warning("Inline image warning: %s", message)
+            else:
+                logger.warning("Inline image warning received with no message")
+            return
 
-                    if not data or len(data) < 4:
-                        logger.debug("Skipping empty or too small base64 data")
-                        continue
-
-                    if len(data) > 67 * 1024 * 1024:
-                        logger.warning("Skipping base64 image larger than 67MB")
-                        continue
-
-                    image_data = base64.b64decode(data)
-
-                    if len(image_data) > MAX_SINGLE_IMAGE_SIZE:
-                        logger.warning(
-                            "Skipping decoded image larger than %dMB", MAX_SINGLE_IMAGE_SIZE // (1024 * 1024)
-                        )
-                        continue
-
-                    dimensions = None
-                    try:
-                        with Image.open(io.BytesIO(image_data)) as pil_img:
-                            dimensions = pil_img.size
-                    except (OSError, ValueError) as e:  # pragma: no cover
-                        logger.debug("Could not determine image dimensions for %s: %s", format_name, e)
-
-                    alt_val = img.get("alt")
-                    desc = alt_val if isinstance(alt_val, str) else None
-                    images.append(
-                        ExtractedImage(
-                            data=image_data,
-                            format=format_name,
-                            filename=f"embedded_image_{len(images) + 1}.{format_name}",
-                            description=desc,
-                            dimensions=dimensions,
-                        )
-                    )
-                except (ValueError, binascii.Error) as e:
-                    logger.warning("Failed to extract base64 image: %s", e)
-
-        def extract_svg_safe(svg_element: object) -> ExtractedImage | None:
-            try:
-                svg_content = str(svg_element).encode("utf-8")
-
-                def _get_attr_safe(obj: object, attr: str) -> str | None:
-                    get_method = getattr(obj, "get", None)
-                    if callable(get_method):
-                        result = get_method(attr)
-                        return result if isinstance(result, str) else None
-                    return None
-
-                title_or_aria = _get_attr_safe(svg_element, "title") or _get_attr_safe(svg_element, "aria-label")
-                desc_svg = title_or_aria if isinstance(title_or_aria, str) else None
-                return ExtractedImage(
-                    data=svg_content,
-                    format="svg",
-                    filename=f"inline_svg_{len(images) + 1}.svg",
-                    description=desc_svg,
-                )
-            except (UnicodeEncodeError, AttributeError) as e:
-                logger.warning("Failed to extract SVG: %s", e)
-                return None
-
-        svg_images = [extract_svg_safe(svg) for svg in soup.find_all("svg")]
-        images.extend(img for img in svg_images if img is not None)
-
-        return images
+        message = getattr(warning, "message", None)
+        index = getattr(warning, "index", None)
+        if message and index is not None:
+            logger.warning("Inline image %s: %s", index, message)
+        elif message:
+            logger.warning("Inline image warning: %s", message)
+        else:
+            logger.warning("Inline image warning received with no message")

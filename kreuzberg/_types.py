@@ -9,6 +9,12 @@ from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypedDict
 
 import langcodes
 import msgspec
+from html_to_markdown._html_to_markdown import (
+    ConversionOptions as HTMLToMarkdownConversionOptions,
+)
+from html_to_markdown._html_to_markdown import (
+    PreprocessingOptions as HTMLToMarkdownPreprocessingOptions,
+)
 
 from kreuzberg._constants import DEFAULT_MAX_CHARACTERS, DEFAULT_MAX_OVERLAP
 from kreuzberg._utils._table import (
@@ -1166,71 +1172,143 @@ class ExtractionConfig(ConfigDict):
 
 @dataclass(unsafe_hash=True, frozen=True, slots=True)
 class HTMLToMarkdownConfig:
-    autolinks: bool = True
-    """Automatically convert valid URLs to Markdown links."""
-    br_in_tables: bool = False
-    """Use <br> tags for line breaks in table cells instead of spaces."""
-    bullets: str = "*+-"
-    """Characters to use for unordered list bullets."""
-    code_language: str = ""
-    """Default language identifier for fenced code blocks."""
-    code_language_callback: Callable[[Any], str] | None = None
-    """Function to dynamically determine code block language."""
-    convert: list[str] | None = None
-    """List of HTML tags to convert (None = all supported tags)."""
-    convert_as_inline: bool = False
-    """Treat content as inline elements only."""
-    custom_converters: Mapping[str, Callable[..., str]] | None = None
-    """Mapping of HTML tag names to custom converter functions."""
-    default_title: bool = False
-    """Use default titles for elements like links."""
-    escape_asterisks: bool = False
-    """Escape * characters to prevent unintended formatting."""
-    escape_misc: bool = False
-    """Escape miscellaneous characters to prevent Markdown conflicts."""
-    escape_underscores: bool = False
-    """Escape _ characters to prevent unintended formatting."""
-    extract_metadata: bool = True
-    """Extract document metadata as comment header."""
-    heading_style: Literal["underlined", "atx", "atx_closed"] = "underlined"
+    heading_style: Literal["underlined", "atx", "atx_closed"] = "atx"
     """Style for markdown headings."""
-    highlight_style: Literal["double-equal", "html", "bold"] = "double-equal"
-    """Style for highlighting text."""
-    keep_inline_images_in: list[str] | None = None
-    """Tags where inline images should be preserved."""
     list_indent_type: Literal["spaces", "tabs"] = "spaces"
     """Type of indentation to use for lists."""
     list_indent_width: int = 4
     """Number of spaces per indentation level (use 2 for Discord/Slack)."""
-    newline_style: Literal["spaces", "backslash"] = "spaces"
-    """Style for line breaks in markdown."""
-    preprocess_html: bool = False
-    """Enable HTML preprocessing to clean messy HTML."""
-    preprocessing_preset: Literal["minimal", "standard", "aggressive"] = "standard"
-    """Preprocessing level for cleaning HTML."""
-    remove_forms: bool = True
-    """Remove form elements during preprocessing."""
-    remove_navigation: bool = True
-    """Remove navigation elements during preprocessing."""
-    strip: list[str] | None = None
-    """List of HTML tags to remove from output."""
-    strip_newlines: bool = False
-    """Remove newlines from HTML input before processing."""
+    bullets: str = "*+-"
+    """Characters to use for unordered list bullets."""
     strong_em_symbol: Literal["*", "_"] = "*"
     """Symbol to use for strong/emphasis formatting."""
-    sub_symbol: str = ""
-    """Symbol to use for subscript text."""
-    sup_symbol: str = ""
-    """Symbol to use for superscript text."""
+    escape_asterisks: bool = False
+    """Escape * characters to prevent unintended formatting."""
+    escape_underscores: bool = False
+    """Escape _ characters to prevent unintended formatting."""
+    escape_misc: bool = False
+    """Escape miscellaneous characters to prevent Markdown conflicts."""
+    escape_ascii: bool = False
+    """Escape all ASCII punctuation."""
+    code_language: str = ""
+    """Default language identifier for fenced code blocks."""
+    code_language_callback: Callable[[Any], str] | None = field(default=None, compare=False, hash=False)
+    """Legacy language callback (no longer used by v2 converter)."""
+    autolinks: bool = True
+    """Automatically convert valid URLs to Markdown links."""
+    default_title: bool = False
+    """Use default titles for elements like links."""
+    keep_inline_images_in: tuple[str, ...] | None = None
+    """Tags where inline images should be preserved."""
+    br_in_tables: bool = False
+    """Use <br> tags for line breaks in table cells instead of spaces."""
+    highlight_style: Literal["double-equal", "html", "bold", "none"] = "double-equal"
+    """Style for highlighting text."""
+    extract_metadata: bool = True
+    """Extract document metadata as comment header."""
     whitespace_mode: Literal["normalized", "strict"] = "normalized"
     """Whitespace handling mode."""
+    strip_newlines: bool = False
+    """Remove newlines from HTML input before processing."""
     wrap: bool = False
     """Enable text wrapping."""
     wrap_width: int = 80
     """Width for text wrapping."""
+    convert_as_inline: bool = False
+    """Treat content as inline elements only."""
+    sub_symbol: str = ""
+    """Symbol to use for subscript text."""
+    sup_symbol: str = ""
+    """Symbol to use for superscript text."""
+    newline_style: Literal["spaces", "backslash"] = "spaces"
+    """Style for line breaks in markdown."""
+    code_block_style: Literal["indented", "backticks", "tildes"] = "backticks"
+    """Style for fenced code blocks."""
+    strip_tags: tuple[str, ...] | None = None
+    """List of HTML tags to remove from output."""
+    convert: tuple[str, ...] | None = None
+    """Legacy list of tags to convert (no longer used by v2 converter)."""
+    custom_converters: Mapping[str, Callable[..., str]] | None = field(default=None, compare=False, hash=False)
+    """Legacy mapping of custom converters (ignored by v2 converter)."""
+    preprocess_html: bool = False
+    """Enable HTML preprocessing to clean messy HTML."""
+    preprocessing_preset: Literal["minimal", "standard", "aggressive"] = "standard"
+    """Preprocessing level for cleaning HTML."""
+    remove_navigation: bool = True
+    """Remove navigation elements during preprocessing."""
+    remove_forms: bool = True
+    """Remove form elements during preprocessing."""
+    encoding: str = "utf-8"
+    """Expected character encoding for the HTML input."""
+    debug: bool = False
+    """Enable debug diagnostics in the converter."""
 
-    def to_dict(self) -> dict[str, Any]:
+    def __post_init__(self) -> None:
+        if self.keep_inline_images_in is not None and not isinstance(self.keep_inline_images_in, tuple):
+            object.__setattr__(self, "keep_inline_images_in", tuple(self.keep_inline_images_in))
+        if self.strip_tags is not None and not isinstance(self.strip_tags, tuple):
+            object.__setattr__(self, "strip_tags", tuple(self.strip_tags))
+        if self.convert is not None and not isinstance(self.convert, tuple):
+            object.__setattr__(self, "convert", tuple(self.convert))
+
+    def to_options(self) -> tuple[HTMLToMarkdownConversionOptions, HTMLToMarkdownPreprocessingOptions]:
+        """Build html_to_markdown ConversionOptions and PreprocessingOptions instances."""
+        preprocessing = HTMLToMarkdownPreprocessingOptions(
+            enabled=self.preprocess_html,
+            preset=self.preprocessing_preset,
+            remove_navigation=self.remove_navigation,
+            remove_forms=self.remove_forms,
+        )
+
+        keep_inline_images_in = list(self.keep_inline_images_in) if self.keep_inline_images_in else []
+        strip_tags = list(self.strip_tags) if self.strip_tags else []
+
+        options = HTMLToMarkdownConversionOptions(
+            heading_style=self.heading_style,
+            list_indent_type=self.list_indent_type,
+            list_indent_width=self.list_indent_width,
+            bullets=self.bullets,
+            strong_em_symbol=self.strong_em_symbol,
+            escape_asterisks=self.escape_asterisks,
+            escape_underscores=self.escape_underscores,
+            escape_misc=self.escape_misc,
+            escape_ascii=self.escape_ascii,
+            code_language=self.code_language,
+            autolinks=self.autolinks,
+            default_title=self.default_title,
+            keep_inline_images_in=keep_inline_images_in,
+            br_in_tables=self.br_in_tables,
+            highlight_style=self.highlight_style,
+            extract_metadata=self.extract_metadata,
+            whitespace_mode=self.whitespace_mode,
+            strip_newlines=self.strip_newlines,
+            wrap=self.wrap,
+            wrap_width=self.wrap_width,
+            convert_as_inline=self.convert_as_inline,
+            sub_symbol=self.sub_symbol,
+            sup_symbol=self.sup_symbol,
+            newline_style=self.newline_style,
+            code_block_style=self.code_block_style,
+            strip_tags=strip_tags,
+            debug=self.debug,
+            encoding=self.encoding,
+        )
+
+        options.preprocessing = preprocessing
+        return options, preprocessing
+
+    def to_dict(self, include_none: bool = False) -> dict[str, Any]:
         result = msgspec.to_builtins(self, builtin_types=(type(None),), order="deterministic")
+        if result.get("keep_inline_images_in") is not None:
+            result["keep_inline_images_in"] = list(result["keep_inline_images_in"])
+        if result.get("strip_tags") is not None:
+            result["strip_tags"] = list(result["strip_tags"])
+        if result.get("convert") is not None:
+            result["convert"] = list(result["convert"])
+
+        if include_none:
+            return result  # type: ignore[no-any-return]
+
         return {k: v for k, v in result.items() if v is not None}
 
 

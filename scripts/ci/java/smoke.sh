@@ -29,11 +29,20 @@ public class Smoke {
 }
 EOF
 
-javac --release 25 -cp "$jar" "$tmp/Smoke.java"
-
 sep=":"
+jar_cp="$jar"
+tmp_cp="$tmp"
+src_cp="$tmp/Smoke.java"
+
 if [ "${RUNNER_OS:-}" = "Windows" ]; then
 	sep=";"
+	if command -v cygpath >/dev/null 2>&1; then
+		jar_cp="$(cygpath -w "$jar")"
+		tmp_cp="$(cygpath -w "$tmp")"
+		src_cp="$(cygpath -w "$tmp/Smoke.java")"
+	fi
 fi
 
-java --enable-native-access=ALL-UNNAMED -cp "$jar$sep$tmp" Smoke
+javac --release 25 -cp "$jar_cp" "$src_cp"
+
+java --enable-native-access=ALL-UNNAMED -cp "$jar_cp$sep$tmp_cp" Smoke

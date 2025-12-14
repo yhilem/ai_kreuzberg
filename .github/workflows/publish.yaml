@@ -401,10 +401,12 @@ jobs:
           enable-cache: "true"
           rust-target: ${{ matrix.rust_target }}
 
-      - name: Install macOS Rust targets
-        if: matrix.label == 'macos-arm64'
-        shell: bash
-        run: rustup target add aarch64-apple-darwin
+      - name: Setup Rust toolchain (native)
+        if: matrix.os != 'ubuntu-latest'
+        uses: ./.github/actions/setup-rust
+        with:
+          cache-key-prefix: python-wheels-${{ matrix.label }}
+          target: ${{ matrix.rust_target }}
 
       - name: Clean previous wheel artifacts
         shell: bash
@@ -2038,6 +2040,8 @@ jobs:
 
       - name: Wait for npm indexing
         if: ${{ needs.prepare.outputs.dry_run != 'true' }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: scripts/publish/wait-for-package.sh npm "@kreuzberg/node" "${{ needs.prepare.outputs.version }}" 25
 
       - name: Prepare main Node package metadata
@@ -2096,6 +2100,9 @@ jobs:
       - name: Install pnpm dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+
       - name: Run cargo audit
         run: cargo audit --deny warnings
         working-directory: crates/kreuzberg-wasm
@@ -2143,6 +2150,8 @@ jobs:
 
       - name: Wait for npm indexing
         if: ${{ steps.npm_check.outputs.exists != 'true' }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: scripts/publish/wait-for-package.sh npm "@kreuzberg/wasm" "${{ needs.prepare.outputs.version }}" 25
 
       - name: Package WASM artifacts

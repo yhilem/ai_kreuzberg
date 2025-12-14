@@ -19,7 +19,7 @@ if ! retry_with_backoff_timeout 900 sudo apt-get install -y \
 	gcc-aarch64-linux-gnu \
 	g++-aarch64-linux-gnu \
 	binutils-aarch64-linux-gnu \
-	pkg-config-aarch64-linux-gnu; then
+	pkg-config; then
 	echo "::error::apt-get install cross toolchain failed" >&2
 	exit 1
 fi
@@ -28,6 +28,7 @@ gcc_bin="$(command -v aarch64-linux-gnu-gcc || command -v aarch64-linux-gnu-gcc-
 gpp_bin="$(command -v aarch64-linux-gnu-g++ || command -v aarch64-linux-gnu-g++-14 || command -v aarch64-linux-gnu-g++-13 || true)"
 ar_bin="$(command -v aarch64-linux-gnu-ar || true)"
 pkg_config_bin="$(command -v aarch64-linux-gnu-pkg-config || true)"
+pkg_config_host_bin="$(command -v pkg-config || true)"
 
 if [[ -z "$gcc_bin" || -z "$gpp_bin" || -z "$ar_bin" ]]; then
 	echo "::error::Cross toolchain binaries not found after install" >&2
@@ -35,6 +36,7 @@ if [[ -z "$gcc_bin" || -z "$gpp_bin" || -z "$ar_bin" ]]; then
 	echo "aarch64-linux-gnu-g++: ${gpp_bin:-missing}" >&2
 	echo "aarch64-linux-gnu-ar: ${ar_bin:-missing}" >&2
 	echo "aarch64-linux-gnu-pkg-config: ${pkg_config_bin:-missing}" >&2
+	echo "pkg-config: ${pkg_config_host_bin:-missing}" >&2
 	ls -la /usr/bin/aarch64-linux-gnu-* 2>/dev/null || true
 	exit 1
 fi
@@ -52,5 +54,7 @@ echo "::endgroup::"
 	echo "PKG_CONFIG_ALLOW_CROSS=1"
 	if [[ -n "$pkg_config_bin" ]]; then
 		echo "PKG_CONFIG_aarch64_unknown_linux_gnu=$pkg_config_bin"
+	elif [[ -n "$pkg_config_host_bin" ]]; then
+		echo "PKG_CONFIG=$pkg_config_host_bin"
 	fi
 } >>"${GITHUB_ENV:?GITHUB_ENV not set}"

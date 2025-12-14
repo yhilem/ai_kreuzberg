@@ -80,9 +80,9 @@ retry_with_backoff_timeout() {
 	while [ $attempt -le $max_attempts ]; do
 		if run_with_timeout "$seconds" "$@"; then
 			return 0
+		else
+			exit_code=$?
 		fi
-
-		exit_code=$?
 		if [ $attempt -lt $max_attempts ]; then
 			echo "⚠ Attempt $attempt failed (exit $exit_code), retrying in ${delay}s..." >&2
 			sleep $delay

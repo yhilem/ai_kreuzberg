@@ -1,6 +1,9 @@
 # This crate is excluded from the workspace to use a vendored kreuzberg crate for gem packaging
 [workspace]
 
+[workspace.dependencies]
+html-to-markdown-rs = { version = "2.14.2", default-features = false, features = ["inline-images"] }
+
 [patch.crates-io]
 # Patch rb-sys to fix Windows i32/i64 type mismatch in tracking_allocator.rs
 rb-sys = { path = "../../../vendor/rb-sys" }
@@ -29,15 +32,8 @@ default = []
 
 [dependencies]
 async-trait = "0.1.89"
-kreuzberg = { path = "../../../vendor/kreuzberg", features = [
-    "full",
-    "bundled-pdfium",
-    "embeddings",
-] }
-kreuzberg-ffi = { path = "../../../vendor/kreuzberg-ffi", features = [
-    "embeddings",
-    "bundled-pdfium",
-] }
+kreuzberg = { path = "../../../vendor/kreuzberg", features = ["full"] }
+kreuzberg-ffi = { path = "../../../vendor/kreuzberg-ffi", features = ["embeddings"] }
 magnus = { git = "https://github.com/matsadler/magnus", rev = "f6db11769efb517427bf7f121f9c32e18b059b38", features = [
     "rb-sys",
 ] }

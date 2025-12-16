@@ -790,12 +790,35 @@ public static class KreuzbergClient
         }
     }
 
+    /// <summary>
+    /// Lists the names of all registered validators.
+    /// </summary>
+    /// <returns>List of validator names</returns>
+    /// <example>
+    /// <code>
+    /// var validators = KreuzbergClient.ListValidators();
+    /// Console.WriteLine($"Registered validators: {string.Join(", ", validators)}");
+    /// </code>
+    /// </example>
+    /// <seealso cref="RegisterValidator"/>
+    /// <seealso cref="UnregisterValidator"/>
+    /// <seealso cref="ClearValidators"/>
     public static IReadOnlyList<string> ListValidators()
     {
         var ptr = NativeMethods.ListValidators();
         return ParseStringListAndFree(ptr);
     }
 
+    /// <summary>
+    /// Unregisters and clears all registered validators.
+    /// </summary>
+    /// <exception cref="KreuzbergException">If clearing fails</exception>
+    /// <remarks>
+    /// This method removes all registered validators from the extraction pipeline.
+    /// After clearing, no validators will be called during extraction.
+    /// </remarks>
+    /// <seealso cref="ListValidators"/>
+    /// <seealso cref="UnregisterValidator"/>
     public static void ClearValidators()
     {
         if (!NativeMethods.ClearValidators())
@@ -806,6 +829,14 @@ public static class KreuzbergClient
         FreeHandles(RegisteredValidators);
     }
 
+    /// <summary>
+    /// Unregisters a previously registered validator by name.
+    /// </summary>
+    /// <param name="name">Name of the validator to unregister. Must not be empty.</param>
+    /// <exception cref="ArgumentException">If name is null or empty</exception>
+    /// <exception cref="KreuzbergException">If unregistration fails</exception>
+    /// <seealso cref="RegisterValidator"/>
+    /// <seealso cref="ClearValidators"/>
     public static void UnregisterValidator(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -889,12 +920,35 @@ public static class KreuzbergClient
         }
     }
 
+    /// <summary>
+    /// Lists the names of all registered OCR backends.
+    /// </summary>
+    /// <returns>List of OCR backend names</returns>
+    /// <example>
+    /// <code>
+    /// var backends = KreuzbergClient.ListOcrBackends();
+    /// Console.WriteLine($"Available OCR backends: {string.Join(", ", backends)}");
+    /// </code>
+    /// </example>
+    /// <seealso cref="RegisterOcrBackend"/>
+    /// <seealso cref="UnregisterOcrBackend"/>
+    /// <seealso cref="ClearOcrBackends"/>
     public static IReadOnlyList<string> ListOcrBackends()
     {
         var ptr = NativeMethods.ListOcrBackends();
         return ParseStringListAndFree(ptr);
     }
 
+    /// <summary>
+    /// Unregisters and clears all registered OCR backends.
+    /// </summary>
+    /// <exception cref="KreuzbergException">If clearing fails</exception>
+    /// <remarks>
+    /// This method removes all registered OCR backends from the extraction pipeline.
+    /// After clearing, the default OCR backend (if any) will be used during extraction.
+    /// </remarks>
+    /// <seealso cref="ListOcrBackends"/>
+    /// <seealso cref="UnregisterOcrBackend"/>
     public static void ClearOcrBackends()
     {
         if (!NativeMethods.ClearOcrBackends())
@@ -905,6 +959,14 @@ public static class KreuzbergClient
         FreeHandles(RegisteredOcrBackends);
     }
 
+    /// <summary>
+    /// Unregisters a previously registered OCR backend by name.
+    /// </summary>
+    /// <param name="name">Name of the OCR backend to unregister. Must not be empty.</param>
+    /// <exception cref="ArgumentException">If name is null or empty</exception>
+    /// <exception cref="KreuzbergException">If unregistration fails</exception>
+    /// <seealso cref="RegisterOcrBackend"/>
+    /// <seealso cref="ClearOcrBackends"/>
     public static void UnregisterOcrBackend(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -930,12 +992,32 @@ public static class KreuzbergClient
         }
     }
 
+    /// <summary>
+    /// Lists the names of all registered document extractors.
+    /// </summary>
+    /// <returns>List of document extractor names</returns>
+    /// <example>
+    /// <code>
+    /// var extractors = KreuzbergClient.ListDocumentExtractors();
+    /// Console.WriteLine($"Available extractors: {string.Join(", ", extractors)}");
+    /// </code>
+    /// </example>
+    /// <seealso cref="UnregisterDocumentExtractor"/>
+    /// <seealso cref="ClearDocumentExtractors"/>
     public static IReadOnlyList<string> ListDocumentExtractors()
     {
         var ptr = NativeMethods.ListDocumentExtractors();
         return ParseStringListAndFree(ptr);
     }
 
+    /// <summary>
+    /// Unregisters a previously registered document extractor by name.
+    /// </summary>
+    /// <param name="name">Name of the document extractor to unregister. Must not be empty.</param>
+    /// <exception cref="ArgumentException">If name is null or empty</exception>
+    /// <exception cref="KreuzbergException">If unregistration fails</exception>
+    /// <seealso cref="ClearDocumentExtractors"/>
+    /// <seealso cref="ListDocumentExtractors"/>
     public static void UnregisterDocumentExtractor(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -957,6 +1039,16 @@ public static class KreuzbergClient
         }
     }
 
+    /// <summary>
+    /// Unregisters and clears all registered document extractors.
+    /// </summary>
+    /// <exception cref="KreuzbergException">If clearing fails</exception>
+    /// <remarks>
+    /// This method removes all registered document extractors from the extraction pipeline.
+    /// After clearing, only built-in extractors will be available.
+    /// </remarks>
+    /// <seealso cref="ListDocumentExtractors"/>
+    /// <seealso cref="UnregisterDocumentExtractor"/>
     public static void ClearDocumentExtractors()
     {
         if (!NativeMethods.ClearDocumentExtractors())

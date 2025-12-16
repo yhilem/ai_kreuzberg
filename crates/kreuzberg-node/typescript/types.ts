@@ -206,58 +206,158 @@ export interface HtmlPreprocessingOptions {
 	removeForms?: boolean;
 }
 
+/**
+ * HTML to Markdown conversion configuration options.
+ *
+ * Controls how HTML content is converted to Markdown format, including formatting,
+ * escaping, and special handling for various HTML elements.
+ */
 export interface HtmlConversionOptions {
+	/** Heading style conversion: "atx" (# style), "underlined" (underline style), or "atx_closed" (# style closed). Default: "atx". */
 	headingStyle?: "atx" | "underlined" | "atx_closed";
+
+	/** List indentation type: "spaces" or "tabs". Default: "spaces". */
 	listIndentType?: "spaces" | "tabs";
+
+	/** Number of spaces/tabs per list indent level. Default: 4. */
 	listIndentWidth?: number;
+
+	/** Bullet characters for unordered lists (e.g., '*', '-', '+'). Default: '*'. */
 	bullets?: string;
+
+	/** Markdown symbol for strong/bold emphasis: '**' or '__'. Default: '**'. */
 	strongEmSymbol?: string;
+
+	/** Escape asterisks (*) in text to prevent accidental formatting. Default: false. */
 	escapeAsterisks?: boolean;
+
+	/** Escape underscores (_) in text to prevent accidental formatting. Default: false. */
 	escapeUnderscores?: boolean;
+
+	/** Escape miscellaneous special characters. Default: false. */
 	escapeMisc?: boolean;
+
+	/** Escape ASCII control characters. Default: false. */
 	escapeAscii?: boolean;
+
+	/** Default code language for syntax highlighting in code blocks (e.g., 'javascript'). Default: null. */
 	codeLanguage?: string;
+
+	/** Convert HTML links to Markdown autolinks format ([text](url)). Default: true. */
 	autolinks?: boolean;
+
+	/** Use the HTML title element as default for links when no text is available. Default: false. */
 	defaultTitle?: boolean;
+
+	/** Insert <br> tags in Markdown tables. Default: false. */
 	brInTables?: boolean;
+
+	/** Use HOCR spatial table format for better table structure preservation. Default: false. */
 	hocrSpatialTables?: boolean;
+
+	/** Highlight style for marked/highlighted text: "double_equal" (==text==), "html" (<mark>), "bold" (**text**), or "none". Default: "none". */
 	highlightStyle?: "double_equal" | "html" | "bold" | "none";
+
+	/** Extract metadata from HTML (title, meta tags, etc.). Default: false. */
 	extractMetadata?: boolean;
+
+	/** Whitespace handling: "normalized" (collapse whitespace) or "strict" (preserve all whitespace). Default: "normalized". */
 	whitespaceMode?: "normalized" | "strict";
+
+	/** Remove newlines from output (convert to single line). Default: false. */
 	stripNewlines?: boolean;
+
+	/** Enable line wrapping at specified width. Default: true. */
 	wrap?: boolean;
+
+	/** Maximum line width when wrapping is enabled. Default: 80. */
 	wrapWidth?: number;
+
+	/** Convert as inline Markdown instead of block elements. Default: false. */
 	convertAsInline?: boolean;
+
+	/** Markdown symbol for subscript text (e.g., '~' for ~text~). Default: '~'. */
 	subSymbol?: string;
+
+	/** Markdown symbol for superscript text (e.g., '^' for ^text^). Default: '^'. */
 	supSymbol?: string;
+
+	/** Newline style in output: "spaces" (two spaces + newline) or "backslash" (backslash + newline). Default: "spaces". */
 	newlineStyle?: "spaces" | "backslash";
+
+	/** Code block style: "indented" (4-space indent), "backticks" (```), or "tildes" (~~~). Default: "backticks". */
 	codeBlockStyle?: "indented" | "backticks" | "tildes";
+
+	/** List of HTML tag names to keep as inline images (don't convert). Default: []. */
 	keepInlineImagesIn?: string[];
+
+	/** Character encoding for output (e.g., 'utf-8', 'ascii'). Default: 'utf-8'. */
 	encoding?: string;
+
+	/** Enable debug mode for detailed conversion logging. Default: false. */
 	debug?: boolean;
+
+	/** List of HTML tag names to remove entirely from output. Default: []. */
 	stripTags?: string[];
+
+	/** List of HTML tag names to preserve in output (don't convert to Markdown). Default: []. */
 	preserveTags?: string[];
+
+	/** HTML preprocessing options for cleaning HTML before conversion. */
 	preprocessing?: HtmlPreprocessingOptions;
 }
 
+/** Keyword extraction algorithm type. */
 export type KeywordAlgorithm = "yake" | "rake";
 
+/**
+ * YAKE (Yet Another Keyword Extractor) algorithm configuration.
+ *
+ * YAKE is an unsupervised keyword extraction method that doesn't require training data.
+ */
 export interface YakeParams {
+	/** Window size for co-occurrence analysis (number of words to consider). Default: 3. */
 	windowSize?: number;
 }
 
+/**
+ * RAKE (Rapid Automatic Keyword Extraction) algorithm configuration.
+ *
+ * RAKE extracts keywords based on word co-occurrence and statistical measures.
+ */
 export interface RakeParams {
+	/** Minimum word length to consider as keyword. Default: 3. */
 	minWordLength?: number;
+
+	/** Maximum number of words per keyword phrase. Default: 3. */
 	maxWordsPerPhrase?: number;
 }
 
+/**
+ * Keyword extraction configuration.
+ *
+ * Extracts important keywords/phrases from document content using YAKE or RAKE algorithms.
+ */
 export interface KeywordConfig {
+	/** Extraction algorithm: "yake" or "rake". Default: "yake". */
 	algorithm?: KeywordAlgorithm;
+
+	/** Maximum number of keywords to extract. Default: 10. */
 	maxKeywords?: number;
+
+	/** Minimum relevance score (0.0-1.0) for keywords. Keywords below this are filtered out. Default: 0.1. */
 	minScore?: number;
+
+	/** N-gram range: [min_length, max_length] for phrase keywords (e.g., [1, 3] for 1-3 word phrases). Default: [1, 3]. */
 	ngramRange?: [number, number];
+
+	/** Language for keyword extraction (e.g., 'en', 'de', 'fr'). Default: 'en'. */
 	language?: string;
+
+	/** YAKE algorithm-specific parameters. Only used when algorithm is "yake". */
 	yakeParams?: YakeParams;
+
+	/** RAKE algorithm-specific parameters. Only used when algorithm is "rake". */
 	rakeParams?: RakeParams;
 }
 
@@ -277,26 +377,69 @@ export interface PageConfig {
 	markerFormat?: string;
 }
 
+/**
+ * Main extraction configuration interface.
+ *
+ * Combines all sub-configurations for document extraction, OCR, chunking, post-processing, etc.
+ * All fields are optional and use sensible defaults.
+ */
 export interface ExtractionConfig {
+	/** Enable caching of extraction results for identical inputs. Default: true. */
 	useCache?: boolean;
+
+	/** Enable quality processing filters to improve extraction reliability. Default: false. */
 	enableQualityProcessing?: boolean;
+
+	/** OCR configuration for text extraction from images. Only used when document contains images or forceOcr is true. */
 	ocr?: OcrConfig;
+
+	/** Force OCR processing even for documents with selectable text. Useful for scanned documents. Default: false. */
 	forceOcr?: boolean;
+
+	/** Chunking configuration for splitting documents into smaller pieces for RAG or vector DB. */
 	chunking?: ChunkingConfig;
+
+	/** Image extraction and optimization configuration. */
 	images?: ImageExtractionConfig;
+
+	/** PDF-specific extraction options (passwords, metadata, etc.). */
 	pdfOptions?: PdfConfig;
+
+	/** Token reduction configuration for optimizing token usage in LLM pipelines. */
 	tokenReduction?: TokenReductionConfig;
+
+	/** Language detection configuration for automatic language identification. */
 	languageDetection?: LanguageDetectionConfig;
+
+	/** Post-processor configuration for customizing extraction results. */
 	postprocessor?: PostProcessorConfig;
+
+	/** HTML to Markdown conversion options for HTML content. */
 	htmlOptions?: HtmlConversionOptions;
+
+	/** Keyword extraction configuration for extracting important phrases. */
 	keywords?: KeywordConfig;
+
+	/** Page tracking and extraction configuration for multi-page documents. */
 	pages?: PageConfig;
+
+	/** Maximum number of concurrent extractions in batch operations. Default: 4. */
 	maxConcurrentExtractions?: number;
 }
 
+/**
+ * Extracted table data from document.
+ *
+ * Contains both cell data and Markdown representation for easy display and processing.
+ */
 export interface Table {
+	/** 2D array of cell contents (rows × columns) */
 	cells: string[][];
+
+	/** Markdown representation of the table for display or parsing */
 	markdown: string;
+
+	/** Page number where this table was found (1-indexed) */
 	pageNumber: number;
 }
 
@@ -504,23 +647,59 @@ export interface ChunkMetadata {
 	lastPage?: number | null;
 }
 
+/**
+ * Text chunk with optional embedding.
+ *
+ * Represents a segment of a document created by the chunking algorithm, useful for RAG and vector databases.
+ */
 export interface Chunk {
+	/** Text content of this chunk */
 	content: string;
+
+	/** Vector embedding for this chunk (if embedding model was used) */
 	embedding?: number[] | null;
+
+	/** Metadata about chunk position and properties in the document */
 	metadata: ChunkMetadata;
 }
 
+/**
+ * Extracted image from document with optional OCR result.
+ *
+ * Contains image data and metadata about position, dimensions, and properties.
+ */
 export interface ExtractedImage {
+	/** Raw image bytes as Uint8Array */
 	data: Uint8Array;
+
+	/** Image format (e.g., 'png', 'jpeg', 'tiff') */
 	format: string;
+
+	/** Sequential index of this image in the document (0-indexed) */
 	imageIndex: number;
+
+	/** Page number where this image was found (1-indexed), null if unknown */
 	pageNumber?: number | null;
+
+	/** Image width in pixels, null if unknown */
 	width?: number | null;
+
+	/** Image height in pixels, null if unknown */
 	height?: number | null;
+
+	/** Color space (e.g., 'RGB', 'CMYK', 'Grayscale'), null if unknown */
 	colorspace?: string | null;
+
+	/** Bits per color component (e.g., 8 for 8-bit), null if unknown */
 	bitsPerComponent?: number | null;
+
+	/** Whether this is a mask image (used internally by PDF) */
 	isMask: boolean;
+
+	/** Image description or caption if available */
 	description?: string | null;
+
+	/** OCR extraction result if OCR was run on this image, null otherwise */
 	ocrResult?: ExtractionResult | null;
 }
 
@@ -528,16 +707,19 @@ export interface ExtractedImage {
  * Content for a single page/slide/sheet.
  *
  * When page extraction is enabled, documents are split into per-page content
- * with associated tables and images mapped to each page.
+ * with associated tables and images mapped to each page. This allows for page-specific processing.
  */
 export interface PageContent {
-	/** Page number (1-indexed) */
+	/** Page number (1-indexed) starting from 1 */
 	pageNumber: number;
-	/** Text content for this page */
+
+	/** Text content extracted from this page */
 	content: string;
-	/** Tables found on this page */
+
+	/** Tables found and extracted from this page */
 	tables: Table[];
-	/** Images found on this page */
+
+	/** Images found and extracted from this page */
 	images: ExtractedImage[];
 }
 
@@ -640,78 +822,127 @@ export interface Metadata {
 	[key: string]: unknown;
 }
 
+/**
+ * Complete extraction result from document processing.
+ *
+ * Contains all extracted content, metadata, and optional processed data like chunks and images.
+ * This is the primary return value from extraction functions.
+ */
 export interface ExtractionResult {
+	/** Extracted text content from the document (main content) */
 	content: string;
+
+	/** MIME type of the input document (e.g., 'application/pdf', 'text/html') */
 	mimeType: string;
+
+	/** Document metadata including title, author, creation date, language, and format-specific fields */
 	metadata: Metadata;
+
+	/** Tables extracted from the document (2D cell arrays with Markdown representation) */
 	tables: Table[];
+
+	/** Detected languages in the document (ISO 639-1 codes, e.g., ['en', 'de']), null if detection disabled */
 	detectedLanguages: string[] | null;
+
+	/** Document chunks for RAG/vector databases (if chunking was enabled), null otherwise */
 	chunks: Chunk[] | null;
+
+	/** Images extracted from document with metadata (if image extraction was enabled), null otherwise */
 	images: ExtractedImage[] | null;
+
+	/** Per-page content when page extraction is enabled, null otherwise. Each item contains page number, content, tables, and images. */
 	pages?: PageContent[] | null;
 }
 
+/** Post-processor execution stage in the extraction pipeline. */
 export type ProcessingStage = "early" | "middle" | "late";
 
+/**
+ * Protocol for custom post-processors that modify extraction results.
+ *
+ * Post-processors enrich or transform extraction results without failing the extraction.
+ * If a post-processor throws an error, it's logged but extraction continues.
+ * Only works with async extraction functions (`extractFile`, `extractBytes`, etc.).
+ */
 export interface PostProcessorProtocol {
 	/**
 	 * Return the unique name of this postprocessor.
+	 *
+	 * @returns Unique processor name (case-sensitive, alphanumeric + underscores recommended)
 	 */
 	name(): string;
 
 	/**
 	 * Process and enrich an extraction result.
 	 *
+	 * Modify the result to add new metadata, transform content, or perform other enrichment.
+	 * If this throws an error, it's logged but extraction continues.
+	 *
 	 * @param result - ExtractionResult with extracted content, metadata, and tables
-	 * @returns Modified result with enriched metadata
+	 * @returns Modified result with enriched data. Can be async or sync.
 	 */
 	process(result: ExtractionResult): ExtractionResult | Promise<ExtractionResult>;
 
 	/**
 	 * Return the processing stage for this processor.
 	 *
+	 * Determines when this processor runs relative to others:
+	 * - "early": Runs first, before other processors (good for cleanup/normalization)
+	 * - "middle": Runs with other middle-stage processors (default)
+	 * - "late": Runs last, after others (good for final enrichment)
+	 *
 	 * @returns One of "early", "middle", or "late" (default: "middle")
 	 */
 	processingStage?(): ProcessingStage;
 
 	/**
-	 * Initialize the processor (e.g., load ML models).
+	 * Initialize the processor (e.g., load ML models, setup resources).
 	 *
-	 * Called once when the processor is registered.
+	 * Called once when the processor is first registered. Use for expensive operations.
 	 */
 	initialize?(): void | Promise<void>;
 
 	/**
 	 * Shutdown the processor and release resources.
 	 *
-	 * Called when the processor is unregistered.
+	 * Called when the processor is unregistered. Use for cleanup (closing connections, freeing memory).
 	 */
 	shutdown?(): void | Promise<void>;
 }
 
+/**
+ * Protocol for custom validators that check extraction results.
+ *
+ * Validators perform quality checks and fail the extraction if validation fails.
+ * Unlike post-processors, validator errors cause the entire extraction to fail.
+ * Useful for enforcing quality standards on extracted content.
+ */
 export interface ValidatorProtocol {
 	/**
 	 * Return the unique name of this validator.
+	 *
+	 * @returns Unique validator name (case-sensitive, alphanumeric + underscores recommended)
 	 */
 	name(): string;
 
 	/**
 	 * Validate an extraction result.
 	 *
-	 * Throw an error if validation fails. The error message should explain why validation failed.
-	 * If validation passes, return without throwing.
+	 * Throw an error if validation fails. The error message will be used as the extraction error.
+	 * If validation passes, return without throwing (return value is ignored).
 	 *
 	 * @param result - ExtractionResult to validate
-	 * @throws Error if validation fails (extraction will fail)
+	 * @throws {Error} If validation fails (extraction will fail with this error)
 	 */
 	validate(result: ExtractionResult): void | Promise<void>;
 
 	/**
 	 * Return the validation priority.
 	 *
-	 * Higher priority validators run first. Useful for running cheap validations before expensive ones.
+	 * Higher priority validators run first. Useful for running cheap validations (e.g., length checks)
+	 * before expensive ones (e.g., AI-based quality checks) to fail fast.
 	 *
-	 * @returns Priority value (higher = runs earlier, default: 50)
+	 * @returns Priority value (higher = runs earlier, default: 50). Range: 0-1000.
 	 */
 	priority?(): number;
 
@@ -719,6 +950,7 @@ export interface ValidatorProtocol {
 	 * Check if this validator should run for a given result.
 	 *
 	 * Allows conditional validation based on MIME type, metadata, or content.
+	 * This is evaluated before validation, so expensive checks can be skipped for irrelevant documents.
 	 *
 	 * @param result - ExtractionResult to check
 	 * @returns true if validator should run, false to skip (default: true)
@@ -726,16 +958,16 @@ export interface ValidatorProtocol {
 	shouldValidate?(result: ExtractionResult): boolean;
 
 	/**
-	 * Initialize the validator.
+	 * Initialize the validator (e.g., load ML models, setup resources).
 	 *
-	 * Called once when the validator is registered.
+	 * Called once when the validator is first registered. Use for expensive operations.
 	 */
 	initialize?(): void | Promise<void>;
 
 	/**
 	 * Shutdown the validator and release resources.
 	 *
-	 * Called when the validator is unregistered.
+	 * Called when the validator is unregistered. Use for cleanup (closing connections, freeing memory).
 	 */
 	shutdown?(): void | Promise<void>;
 }

@@ -9,7 +9,10 @@
 
 mod helpers;
 
-use helpers::{assert_mime_type, assert_non_empty_content, get_test_file_path, test_documents_available};
+use helpers::{assert_mime_type, get_test_file_path, test_documents_available};
+
+#[cfg(any(feature = "office", feature = "ocr"))]
+use helpers::assert_non_empty_content;
 use kreuzberg::core::config::ExtractionConfig;
 use kreuzberg::core::extractor::extract_file;
 

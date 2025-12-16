@@ -271,9 +271,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install system dependencies
-        uses: ./.github/actions/install-system-deps
-
       - name: Setup Rust
         uses: ./.github/actions/setup-rust
         with:

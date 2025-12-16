@@ -430,14 +430,16 @@ function convertResult(rawResult: unknown): ExtractionResult {
 		tables: Array.isArray(result["tables"]) ? (result["tables"] as Table[]) : [],
 		// biome-ignore lint/complexity/useLiteralKeys: required for strict TypeScript noPropertyAccessFromIndexSignature
 		detectedLanguages: Array.isArray(result["detectedLanguages"]) ? (result["detectedLanguages"] as string[]) : null,
-		// biome-ignore lint/complexity/useLiteralKeys: required for strict TypeScript noPropertyAccessFromIndexSignature
-		chunks: Array.isArray(result["chunks"])
-			? (result["chunks"] as unknown[]).map((chunk) => convertChunk(chunk))
-			: null,
-		// biome-ignore lint/complexity/useLiteralKeys: required for strict TypeScript noPropertyAccessFromIndexSignature
-		images: Array.isArray(result["images"])
-			? (result["images"] as unknown[]).map((image) => convertImage(image))
-			: null,
+		chunks: (() => {
+			// biome-ignore lint/complexity/useLiteralKeys: required for strict TypeScript noPropertyAccessFromIndexSignature
+			const chunksData = result["chunks"];
+			return Array.isArray(chunksData) ? (chunksData as unknown[]).map((chunk) => convertChunk(chunk)) : null;
+		})(),
+		images: (() => {
+			// biome-ignore lint/complexity/useLiteralKeys: required for strict TypeScript noPropertyAccessFromIndexSignature
+			const imagesData = result["images"];
+			return Array.isArray(imagesData) ? (imagesData as unknown[]).map((image) => convertImage(image)) : null;
+		})(),
 	};
 }
 
@@ -691,14 +693,15 @@ function normalizeExtractionConfig(config: ExtractionConfigType | null): NativeE
  * **Usage Note**: For processing multiple files, prefer `batchExtractFilesSync()` which
  * provides better performance and memory management.
  *
- * @param filePath - Path to the file (string)
- * @param mimeType - Optional MIME type hint (auto-detected if null)
- * @param config - Extraction configuration (uses defaults if null)
- * @returns ExtractionResult with content, metadata, and tables
- * @throws Error when file cannot be read or parsed
- * @throws ParsingError when document format is invalid
- * @throws OcrError when OCR processing fails
- * @throws KreuzbergError for other extraction failures
+ * @param filePath - Path to the file to extract (string). Can be absolute or relative.
+ * @param mimeType - Optional MIME type hint for format detection. If null, MIME type is auto-detected from file extension or content.
+ * @param config - Extraction configuration object. If null, uses default extraction settings.
+ * @returns ExtractionResult containing extracted content, metadata, tables, and optional chunks/images
+ * @throws {Error} If file doesn't exist, cannot be accessed, or cannot be read
+ * @throws {ParsingError} When document format is invalid or corrupted
+ * @throws {OcrError} When OCR processing fails (if OCR is enabled)
+ * @throws {ValidationError} When extraction result fails validation (if validators registered)
+ * @throws {KreuzbergError} For other extraction-related failures
  *
  * @example
  * ```typescript
@@ -738,14 +741,15 @@ export function extractFileSync(
  * **Usage Note**: For processing multiple files, prefer `batchExtractFiles()` which
  * provides better performance and memory management.
  *
- * @param filePath - Path to the file (string)
- * @param mimeType - Optional MIME type hint (auto-detected if null)
- * @param config - Extraction configuration (uses defaults if null)
- * @returns Promise<ExtractionResult> with content, metadata, and tables
- * @throws Error when file cannot be read or parsed
- * @throws ParsingError when document format is invalid
- * @throws OcrError when OCR processing fails
- * @throws KreuzbergError for other extraction failures
+ * @param filePath - Path to the file to extract (string). Can be absolute or relative.
+ * @param mimeType - Optional MIME type hint for format detection. If null, MIME type is auto-detected from file extension or content.
+ * @param config - Extraction configuration object. If null, uses default extraction settings.
+ * @returns Promise<ExtractionResult> containing extracted content, metadata, tables, and optional chunks/images
+ * @throws {Error} If file doesn't exist, cannot be accessed, or cannot be read
+ * @throws {ParsingError} When document format is invalid or corrupted
+ * @throws {OcrError} When OCR processing fails (if OCR is enabled)
+ * @throws {ValidationError} When extraction result fails validation (if validators registered)
+ * @throws {KreuzbergError} For other extraction-related failures
  *
  * @example
  * ```typescript
@@ -782,15 +786,16 @@ export async function extractFile(
  * **Usage Note**: For processing multiple byte arrays, prefer `batchExtractBytesSync()`
  * which provides better performance and memory management.
  *
- * @param data - File content as Uint8Array
- * @param mimeType - MIME type of the data (required for format detection)
- * @param config - Extraction configuration (uses defaults if null)
- * @returns ExtractionResult with content, metadata, and tables
- * @throws TypeError when data is not a valid Uint8Array
- * @throws Error when file cannot be read or parsed
- * @throws ParsingError when document format is invalid
- * @throws OcrError when OCR processing fails
- * @throws KreuzbergError for other extraction failures
+ * @param data - File content as Uint8Array (Buffer will be converted)
+ * @param mimeType - MIME type of the data (required for accurate format detection). Must be a valid MIME type string.
+ * @param config - Extraction configuration object. If null, uses default extraction settings.
+ * @returns ExtractionResult containing extracted content, metadata, tables, and optional chunks/images
+ * @throws {TypeError} When data is not a valid Uint8Array
+ * @throws {Error} When file cannot be read or parsed
+ * @throws {ParsingError} When document format is invalid or corrupted
+ * @throws {OcrError} When OCR processing fails (if OCR is enabled)
+ * @throws {ValidationError} When extraction result fails validation (if validators registered)
+ * @throws {KreuzbergError} For other extraction-related failures
  *
  * @example
  * ```typescript
@@ -819,15 +824,16 @@ export function extractBytesSync(
  * **Usage Note**: For processing multiple byte arrays, prefer `batchExtractBytes()`
  * which provides better performance and memory management.
  *
- * @param data - File content as Uint8Array
- * @param mimeType - MIME type of the data (required for format detection)
- * @param config - Extraction configuration (uses defaults if null)
- * @returns Promise<ExtractionResult> with content, metadata, and tables
- * @throws TypeError when data is not a valid Uint8Array
- * @throws Error when file cannot be read or parsed
- * @throws ParsingError when document format is invalid
- * @throws OcrError when OCR processing fails
- * @throws KreuzbergError for other extraction failures
+ * @param data - File content as Uint8Array (Buffer will be converted)
+ * @param mimeType - MIME type of the data (required for accurate format detection). Must be a valid MIME type string.
+ * @param config - Extraction configuration object. If null, uses default extraction settings.
+ * @returns Promise<ExtractionResult> containing extracted content, metadata, tables, and optional chunks/images
+ * @throws {TypeError} When data is not a valid Uint8Array
+ * @throws {Error} When file cannot be read or parsed
+ * @throws {ParsingError} When document format is invalid or corrupted
+ * @throws {OcrError} When OCR processing fails (if OCR is enabled)
+ * @throws {ValidationError} When extraction result fails validation (if validators registered)
+ * @throws {KreuzbergError} For other extraction-related failures
  *
  * @example
  * ```typescript
@@ -845,6 +851,7 @@ export async function extractBytes(
 	config: ExtractionConfigType | null = null,
 ): Promise<ExtractionResult> {
 	const validated = assertUint8Array(data, "data");
+	// biome-ignore lint/complexity/useLiteralKeys: required for environment variable access
 	if (process.env["KREUZBERG_DEBUG_GUTEN"] === "1") {
 		console.log("[TypeScript] Debug input header:", Array.from(validated.slice(0, 8)));
 	}
@@ -864,13 +871,14 @@ export async function extractBytes(
  * - Optimized memory usage across all extractions
  * - More reliable for batch document processing
  *
- * @param paths - List of file paths to extract
- * @param config - Extraction configuration (uses defaults if null)
+ * @param paths - List of file paths to extract (absolute or relative paths)
+ * @param config - Extraction configuration object. If null, uses default extraction settings.
  * @returns Array of ExtractionResults (one per file, in same order as input)
- * @throws Error when file cannot be read or parsed
- * @throws ParsingError when document format is invalid
- * @throws OcrError when OCR processing fails
- * @throws KreuzbergError for other extraction failures
+ * @throws {Error} If any file cannot be read or parsed
+ * @throws {ParsingError} When any document format is invalid or corrupted
+ * @throws {OcrError} When OCR processing fails (if OCR is enabled)
+ * @throws {ValidationError} When any extraction result fails validation (if validators registered)
+ * @throws {KreuzbergError} For other extraction-related failures
  *
  * @example
  * ```typescript
@@ -901,13 +909,14 @@ export function batchExtractFilesSync(paths: string[], config: ExtractionConfigT
  * - Optimized memory usage across all extractions
  * - More reliable for batch document processing
  *
- * @param paths - List of file paths to extract
- * @param config - Extraction configuration (uses defaults if null)
+ * @param paths - List of file paths to extract (absolute or relative paths)
+ * @param config - Extraction configuration object. If null, uses default extraction settings.
  * @returns Promise resolving to array of ExtractionResults (one per file, in same order as input)
- * @throws Error when file cannot be read or parsed
- * @throws ParsingError when document format is invalid
- * @throws OcrError when OCR processing fails
- * @throws KreuzbergError for other extraction failures
+ * @throws {Error} If any file cannot be read or parsed
+ * @throws {ParsingError} When any document format is invalid or corrupted
+ * @throws {OcrError} When OCR processing fails (if OCR is enabled)
+ * @throws {ValidationError} When any extraction result fails validation (if validators registered)
+ * @throws {KreuzbergError} For other extraction-related failures
  *
  * @example
  * ```typescript
@@ -944,15 +953,16 @@ export async function batchExtractFiles(
  * - Optimized memory usage across all extractions
  * - More reliable for batch document processing
  *
- * @param dataList - List of file contents as Uint8Arrays
- * @param mimeTypes - List of MIME types (one per data item, required for format detection)
- * @param config - Extraction configuration (uses defaults if null)
+ * @param dataList - List of file contents as Uint8Arrays (must be same length as mimeTypes)
+ * @param mimeTypes - List of MIME types (one per data item, required for accurate format detection)
+ * @param config - Extraction configuration object. If null, uses default extraction settings.
  * @returns Array of ExtractionResults (one per data item, in same order as input)
- * @throws TypeError when dataList contains non-Uint8Array items or length mismatch
- * @throws Error when file cannot be read or parsed
- * @throws ParsingError when document format is invalid
- * @throws OcrError when OCR processing fails
- * @throws KreuzbergError for other extraction failures
+ * @throws {TypeError} When dataList contains non-Uint8Array items or length mismatch with mimeTypes
+ * @throws {Error} If any data cannot be read or parsed
+ * @throws {ParsingError} When any document format is invalid or corrupted
+ * @throws {OcrError} When OCR processing fails (if OCR is enabled)
+ * @throws {ValidationError} When any extraction result fails validation (if validators registered)
+ * @throws {KreuzbergError} For other extraction-related failures
  *
  * @example
  * ```typescript
@@ -996,15 +1006,16 @@ export function batchExtractBytesSync(
  * - Optimized memory usage across all extractions
  * - More reliable for batch document processing
  *
- * @param dataList - List of file contents as Uint8Arrays
- * @param mimeTypes - List of MIME types (one per data item, required for format detection)
- * @param config - Extraction configuration (uses defaults if null)
+ * @param dataList - List of file contents as Uint8Arrays (must be same length as mimeTypes)
+ * @param mimeTypes - List of MIME types (one per data item, required for accurate format detection)
+ * @param config - Extraction configuration object. If null, uses default extraction settings.
  * @returns Promise resolving to array of ExtractionResults (one per data item, in same order as input)
- * @throws TypeError when dataList contains non-Uint8Array items or length mismatch
- * @throws Error when file cannot be read or parsed
- * @throws ParsingError when document format is invalid
- * @throws OcrError when OCR processing fails
- * @throws KreuzbergError for other extraction failures
+ * @throws {TypeError} When dataList contains non-Uint8Array items or length mismatch with mimeTypes
+ * @throws {Error} If any data cannot be read or parsed
+ * @throws {ParsingError} When any document format is invalid or corrupted
+ * @throws {OcrError} When OCR processing fails (if OCR is enabled)
+ * @throws {ValidationError} When any extraction result fails validation (if validators registered)
+ * @throws {KreuzbergError} For other extraction-related failures
  *
  * @example
  * ```typescript
@@ -1052,7 +1063,10 @@ export async function batchExtractBytes(
  * preventing JavaScript callbacks from executing. For v4.0, use async extraction
  * when you need custom processors.
  *
- * @param processor - PostProcessorProtocol implementation
+ * @param processor - PostProcessorProtocol implementation with name(), process(), and optional processingStage()
+ * @throws {Error} If processor is missing required methods (name or process)
+ * @throws {Error} If processor name is empty string
+ * @throws {Error} If a processor with the same name is already registered
  *
  * @example
  * ```typescript
@@ -1144,8 +1158,9 @@ export function registerPostProcessor(processor: PostProcessorProtocol): void {
  * Unregister a postprocessor by name.
  *
  * Removes a previously registered postprocessor from the registry.
+ * If the processor doesn't exist, this is a no-op (does not throw).
  *
- * @param name - Name of the processor to unregister
+ * @param name - Name of the processor to unregister (case-sensitive)
  *
  * @example
  * ```typescript
@@ -1162,7 +1177,8 @@ export function unregisterPostProcessor(name: string): void {
 /**
  * Clear all registered postprocessors.
  *
- * Removes all postprocessors from the registry.
+ * Removes all postprocessors from the registry. Useful for test cleanup or resetting state.
+ * If no postprocessors are registered, this is a no-op.
  *
  * @example
  * ```typescript
@@ -1179,9 +1195,9 @@ export function clearPostProcessors(): void {
 /**
  * List all registered post-processors.
  *
- * Returns the names of all currently registered post-processors.
+ * Returns the names of all currently registered post-processors (both built-in and custom).
  *
- * @returns Array of post-processor names
+ * @returns Array of post-processor names (empty array if none registered)
  *
  * @example
  * ```typescript
@@ -1203,7 +1219,10 @@ export function listPostProcessors(): string[] {
  * Unlike post-processors, validator errors **fail fast** - if a validator throws an error,
  * the extraction fails immediately.
  *
- * @param validator - ValidatorProtocol implementation
+ * @param validator - ValidatorProtocol implementation with name(), validate(), and optional priority()/shouldValidate()
+ * @throws {Error} If validator is missing required methods (name or validate)
+ * @throws {Error} If validator name is empty string
+ * @throws {Error} If a validator with the same name is already registered
  *
  * @example
  * ```typescript
@@ -1264,8 +1283,9 @@ export function registerValidator(validator: ValidatorProtocol): void {
  * Unregister a validator by name.
  *
  * Removes a previously registered validator from the global registry.
+ * If the validator doesn't exist, this is a no-op (does not throw).
  *
- * @param name - Validator name to unregister
+ * @param name - Validator name to unregister (case-sensitive)
  *
  * @example
  * ```typescript
@@ -1300,9 +1320,9 @@ export function clearValidators(): void {
 /**
  * List all registered validators.
  *
- * Returns the names of all currently registered validators.
+ * Returns the names of all currently registered validators (both built-in and custom).
  *
- * @returns Array of validator names
+ * @returns Array of validator names (empty array if none registered)
  *
  * @example
  * ```typescript
@@ -1337,11 +1357,11 @@ export function listValidators(): string[] {
  * from multiple Rust async tasks. Ensure your implementation handles concurrent
  * calls properly.
  *
- * @param backend - OcrBackendProtocol implementation
- *
- * @throws {Error} If backend is missing required methods
- * @throws {Error} If backend name is empty or duplicate
- * @throws {Error} If registration fails
+ * @param backend - OcrBackendProtocol implementation with name(), supportedLanguages(), and processImage()
+ * @throws {Error} If backend is missing required methods (name, supportedLanguages, or processImage)
+ * @throws {Error} If backend name is empty string or contains invalid characters
+ * @throws {Error} If a backend with the same name is already registered
+ * @throws {Error} If registration fails due to FFI issues
  *
  * @example
  * ```typescript
@@ -1423,6 +1443,7 @@ export function registerOcrBackend(backend: OcrBackendProtocol): void {
 			...processArgs: [OcrProcessPayload | OcrProcessTuple | NestedOcrProcessTuple, string?]
 		): Promise<string> {
 			const [imagePayload, maybeLanguage] = processArgs;
+			// biome-ignore lint/complexity/useLiteralKeys: required for environment variable access
 			if (process.env["KREUZBERG_DEBUG_GUTEN"] === "1") {
 				console.log("[registerOcrBackend] JS arguments", { length: processArgs.length });
 				console.log("[registerOcrBackend] Raw args", {
@@ -1447,6 +1468,7 @@ export function registerOcrBackend(backend: OcrBackendProtocol): void {
 				throw new Error("OCR backend did not receive a language parameter");
 			}
 
+			// biome-ignore lint/complexity/useLiteralKeys: required for environment variable access
 			if (process.env["KREUZBERG_DEBUG_GUTEN"] === "1") {
 				const length = typeof rawBytes === "string" ? rawBytes.length : rawBytes.length;
 				console.log(
@@ -1475,7 +1497,7 @@ export function registerOcrBackend(backend: OcrBackendProtocol): void {
  * Returns an array of names of all currently registered OCR backends,
  * including built-in backends like "tesseract".
  *
- * @returns Array of OCR backend names
+ * @returns Array of OCR backend names (empty array if none registered)
  *
  * @example
  * ```typescript
@@ -1516,7 +1538,7 @@ export function unregisterOcrBackend(name: string): void {
  *
  * Removes all OCR backends from the registry, including built-in backends.
  * Use with caution as this will make OCR functionality unavailable until
- * backends are re-registered.
+ * backends are re-registered. If no backends are registered, this is a no-op.
  *
  * @example
  * ```typescript
@@ -1536,7 +1558,7 @@ export function clearOcrBackends(): void {
  * Returns an array of names of all currently registered document extractors,
  * including built-in extractors for PDF, Office documents, images, etc.
  *
- * @returns Array of document extractor names
+ * @returns Array of document extractor names (empty array if none registered)
  *
  * @example
  * ```typescript

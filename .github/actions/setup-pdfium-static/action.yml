@@ -62,13 +62,13 @@ runs:
               ASSET_NAME="pdfium-linux-arm64.tgz"
               ;;
             macos-x64)
-              ASSET_NAME="pdfium-macos-x64.tgz"
+              ASSET_NAME="pdfium-mac-x64.tgz"
               ;;
             macos-arm64)
-              ASSET_NAME="pdfium-macos-arm64.tgz"
+              ASSET_NAME="pdfium-mac-arm64.tgz"
               ;;
             windows-x64)
-              ASSET_NAME="pdfium-windows-x64.zip"
+              ASSET_NAME="pdfium-win-x64.tgz"
               ;;
             *)
               echo "ERROR: Unsupported platform ${{ env.PDFIUM_PLATFORM }}"

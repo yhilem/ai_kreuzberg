@@ -80,6 +80,8 @@ for crate_dir in kreuzberg kreuzberg-ffi kreuzberg-tesseract; do
 	sed -i.bak 's/^reqwest = { workspace = true, /reqwest = { version = "0.12.25", /' "$REPO_ROOT/packages/ruby/vendor/$crate_dir/Cargo.toml"
 	# Replace both base and dev image entries
 	sed -i.bak 's/^image = { workspace = true, /image = { version = "0.25.9", /' "$REPO_ROOT/packages/ruby/vendor/$crate_dir/Cargo.toml"
+	sed -i.bak 's/^html-to-markdown-rs = { workspace = true/html-to-markdown-rs = { version = "2.14.11", default-features = false/' "$REPO_ROOT/packages/ruby/vendor/$crate_dir/Cargo.toml"
+	sed -i.bak 's/^once_cell = { workspace = true }/once_cell = "1.21.3"/' "$REPO_ROOT/packages/ruby/vendor/$crate_dir/Cargo.toml"
 
 	# Inline dev-dependencies
 	sed -i.bak 's/^tempfile = { workspace = true }/tempfile = "3.23.0"/' "$REPO_ROOT/packages/ruby/vendor/$crate_dir/Cargo.toml"
@@ -130,6 +132,8 @@ ahash = "0.8.12"
 base64 = "0.22.1"
 hex = "0.4.3"
 num_cpus = "1.17.0"
+once_cell = "1.21.3"
+html-to-markdown-rs = { version = "2.14.11", default-features = false }
 reqwest = { version = "0.12.25", default-features = false }
 image = { version = "0.25.9", default-features = false }
 

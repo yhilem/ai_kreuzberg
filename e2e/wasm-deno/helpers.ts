@@ -1,106 +1,36 @@
 import { assertEquals, assertExists } from "https://deno.land/std@0.224.0/assert/mod.ts";
+// @deno-types="../../crates/kreuzberg-wasm/dist/index.d.mts"
 import { extractBytes } from "npm:@kreuzberg/wasm@^4.0.0";
+// @deno-types="../../crates/kreuzberg-wasm/dist/index.d.mts"
+import type {
+	ChunkingConfig,
+	ExtractionConfig,
+	ExtractionResult,
+	ImageExtractionConfig,
+	LanguageDetectionConfig,
+	Metadata,
+	OcrConfig,
+	PdfConfig,
+	PostProcessorConfig,
+	Table,
+	TesseractConfig,
+	TokenReductionConfig,
+} from "npm:@kreuzberg/wasm@^4.0.0";
 
-// Type definitions for WASM module (not exported from pkg, but used in helpers)
-export interface Metadata {
-	[key: string]: unknown;
-	title?: string;
-	subject?: string;
-	authors?: string[];
-	keywords?: string[];
-	language?: string;
-	createdAt?: string;
-	modifiedAt?: string;
-	creator?: string;
-	lastModifiedBy?: string;
-	pageCount?: number;
-	formatMetadata?: unknown;
-}
-
-export interface Table {
-	cells?: string[][];
-	markdown?: string;
-	pageNumber?: number;
-	headers?: string[];
-	rows?: string[][];
-}
-
-export interface ExtractionResult {
-	content: string;
-	mimeType: string;
-	metadata: Metadata;
-	tables: Table[];
-	detectedLanguages?: string[] | null;
-	chunks?: unknown[] | null;
-	images?: unknown[] | null;
-	pages?: unknown[] | null;
-}
-
-export interface TesseractConfig {
-	psm?: number;
-	enableTableDetection?: boolean;
-	tesseditCharWhitelist?: string;
-}
-
-export interface OcrConfig {
-	backend?: string;
-	languages?: string[];
-	enabled?: boolean;
-	tesseractConfig?: TesseractConfig;
-	language?: string;
-}
-
-export interface ChunkingConfig {
-	maxChars?: number;
-	maxOverlap?: number;
-}
-
-export interface ImageExtractionConfig {
-	enabled?: boolean;
-	targetDpi?: number;
-	maxImageDimension?: number;
-	autoAdjustDpi?: boolean;
-	minDpi?: number;
-	maxDpi?: number;
-}
-
-export interface PdfConfig {
-	extractImages?: boolean;
-	passwords?: string[];
-	extractMetadata?: boolean;
-}
-
-export interface TokenReductionConfig {
-	mode?: string;
-	preserveImportantWords?: boolean;
-}
-
-export interface PostProcessorConfig {
-	enabled?: boolean;
-	enabledProcessors?: string[];
-	disabledProcessors?: string[];
-}
-
-export interface LanguageDetectionConfig {
-	enabled?: boolean;
-	minConfidence?: number;
-	detectMultiple?: boolean;
-}
-
-export interface ExtractionConfig {
-	ocr?: OcrConfig;
-	chunking?: ChunkingConfig;
-	images?: ImageExtractionConfig;
-	pages?: { enabled?: boolean };
-	languageDetection?: LanguageDetectionConfig;
-	pdfOptions?: PdfConfig;
-	tokenReduction?: TokenReductionConfig;
-	postprocessor?: PostProcessorConfig;
-	useCache?: boolean;
-	enableQualityProcessing?: boolean;
-	forceOcr?: boolean;
-	maxConcurrentExtractions?: number;
-}
+export type {
+	ChunkingConfig,
+	ExtractionConfig,
+	ExtractionResult,
+	ImageExtractionConfig,
+	LanguageDetectionConfig,
+	Metadata,
+	OcrConfig,
+	PdfConfig,
+	PostProcessorConfig,
+	Table,
+	TesseractConfig,
+	TokenReductionConfig,
+};
 
 const WORKSPACE_ROOT = new URL("../../../../..", import.meta.url).pathname;
 const TEST_DOCUMENTS = `${WORKSPACE_ROOT}/test_documents`;

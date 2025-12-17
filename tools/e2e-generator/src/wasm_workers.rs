@@ -31,7 +31,7 @@ import type {
 function getRootDir(): string {
     const __filename = new URL(import.meta.url).pathname;
     const __dirname = path.dirname(__filename);
-    return path.resolve(__dirname, "../../");
+    return path.resolve(__dirname, "../../../");
 }
 
 const fixtureCache = new Map<string, Uint8Array>();
@@ -387,10 +387,11 @@ function valuesEqual(lhs: unknown, rhs: unknown): boolean {
 /// Generate Cloudflare Workers/WASM test suite from fixtures.
 pub fn generate(fixtures: &[Fixture], output_root: &Utf8Path) -> Result<()> {
     let output_dir = output_root.join("wasm-workers");
+    let tests_dir = output_dir.join("tests");
 
-    fs::create_dir_all(&output_dir).context("Failed to create Workers tests directory")?;
+    fs::create_dir_all(&tests_dir).context("Failed to create Workers tests directory")?;
 
-    clean_test_files(&output_dir)?;
+    clean_test_files(&tests_dir)?;
 
     // Filter fixtures for Workers WASM target
     let doc_fixtures: Vec<_> = fixtures
@@ -401,7 +402,7 @@ pub fn generate(fixtures: &[Fixture], output_root: &Utf8Path) -> Result<()> {
     let plugin_fixtures: Vec<_> = fixtures.iter().filter(|f| f.is_plugin_api()).collect();
 
     // Generate helpers (fixtures are loaded from disk at runtime)
-    write_helpers(&output_dir)?;
+    write_helpers(&tests_dir)?;
 
     // Group document fixtures by category
     let mut grouped = doc_fixtures
@@ -415,13 +416,13 @@ pub fn generate(fixtures: &[Fixture], output_root: &Utf8Path) -> Result<()> {
         fixtures.sort_by(|a, b| a.id.cmp(&b.id));
         let file_name = format!("{}.spec.ts", to_snake_case(&category));
         let content = render_category(&category, &fixtures)?;
-        let path = output_dir.join(&file_name);
+        let path = tests_dir.join(&file_name);
         fs::write(&path, content).with_context(|| format!("Writing {}", path))?;
     }
 
     // Generate plugin API tests if any exist
     if !plugin_fixtures.is_empty() {
-        generate_plugin_api_tests(&plugin_fixtures, &output_dir)?;
+        generate_plugin_api_tests(&plugin_fixtures, &tests_dir)?;
     }
 
     // Generate vitest configuration

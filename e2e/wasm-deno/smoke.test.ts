@@ -1,13 +1,12 @@
 // Auto-generated tests for smoke fixtures.
 // Run with: deno test --allow-read
 
+// @deno-types="../../crates/kreuzberg-wasm/dist/index.d.mts"
 import { extractBytes } from "npm:@kreuzberg/wasm@^4.0.0";
 import { assertions, buildConfig, resolveDocument, shouldSkipFixture } from "./helpers.ts";
 import type { ExtractionResult } from "./helpers.ts";
 
-const TEST_TIMEOUT_MS = 60_000;
-
-Deno.test("smoke_docx_basic", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("smoke_docx_basic", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("documents/fake.docx");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;
@@ -27,7 +26,7 @@ Deno.test("smoke_docx_basic", { permissions: { read: true }, timeout: TEST_TIMEO
 	assertions.assertContentContainsAny(result, ["Lorem", "ipsum", "document", "text"]);
 });
 
-Deno.test("smoke_html_basic", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("smoke_html_basic", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("web/simple_table.html");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;
@@ -47,7 +46,7 @@ Deno.test("smoke_html_basic", { permissions: { read: true }, timeout: TEST_TIMEO
 	assertions.assertContentContainsAny(result, ["#", "**", "simple", "HTML"]);
 });
 
-Deno.test("smoke_image_png", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("smoke_image_png", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("images/sample.png");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;
@@ -63,10 +62,10 @@ Deno.test("smoke_image_png", { permissions: { read: true }, timeout: TEST_TIMEOU
 		return;
 	}
 	assertions.assertExpectedMime(result, ["image/png"]);
-	assertions.assertMetadataExpectation(result, "format", "PNG");
+	assertions.assertMetadataExpectation(result, "format", { eq: "PNG" });
 });
 
-Deno.test("smoke_json_basic", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("smoke_json_basic", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("data_formats/simple.json");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;
@@ -85,7 +84,7 @@ Deno.test("smoke_json_basic", { permissions: { read: true }, timeout: TEST_TIMEO
 	assertions.assertMinContentLength(result, 5);
 });
 
-Deno.test("smoke_pdf_basic", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("smoke_pdf_basic", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("pdfs/fake_memo.pdf");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;
@@ -105,7 +104,7 @@ Deno.test("smoke_pdf_basic", { permissions: { read: true }, timeout: TEST_TIMEOU
 	assertions.assertContentContainsAny(result, ["May 5, 2023", "To Whom it May Concern"]);
 });
 
-Deno.test("smoke_txt_basic", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("smoke_txt_basic", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("text/report.txt");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;
@@ -124,7 +123,7 @@ Deno.test("smoke_txt_basic", { permissions: { read: true }, timeout: TEST_TIMEOU
 	assertions.assertMinContentLength(result, 5);
 });
 
-Deno.test("smoke_xlsx_basic", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("smoke_xlsx_basic", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("spreadsheets/stanley_cups.xlsx");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;

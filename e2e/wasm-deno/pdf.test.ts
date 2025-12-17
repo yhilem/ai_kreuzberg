@@ -1,13 +1,13 @@
 // Auto-generated tests for pdf fixtures.
 // Run with: deno test --allow-read
 
+// @deno-types="../../crates/kreuzberg-wasm/dist/index.d.mts"
 import { extractBytes } from "npm:@kreuzberg/wasm@^4.0.0";
 import { assertions, buildConfig, resolveDocument, shouldSkipFixture } from "./helpers.ts";
+// @deno-types="../../crates/kreuzberg-wasm/dist/index.d.mts"
 import type { ExtractionResult } from "npm:@kreuzberg/wasm@^4.0.0";
 
-const TEST_TIMEOUT_MS = 60_000;
-
-Deno.test("pdf_assembly_technical", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("pdf_assembly_technical", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("pdfs/assembly_language_for_beginners_al4_b_en.pdf");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;
@@ -28,7 +28,7 @@ Deno.test("pdf_assembly_technical", { permissions: { read: true }, timeout: TEST
 	assertions.assertMetadataExpectation(result, "format_type", { eq: "pdf" });
 });
 
-Deno.test("pdf_bayesian_data_analysis", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("pdf_bayesian_data_analysis", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("pdfs/bayesian_data_analysis_third_edition_13th_feb_2020.pdf");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;
@@ -49,7 +49,7 @@ Deno.test("pdf_bayesian_data_analysis", { permissions: { read: true }, timeout: 
 	assertions.assertMetadataExpectation(result, "format_type", { eq: "pdf" });
 });
 
-Deno.test("pdf_code_and_formula", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("pdf_code_and_formula", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("pdfs/code_and_formula.pdf");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;
@@ -68,7 +68,7 @@ Deno.test("pdf_code_and_formula", { permissions: { read: true }, timeout: TEST_T
 	assertions.assertMinContentLength(result, 100);
 });
 
-Deno.test("pdf_deep_learning", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("pdf_deep_learning", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("pdfs/fundamentals_of_deep_learning_2014.pdf");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;
@@ -89,7 +89,7 @@ Deno.test("pdf_deep_learning", { permissions: { read: true }, timeout: TEST_TIME
 	assertions.assertMetadataExpectation(result, "format_type", { eq: "pdf" });
 });
 
-Deno.test("pdf_embedded_images", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("pdf_embedded_images", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("pdfs/embedded_images_tables.pdf");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;
@@ -109,7 +109,7 @@ Deno.test("pdf_embedded_images", { permissions: { read: true }, timeout: TEST_TI
 	assertions.assertTableCount(result, 0, null);
 });
 
-Deno.test("pdf_google_doc", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("pdf_google_doc", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("pdfs/google_doc_document.pdf");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;
@@ -129,7 +129,7 @@ Deno.test("pdf_google_doc", { permissions: { read: true }, timeout: TEST_TIMEOUT
 	assertions.assertMetadataExpectation(result, "format_type", { eq: "pdf" });
 });
 
-Deno.test("pdf_large_ciml", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("pdf_large_ciml", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("pdfs/a_course_in_machine_learning_ciml_v0_9_all.pdf");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;
@@ -150,7 +150,7 @@ Deno.test("pdf_large_ciml", { permissions: { read: true }, timeout: TEST_TIMEOUT
 	assertions.assertMetadataExpectation(result, "format_type", { eq: "pdf" });
 });
 
-Deno.test("pdf_non_english_german", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("pdf_non_english_german", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("pdfs/5_level_paging_and_5_level_ept_intel_revision_1_1_may_2017.pdf");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;
@@ -171,7 +171,7 @@ Deno.test("pdf_non_english_german", { permissions: { read: true }, timeout: TEST
 	assertions.assertMetadataExpectation(result, "format_type", { eq: "pdf" });
 });
 
-Deno.test("pdf_right_to_left", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("pdf_right_to_left", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("pdfs/right_to_left_01.pdf");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;
@@ -191,7 +191,7 @@ Deno.test("pdf_right_to_left", { permissions: { read: true }, timeout: TEST_TIME
 	assertions.assertMetadataExpectation(result, "format_type", { eq: "pdf" });
 });
 
-Deno.test("pdf_simple_text", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("pdf_simple_text", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("pdfs/fake_memo.pdf");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;
@@ -211,7 +211,7 @@ Deno.test("pdf_simple_text", { permissions: { read: true }, timeout: TEST_TIMEOU
 	assertions.assertContentContainsAny(result, ["May 5, 2023", "To Whom it May Concern", "Mallori"]);
 });
 
-Deno.test("pdf_tables_large", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("pdf_tables_large", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("pdfs_with_tables/large.pdf");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;
@@ -231,7 +231,7 @@ Deno.test("pdf_tables_large", { permissions: { read: true }, timeout: TEST_TIMEO
 	assertions.assertTableCount(result, 1, null);
 });
 
-Deno.test("pdf_tables_medium", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("pdf_tables_medium", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("pdfs_with_tables/medium.pdf");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;
@@ -251,7 +251,7 @@ Deno.test("pdf_tables_medium", { permissions: { read: true }, timeout: TEST_TIME
 	assertions.assertTableCount(result, 1, null);
 });
 
-Deno.test("pdf_tables_small", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("pdf_tables_small", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("pdfs_with_tables/tiny.pdf");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;
@@ -279,7 +279,7 @@ Deno.test("pdf_tables_small", { permissions: { read: true }, timeout: TEST_TIMEO
 	assertions.assertTableCount(result, 1, null);
 });
 
-Deno.test("pdf_technical_stat_learning", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("pdf_technical_stat_learning", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument(
 		"pdfs/an_introduction_to_statistical_learning_with_applications_in_r_islr_sixth_printing.pdf",
 	);

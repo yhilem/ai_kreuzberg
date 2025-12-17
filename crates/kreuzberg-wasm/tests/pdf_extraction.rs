@@ -4,6 +4,8 @@
 //! including basic text extraction, MIME type handling, and error conditions.
 //! Tests focus on behavioral correctness rather than implementation details.
 
+#![cfg(target_arch = "wasm32")]
+
 use js_sys::Uint8Array;
 use kreuzberg_wasm::*;
 

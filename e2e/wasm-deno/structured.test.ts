@@ -1,13 +1,13 @@
 // Auto-generated tests for structured fixtures.
 // Run with: deno test --allow-read
 
+// @deno-types="../../crates/kreuzberg-wasm/dist/index.d.mts"
 import { extractBytes } from "npm:@kreuzberg/wasm@^4.0.0";
 import { assertions, buildConfig, resolveDocument, shouldSkipFixture } from "./helpers.ts";
+// @deno-types="../../crates/kreuzberg-wasm/dist/index.d.mts"
 import type { ExtractionResult } from "npm:@kreuzberg/wasm@^4.0.0";
 
-const TEST_TIMEOUT_MS = 60_000;
-
-Deno.test("structured_json_basic", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("structured_json_basic", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("json/sample_document.json");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;
@@ -27,7 +27,7 @@ Deno.test("structured_json_basic", { permissions: { read: true }, timeout: TEST_
 	assertions.assertContentContainsAny(result, ["Sample Document", "Test Author"]);
 });
 
-Deno.test("structured_json_simple", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("structured_json_simple", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("data_formats/simple.json");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;
@@ -47,7 +47,7 @@ Deno.test("structured_json_simple", { permissions: { read: true }, timeout: TEST
 	assertions.assertContentContainsAny(result, ["{", "name"]);
 });
 
-Deno.test("structured_yaml_simple", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("structured_yaml_simple", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("data_formats/simple.yaml");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;

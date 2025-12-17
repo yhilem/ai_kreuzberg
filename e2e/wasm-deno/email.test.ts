@@ -1,13 +1,13 @@
 // Auto-generated tests for email fixtures.
 // Run with: deno test --allow-read
 
+// @deno-types="../../crates/kreuzberg-wasm/dist/index.d.mts"
 import { extractBytes } from "npm:@kreuzberg/wasm@^4.0.0";
 import { assertions, buildConfig, resolveDocument, shouldSkipFixture } from "./helpers.ts";
+// @deno-types="../../crates/kreuzberg-wasm/dist/index.d.mts"
 import type { ExtractionResult } from "npm:@kreuzberg/wasm@^4.0.0";
 
-const TEST_TIMEOUT_MS = 60_000;
-
-Deno.test("email_sample_eml", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("email_sample_eml", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("email/sample_email.eml");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;

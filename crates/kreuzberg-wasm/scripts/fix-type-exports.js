@@ -34,8 +34,12 @@ function fixTypeExports(filePath) {
 			const importPath = typeImportMatch[2];
 			// Extract the module reference without extension
 			const baseModule = importPath.replace(/\.(mjs|d\.mts|d\.ts|js)$/, "");
-			// For both .mjs and .d.mts references, use .mjs
-			moduleRef = `${baseModule}.mjs`;
+			// For .d.mts files, reference .d.mts; for .d.ts files, use .js
+			if (filePath.endsWith(".d.mts")) {
+				moduleRef = `${baseModule}.d.mts`;
+			} else {
+				moduleRef = `${baseModule}.js`;
+			}
 
 			// Parse the named imports to get type aliases
 			const imports = typeImportMatch[1];
@@ -47,34 +51,95 @@ function fixTypeExports(filePath) {
 			return;
 		}
 
-		// Build the corrected export statement with all types
+		// Build the corrected import and export statements with all types
+		const correctedImport = `import { E as ExtractionConfig, a as ExtractionResult } from '${moduleRef}';`;
 		const correctedExport = `export { C as Chunk, b as ChunkMetadata, c as ChunkingConfig, d as ExtractedImage, I as ImageExtractionConfig, L as LanguageDetectionConfig, M as Metadata, O as OcrBackendProtocol, e as OcrConfig, P as PageContent, f as PageExtractionConfig, g as PdfConfig, h as PostProcessorConfig, T as Table, i as TesseractConfig, j as TokenReductionConfig, E as ExtractionConfig, a as ExtractionResult } from '${moduleRef}';`;
 
-		// Find and replace the export statement that doesn't include ExtractionConfig
+		// Find and replace both import and export statements
 		const lines = content.split("\n");
 		let replaced = false;
 		let foundCorrectExport = false;
+		let importFixed = false;
+		let duplicateRemoved = false;
+		let runtimeFixed = false;
 
 		for (let i = 0; i < lines.length; i++) {
-			const line = lines[i];
-			// Match any export from types-*.mjs
+			let line = lines[i];
+
+			// Fix import statement
+			if (line.startsWith("import {") && /from\s+['"]\.\/types-[^'"]+['"]/.test(line)) {
+				// Check if the import already uses the correct extension
+				if (!line.includes(moduleRef)) {
+					lines[i] = correctedImport;
+					importFixed = true;
+				}
+			}
+
+			// Fix export statement from types file
 			if (line.startsWith("export {") && /from\s+['"]\.\/types-[^'"]+['"]/.test(line)) {
-				// Check if it already has both key types
-				if (line.includes("ExtractionConfig") && line.includes("ExtractionResult")) {
+				// Check if it already has both key types and correct module ref
+				if (line.includes("ExtractionConfig") && line.includes("ExtractionResult") && line.includes(moduleRef)) {
 					foundCorrectExport = true;
 				} else if (line.includes("from")) {
 					// Replace with corrected export
 					lines[i] = correctedExport;
 					replaced = true;
 				}
-				break;
+			}
+
+			// Remove duplicate export at the end that re-exports ExtractionConfig and ExtractionResult
+			// This is typically: export { ExtractionConfig, ExtractionResult, batchExtractBytes, ... };
+			if (
+				line.startsWith("export {") &&
+				!line.includes("from") &&
+				line.includes("ExtractionConfig") &&
+				line.includes("ExtractionResult")
+			) {
+				// Remove ExtractionConfig and ExtractionResult from this export
+				const exportContent = line.match(/export\s+\{([^}]+)\}/)?.[1];
+				if (exportContent) {
+					const exports = exportContent
+						.split(",")
+						.map((e) => e.trim())
+						.filter((e) => {
+							return e !== "ExtractionConfig" && e !== "ExtractionResult";
+						});
+					if (exports.length > 0) {
+						lines[i] = `export { ${exports.join(", ")} };`;
+						duplicateRemoved = true;
+					} else {
+						// If no other exports, remove the line entirely
+						lines[i] = "";
+						duplicateRemoved = true;
+					}
+				}
+			}
+
+			// Fix runtime.mjs references to runtime.d.mts for .d.mts files
+			// export { RuntimeType, ... } from './runtime.mjs' should be './runtime.d.mts'
+			if (filePath.endsWith(".d.mts") && line.includes("from './runtime.mjs'") && line.includes("RuntimeType")) {
+				line = line.replace("from './runtime.mjs'", "from './runtime.d.mts'");
+				lines[i] = line;
+				runtimeFixed = true;
+			}
+
+			// Fix other .mjs references in .d.mts files to .d.mts
+			if (filePath.endsWith(".d.mts") && /from\s+['"]\.\/(adapters|ocr)\/[^'"]+\.mjs['"]/.test(line)) {
+				line = line.replace(/\.mjs'/g, ".d.mts'").replace(/\.mjs"/g, '.d.mts"');
+				lines[i] = line;
+				runtimeFixed = true;
 			}
 		}
 
-		if (replaced) {
+		if (replaced || importFixed || duplicateRemoved || runtimeFixed) {
 			content = lines.join("\n");
 			fs.writeFileSync(filePath, content);
-			console.log(`✓ Fixed type exports in ${path.basename(filePath)}`);
+			const changes = [];
+			if (importFixed) changes.push("imports");
+			if (replaced) changes.push("exports");
+			if (duplicateRemoved) changes.push("duplicates");
+			if (runtimeFixed) changes.push("module references");
+			console.log(`✓ Fixed type ${changes.join(" and ")} in ${path.basename(filePath)}`);
 		} else if (foundCorrectExport) {
 			console.log(`✓ ${path.basename(filePath)} already has correct exports`);
 		} else {
@@ -86,10 +151,53 @@ function fixTypeExports(filePath) {
 	}
 }
 
+/**
+ * Recursively find all .d.ts and .d.mts files
+ * @param {string} dir - Directory to search
+ * @returns {string[]} Array of file paths
+ */
+function findTypeDefinitions(dir) {
+	const files = [];
+	const entries = fs.readdirSync(dir, { withFileTypes: true });
+
+	for (const entry of entries) {
+		const fullPath = path.join(dir, entry.name);
+		if (entry.isDirectory()) {
+			files.push(...findTypeDefinitions(fullPath));
+		} else if (entry.name.endsWith(".d.ts") || entry.name.endsWith(".d.mts")) {
+			files.push(fullPath);
+		}
+	}
+
+	return files;
+}
+
 // Main execution
 console.log("Fixing type exports in generated .d.ts files...\n");
 
-fixTypeExports(path.join(distDir, "index.d.ts"));
-fixTypeExports(path.join(distDir, "index.d.mts"));
+const typeFiles = findTypeDefinitions(distDir);
+for (const file of typeFiles) {
+	fixTypeExports(file);
+}
+
+// Fix any remaining .mjs references in .d.mts files to .d.mts
+console.log("\nFixing remaining type references in .d.mts files...");
+const dmtsFiles = typeFiles.filter((f) => f.endsWith(".d.mts"));
+for (const file of dmtsFiles) {
+	try {
+		let content = fs.readFileSync(file, "utf-8");
+		const originalContent = content;
+
+		// Fix types-*.mjs references to types-*.d.mts
+		content = content.replace(/types-([^'"/]+)\.mjs/g, "types-$1.d.mts");
+
+		if (content !== originalContent) {
+			fs.writeFileSync(file, content);
+			console.log(`✓ Fixed remaining references in ${path.basename(file)}`);
+		}
+	} catch (error) {
+		console.error(`✗ Error fixing ${file}:`, error.message);
+	}
+}
 
 console.log("\nType export fixes complete!");

@@ -8,6 +8,8 @@
 //! - Plugin chaining and pipeline management
 //! - Lock poisoning recovery
 
+#![cfg(target_arch = "wasm32")]
+
 use js_sys::Reflect;
 use kreuzberg_wasm::*;
 use wasm_bindgen::JsValue;

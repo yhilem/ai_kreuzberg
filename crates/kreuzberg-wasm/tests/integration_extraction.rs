@@ -8,6 +8,8 @@
 //! - Error propagation chains
 //! - Batch operations with mixed success/failure scenarios
 
+#![cfg(target_arch = "wasm32")]
+
 use js_sys::Uint8Array;
 use kreuzberg_wasm::*;
 use wasm_bindgen_test::*;

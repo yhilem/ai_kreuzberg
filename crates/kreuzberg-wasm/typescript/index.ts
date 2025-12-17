@@ -144,8 +144,8 @@ export {
 export type * from "./types.js";
 export type {
 	Chunk,
-	ChunkMetadata,
 	ChunkingConfig,
+	ChunkMetadata,
 	ExtractedImage,
 	ExtractionConfig,
 	ExtractionResult,

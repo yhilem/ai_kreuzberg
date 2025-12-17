@@ -1,13 +1,13 @@
 // Auto-generated tests for html fixtures.
 // Run with: deno test --allow-read
 
+// @deno-types="../../crates/kreuzberg-wasm/dist/index.d.mts"
 import { extractBytes } from "npm:@kreuzberg/wasm@^4.0.0";
 import { assertions, buildConfig, resolveDocument, shouldSkipFixture } from "./helpers.ts";
+// @deno-types="../../crates/kreuzberg-wasm/dist/index.d.mts"
 import type { ExtractionResult } from "npm:@kreuzberg/wasm@^4.0.0";
 
-const TEST_TIMEOUT_MS = 60_000;
-
-Deno.test("html_complex_layout", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("html_complex_layout", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("web/taylor_swift.html");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;
@@ -26,7 +26,7 @@ Deno.test("html_complex_layout", { permissions: { read: true }, timeout: TEST_TI
 	assertions.assertMinContentLength(result, 1000);
 });
 
-Deno.test("html_simple_table", { permissions: { read: true }, timeout: TEST_TIMEOUT_MS }, async () => {
+Deno.test("html_simple_table", { permissions: { read: true } }, async () => {
 	const documentBytes = await resolveDocument("web/simple_table.html");
 	const config = buildConfig(undefined);
 	let result: ExtractionResult | null = null;

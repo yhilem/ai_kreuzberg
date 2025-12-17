@@ -118,9 +118,11 @@ pub fn discover_config() -> Result<JsValue, JsValue> {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(target_arch = "wasm32")]
     use super::*;
 
     #[test]
+    #[cfg(target_arch = "wasm32")]
     fn test_load_config_from_json_string() {
         let json_config = r#"{"use_cache": true, "enable_quality_processing": true}"#;
         let result = load_config_from_string(json_config.to_string(), "json".to_string());
@@ -128,6 +130,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(target_arch = "wasm32")]
     fn test_load_config_from_toml_string() {
         let toml_config = r#"use_cache = true
 enable_quality_processing = true"#;
@@ -136,6 +139,7 @@ enable_quality_processing = true"#;
     }
 
     #[test]
+    #[cfg(target_arch = "wasm32")]
     fn test_load_config_from_yaml_string() {
         let yaml_config = r#"use_cache: true
 enable_quality_processing: true"#;
@@ -144,6 +148,7 @@ enable_quality_processing: true"#;
     }
 
     #[test]
+    #[cfg(target_arch = "wasm32")]
     fn test_load_config_invalid_json() {
         let invalid_json = "{ invalid json }";
         let result = load_config_from_string(invalid_json.to_string(), "json".to_string());
@@ -151,6 +156,7 @@ enable_quality_processing: true"#;
     }
 
     #[test]
+    #[cfg(target_arch = "wasm32")]
     fn test_load_config_unsupported_format() {
         let config = "use_cache = true";
         let result = load_config_from_string(config.to_string(), "xml".to_string());
@@ -158,6 +164,7 @@ enable_quality_processing: true"#;
     }
 
     #[test]
+    #[cfg(target_arch = "wasm32")]
     fn test_discover_config_not_available() {
         let result = discover_config();
         assert!(result.is_err());

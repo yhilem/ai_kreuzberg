@@ -475,8 +475,9 @@ mod build_tesseract {
 
             if windows_target {
                 if mingw_target {
-                    leptonica_config.generator("MinGW Makefiles");
-                    leptonica_config.define("MSYS2_ARG_CONV_EXCL", "/MD;/MDd;/D;-D;-I");
+                    leptonica_config.generator("Unix Makefiles");
+                    leptonica_config.define("CMAKE_MAKE_PROGRAM", "mingw32-make");
+                    leptonica_config.define("MSYS2_ARG_CONV_EXCL", "/MD;/MDd;/D;-D;-I;-L");
                 } else if msvc_target && env::var("VSINSTALLDIR").is_ok() {
                     leptonica_config.generator("NMake Makefiles");
                 }
@@ -554,8 +555,9 @@ mod build_tesseract {
             let mut tesseract_config = Config::new(&tesseract_dir);
             if windows_target {
                 if mingw_target {
-                    tesseract_config.generator("MinGW Makefiles");
-                    tesseract_config.define("MSYS2_ARG_CONV_EXCL", "/MD;/MDd;/D;-D;-I");
+                    tesseract_config.generator("Unix Makefiles");
+                    tesseract_config.define("CMAKE_MAKE_PROGRAM", "mingw32-make");
+                    tesseract_config.define("MSYS2_ARG_CONV_EXCL", "/MD;/MDd;/D;-D;-I;-L");
                 } else if msvc_target && env::var("VSINSTALLDIR").is_ok() {
                     tesseract_config.generator("NMake Makefiles");
                 }

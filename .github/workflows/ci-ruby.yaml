@@ -155,7 +155,7 @@ jobs:
 
       - name: Vendor kreuzberg core crate
         shell: bash
-        run: scripts/ci/ruby/vendor-kreuzberg-core.sh
+        run: python3 scripts/ci/ruby/vendor-kreuzberg-core.py
 
       - name: Configure Tesseract build environment (Windows)
         if: runner.os == 'Windows'
@@ -292,7 +292,7 @@ jobs:
 
       - name: Vendor kreuzberg core for native extension
         shell: bash
-        run: scripts/ci/ruby/vendor-kreuzberg-core.sh
+        run: python3 scripts/ci/ruby/vendor-kreuzberg-core.py
 
       - name: Build local native extension
         shell: bash

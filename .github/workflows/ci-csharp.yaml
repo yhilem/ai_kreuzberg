@@ -5,7 +5,6 @@ on:
     branches: [main]
     paths:
       - '.github/actions/**'
-      - 'scripts/**'
       - 'crates/kreuzberg/**'
       - 'crates/kreuzberg-ffi/**'
       - 'crates/kreuzberg-tesseract/**'
@@ -18,13 +17,13 @@ on:
       - 'Cargo.lock'
       - 'packages/csharp/**/*.csproj'
       - 'e2e/csharp/**/*.csproj'
+      - 'scripts/ci/csharp/**'
       - '.github/workflows/ci-csharp.yaml'
       - '.cargo/config.toml'
   pull_request:
     branches: [main]
     paths:
       - '.github/actions/**'
-      - 'scripts/**'
       - 'crates/kreuzberg/**'
       - 'crates/kreuzberg-ffi/**'
       - 'crates/kreuzberg-tesseract/**'
@@ -37,6 +36,7 @@ on:
       - 'Cargo.lock'
       - 'packages/csharp/**/*.csproj'
       - 'e2e/csharp/**/*.csproj'
+      - 'scripts/ci/csharp/**'
       - '.github/workflows/ci-csharp.yaml'
       - '.cargo/config.toml'
 

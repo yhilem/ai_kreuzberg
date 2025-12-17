@@ -10,7 +10,6 @@ on:
       - 'crates/kreuzberg-tesseract/**'
       - 'packages/typescript/**'
       - 'e2e/typescript/**'
-      - 'scripts/**'
       - 'test_documents/**'
       - 'fixtures/**'
       - 'tools/e2e-generator/**'
@@ -18,6 +17,7 @@ on:
       - 'Cargo.lock'
       - 'pnpm-lock.yaml'
       - 'package.json'
+      - 'scripts/ci/node/**'
       - '.github/workflows/ci-node.yaml'
       - '.cargo/config.toml'
   pull_request:
@@ -29,7 +29,6 @@ on:
       - 'crates/kreuzberg-tesseract/**'
       - 'packages/typescript/**'
       - 'e2e/typescript/**'
-      - 'scripts/**'
       - 'test_documents/**'
       - 'fixtures/**'
       - 'tools/e2e-generator/**'
@@ -37,6 +36,7 @@ on:
       - 'Cargo.lock'
       - 'pnpm-lock.yaml'
       - 'package.json'
+      - 'scripts/ci/node/**'
       - '.github/workflows/ci-node.yaml'
       - '.cargo/config.toml'
 

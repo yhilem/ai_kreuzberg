@@ -19,7 +19,7 @@ on:
       - 'Cargo.lock'
       - 'pnpm-lock.yaml'
       - 'package.json'
-      - 'scripts/**'
+      - 'scripts/ci/wasm/**'
       - '.github/workflows/ci-wasm.yaml'
   pull_request:
     branches: [main]
@@ -39,7 +39,7 @@ on:
       - 'Cargo.lock'
       - 'pnpm-lock.yaml'
       - 'package.json'
-      - 'scripts/**'
+      - 'scripts/ci/wasm/**'
       - '.github/workflows/ci-wasm.yaml'
   workflow_dispatch:
 

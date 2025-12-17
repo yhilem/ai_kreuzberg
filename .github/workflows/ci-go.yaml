@@ -6,8 +6,9 @@ on:
     paths:
       - '.github/actions/**'
       - 'packages/go/v4/**'
-      - 'crates/**'
-      - 'scripts/**'
+      - 'crates/kreuzberg/**'
+      - 'crates/kreuzberg-ffi/**'
+      - 'crates/kreuzberg-tesseract/**'
       - 'scripts/ci/go/**'
       - 'e2e/go/**'
       - 'test_documents/**'
@@ -22,8 +23,9 @@ on:
     paths:
       - '.github/actions/**'
       - 'packages/go/v4/**'
-      - 'crates/**'
-      - 'scripts/**'
+      - 'crates/kreuzberg/**'
+      - 'crates/kreuzberg-ffi/**'
+      - 'crates/kreuzberg-tesseract/**'
       - 'scripts/ci/go/**'
       - 'e2e/go/**'
       - 'test_documents/**'

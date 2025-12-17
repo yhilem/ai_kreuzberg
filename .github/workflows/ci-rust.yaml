@@ -16,7 +16,9 @@ on:
       - 'Cargo.lock'
       - '.cargo/config.toml'
       - 'rust-toolchain.toml'
-      - 'scripts/**'
+      - 'scripts/ci/rust/**'
+      - 'scripts/install-system-pdfium-linux.sh'
+      - 'scripts/install-system-pdfium-macos.sh'
       - '.github/workflows/ci-rust.yaml'
   pull_request:
     branches: [main]
@@ -33,7 +35,9 @@ on:
       - 'Cargo.lock'
       - '.cargo/config.toml'
       - 'rust-toolchain.toml'
-      - 'scripts/**'
+      - 'scripts/ci/rust/**'
+      - 'scripts/install-system-pdfium-linux.sh'
+      - 'scripts/install-system-pdfium-macos.sh'
       - '.github/workflows/ci-rust.yaml'
 
 permissions:

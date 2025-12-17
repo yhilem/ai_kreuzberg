@@ -4,21 +4,57 @@ on:
   push:
     branches: [main]
     paths:
-      - 'crates/**'
-      - 'packages/**'
-      - 'tools/**'
+      # All Rust crates
+      - 'crates/kreuzberg/**'
+      - 'crates/kreuzberg-cli/**'
+      - 'crates/kreuzberg-py/**'
+      - 'crates/kreuzberg-node/**'
+      - 'crates/kreuzberg-ffi/**'
+      - 'crates/kreuzberg-tesseract/**'
+      - 'crates/kreuzberg-wasm/**'
+      # All language packages
+      - 'packages/python/**'
+      - 'packages/typescript/**'
+      - 'packages/ruby/**'
+      - 'packages/java/**'
+      - 'packages/go/v4/**'
+      - 'packages/csharp/**'
+      - 'packages/wasm/**'
+      # All tools
+      - 'tools/benchmark-harness/**'
+      - 'tools/e2e-generator/**'
+      # Validation-specific scripts
+      - 'scripts/ci/validate/**'
+      # CI infrastructure
       - '.github/actions/**'
-      - 'scripts/**'
       - '.cargo/config.toml'
       - '.github/workflows/ci-validate.yaml'
   pull_request:
     branches: [main]
     paths:
-      - 'crates/**'
-      - 'packages/**'
-      - 'tools/**'
+      # All Rust crates
+      - 'crates/kreuzberg/**'
+      - 'crates/kreuzberg-cli/**'
+      - 'crates/kreuzberg-py/**'
+      - 'crates/kreuzberg-node/**'
+      - 'crates/kreuzberg-ffi/**'
+      - 'crates/kreuzberg-tesseract/**'
+      - 'crates/kreuzberg-wasm/**'
+      # All language packages
+      - 'packages/python/**'
+      - 'packages/typescript/**'
+      - 'packages/ruby/**'
+      - 'packages/java/**'
+      - 'packages/go/v4/**'
+      - 'packages/csharp/**'
+      - 'packages/wasm/**'
+      # All tools
+      - 'tools/benchmark-harness/**'
+      - 'tools/e2e-generator/**'
+      # Validation-specific scripts
+      - 'scripts/ci/validate/**'
+      # CI infrastructure
       - '.github/actions/**'
-      - 'scripts/**'
       - '.cargo/config.toml'
       - '.github/workflows/ci-validate.yaml'
 

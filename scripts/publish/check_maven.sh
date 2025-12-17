@@ -24,7 +24,7 @@ group="dev.kreuzberg"
 artifact="kreuzberg"
 base_url="https://search.maven.org/solrsearch/select"
 query="g:\"${group}\" AND a:\"${artifact}\" AND v:\"${version}\""
-max_attempts=3
+max_attempts=12
 attempt=1
 response=""
 count=0
@@ -48,13 +48,14 @@ while [ $attempt -le $max_attempts ]; do
 	if [ -n "$response" ]; then
 		count=$(echo "$response" | jq -r '.response.numFound' 2>/dev/null || echo "0")
 		if [ "$count" != "0" ]; then
+			echo "::notice::Found ${group}:${artifact}:${version} on Maven Central after ${attempt} attempt(s)" >&2
 			break
 		fi
 	fi
 
 	if [ $attempt -lt $max_attempts ]; then
-		sleep_time=$((attempt * 5))
-		echo "::warning::Maven Central check failed, retrying in ${sleep_time}s..." >&2
+		sleep_time=$((attempt * 10))
+		echo "::warning::Package not found yet, retrying in ${sleep_time}s... (attempt ${attempt}/${max_attempts})" >&2
 		sleep "$sleep_time"
 	fi
 

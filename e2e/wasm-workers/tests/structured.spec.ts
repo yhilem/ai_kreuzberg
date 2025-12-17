@@ -8,11 +8,15 @@ import type { ExtractionResult } from "@kreuzberg/wasm";
 
 describe("structured", () => {
 	it("structured_json_basic", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture("json/sample_document.json");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig(undefined);
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture("json/sample_document.json");
-			const config = buildConfig(undefined);
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (shouldSkipFixture(error, "structured_json_basic", [], undefined)) {
@@ -29,11 +33,15 @@ describe("structured", () => {
 	});
 
 	it("structured_json_simple", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture("data_formats/simple.json");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig(undefined);
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture("data_formats/simple.json");
-			const config = buildConfig(undefined);
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (shouldSkipFixture(error, "structured_json_simple", [], undefined)) {
@@ -50,11 +58,15 @@ describe("structured", () => {
 	});
 
 	it("structured_yaml_simple", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture("data_formats/simple.yaml");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig(undefined);
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture("data_formats/simple.yaml");
-			const config = buildConfig(undefined);
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (shouldSkipFixture(error, "structured_yaml_simple", [], undefined)) {

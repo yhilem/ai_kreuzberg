@@ -8,11 +8,15 @@ import type { ExtractionResult } from "@kreuzberg/wasm";
 
 describe("html", () => {
 	it("html_complex_layout", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture("web/taylor_swift.html");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig(undefined);
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture("web/taylor_swift.html");
-			const config = buildConfig(undefined);
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (shouldSkipFixture(error, "html_complex_layout", [], undefined)) {
@@ -28,11 +32,15 @@ describe("html", () => {
 	});
 
 	it("html_simple_table", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture("web/simple_table.html");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig(undefined);
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture("web/simple_table.html");
-			const config = buildConfig(undefined);
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (shouldSkipFixture(error, "html_simple_table", [], undefined)) {

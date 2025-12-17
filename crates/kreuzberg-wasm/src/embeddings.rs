@@ -131,12 +131,14 @@ mod tests {
     use super::*;
 
     #[test]
+    #[cfg(target_arch = "wasm32")]
     fn test_list_embedding_presets() {
         let presets = list_embedding_presets();
         assert!(presets.length() > 0);
     }
 
     #[test]
+    #[cfg(target_arch = "wasm32")]
     fn test_get_embedding_preset_valid() {
         let preset = get_embedding_preset("balanced".to_string());
         assert!(preset.is_some());

@@ -81,13 +81,13 @@ function mapStringArray(value: unknown): string[] | undefined {
 }
 
 function mapTesseractConfig(raw: PlainRecord): TesseractConfig {
-	const config: TesseractConfig = {};
-	assignNumberField(config as PlainRecord, raw, "psm", "psm");
-	assignBooleanField(config as PlainRecord, raw, "enable_table_detection", "enableTableDetection");
+	const config: PlainRecord = {};
+	assignNumberField(config, raw, "psm", "psm");
+	assignBooleanField(config, raw, "enable_table_detection", "enableTableDetection");
 	if (typeof raw.tessedit_char_whitelist === "string") {
 		config.tesseditCharWhitelist = raw.tessedit_char_whitelist as string;
 	}
-	return config;
+	return config as TesseractConfig;
 }
 
 function mapOcrConfig(raw: PlainRecord): OcrConfig | undefined {
@@ -96,7 +96,7 @@ function mapOcrConfig(raw: PlainRecord): OcrConfig | undefined {
 		return undefined;
 	}
 
-	const config: OcrConfig = { backend };
+	const config: PlainRecord = { backend };
 	if (typeof raw.language === "string") {
 		config.language = raw.language as string;
 	}
@@ -105,57 +105,57 @@ function mapOcrConfig(raw: PlainRecord): OcrConfig | undefined {
 		config.tesseractConfig = mapTesseractConfig(raw.tesseract_config as PlainRecord);
 	}
 
-	return config;
+	return config as OcrConfig;
 }
 
 function mapChunkingConfig(raw: PlainRecord): ChunkingConfig {
-	const config: ChunkingConfig = {};
-	assignNumberField(config as PlainRecord, raw, "max_chars", "maxChars");
-	assignNumberField(config as PlainRecord, raw, "max_overlap", "maxOverlap");
-	return config;
+	const config: PlainRecord = {};
+	assignNumberField(config, raw, "max_chars", "maxChars");
+	assignNumberField(config, raw, "max_overlap", "maxOverlap");
+	return config as ChunkingConfig;
 }
 
 function mapImageExtractionConfig(raw: PlainRecord): ImageExtractionConfig {
-	const config: ImageExtractionConfig = {};
-	assignBooleanField(config as PlainRecord, raw, "extract_images", "extractImages");
-	assignNumberField(config as PlainRecord, raw, "target_dpi", "targetDpi");
-	assignNumberField(config as PlainRecord, raw, "max_image_dimension", "maxImageDimension");
-	assignBooleanField(config as PlainRecord, raw, "auto_adjust_dpi", "autoAdjustDpi");
-	assignNumberField(config as PlainRecord, raw, "min_dpi", "minDpi");
-	assignNumberField(config as PlainRecord, raw, "max_dpi", "maxDpi");
-	return config;
+	const config: PlainRecord = {};
+	assignBooleanField(config, raw, "extract_images", "extractImages");
+	assignNumberField(config, raw, "target_dpi", "targetDpi");
+	assignNumberField(config, raw, "max_image_dimension", "maxImageDimension");
+	assignBooleanField(config, raw, "auto_adjust_dpi", "autoAdjustDpi");
+	assignNumberField(config, raw, "min_dpi", "minDpi");
+	assignNumberField(config, raw, "max_dpi", "maxDpi");
+	return config as ImageExtractionConfig;
 }
 
 function mapPdfConfig(raw: PlainRecord): PdfConfig {
-	const config: PdfConfig = {};
-	assignBooleanField(config as PlainRecord, raw, "extract_images", "extractImages");
+	const config: PlainRecord = {};
+	assignBooleanField(config, raw, "extract_images", "extractImages");
 	if (Array.isArray(raw.passwords)) {
 		config.passwords = raw.passwords.filter((item: unknown): item is string => typeof item === "string");
 	}
-	assignBooleanField(config as PlainRecord, raw, "extract_metadata", "extractMetadata");
-	return config;
+	assignBooleanField(config, raw, "extract_metadata", "extractMetadata");
+	return config as PdfConfig;
 }
 
 function mapTokenReductionConfig(raw: PlainRecord): TokenReductionConfig {
-	const config: TokenReductionConfig = {};
+	const config: PlainRecord = {};
 	if (typeof raw.mode === "string") {
 		config.mode = raw.mode as string;
 	}
-	assignBooleanField(config as PlainRecord, raw, "preserve_important_words", "preserveImportantWords");
-	return config;
+	assignBooleanField(config, raw, "preserve_important_words", "preserveImportantWords");
+	return config as TokenReductionConfig;
 }
 
 function mapLanguageDetectionConfig(raw: PlainRecord): LanguageDetectionConfig {
-	const config: LanguageDetectionConfig = {};
-	assignBooleanField(config as PlainRecord, raw, "enabled", "enabled");
-	assignNumberField(config as PlainRecord, raw, "min_confidence", "minConfidence");
-	assignBooleanField(config as PlainRecord, raw, "detect_multiple", "detectMultiple");
-	return config;
+	const config: PlainRecord = {};
+	assignBooleanField(config, raw, "enabled", "enabled");
+	assignNumberField(config, raw, "min_confidence", "minConfidence");
+	assignBooleanField(config, raw, "detect_multiple", "detectMultiple");
+	return config as LanguageDetectionConfig;
 }
 
 function mapPostProcessorConfig(raw: PlainRecord): PostProcessorConfig {
-	const config: PostProcessorConfig = {};
-	assignBooleanField(config as PlainRecord, raw, "enabled", "enabled");
+	const config: PlainRecord = {};
+	assignBooleanField(config, raw, "enabled", "enabled");
 	const enabled = mapStringArray(raw.enabled_processors);
 	if (enabled) {
 		config.enabledProcessors = enabled;
@@ -164,7 +164,7 @@ function mapPostProcessorConfig(raw: PlainRecord): PostProcessorConfig {
 	if (disabled) {
 		config.disabledProcessors = disabled;
 	}
-	return config;
+	return config as PostProcessorConfig;
 }
 
 export function buildConfig(raw: unknown): ExtractionConfig {

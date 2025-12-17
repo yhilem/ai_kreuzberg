@@ -14,10 +14,10 @@ import type {
 
 // CRITICAL: Cloudflare Workers cannot access the filesystem
 // All fixture-based tests are skipped in this environment
-export function getFixture(fixturePath: string): Uint8Array {
-	throw new Error(
-		`Cloudflare Workers cannot load fixtures from disk. Fixture: ${fixturePath}. These tests require filesystem access which is not available in the Workers sandbox.`,
-	);
+export function getFixture(fixturePath: string): Uint8Array | null {
+	console.warn(`[SKIP] Cloudflare Workers cannot load fixtures from disk. Fixture: ${fixturePath}`);
+	console.warn("[SKIP] These tests require filesystem access which is not available in the Workers sandbox.");
+	return null;
 }
 
 type PlainRecord = Record<string, unknown>;
@@ -209,12 +209,6 @@ export function shouldSkipFixture(
 	const requirementHit = requirements.some((req) => lower.includes(req.toLowerCase()));
 	const missingDependency = lower.includes("missingdependencyerror") || lower.includes("missing dependency");
 	const unsupportedFormat = lower.includes("unsupported mime type") || lower.includes("unsupported format");
-	const workersFileSystem = lower.includes("cloudflare workers cannot load fixtures");
-
-	if (workersFileSystem) {
-		console.warn(`Skipping ${fixtureId}: Cloudflare Workers filesystem limitation`);
-		return true;
-	}
 
 	if (missingDependency || unsupportedFormat || requirementHit) {
 		const reason = missingDependency

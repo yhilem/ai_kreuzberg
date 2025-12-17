@@ -31,7 +31,10 @@ use html_to_markdown_rs::{
     convert as convert_html, convert_with_inline_images,
 };
 use serde::{Deserialize, Serialize};
-use std::{any::Any, collections::HashMap, thread};
+use std::collections::HashMap;
+
+#[cfg(not(target_arch = "wasm32"))]
+use std::{any::Any, thread};
 
 pub use html_to_markdown_rs::{
     CodeBlockStyle, HeadingStyle, HighlightStyle, ListIndentType, NewlineStyle, PreprocessingOptions,
@@ -132,10 +135,6 @@ fn convert_html_with_options(html: &str, options: ConversionOptions) -> Result<S
         .map_err(|e| KreuzbergError::parsing(format!("Failed to convert HTML to Markdown: {}", e)))
 }
 
-fn convert_html_with_options_large_stack(html: String, options: ConversionOptions) -> Result<String> {
-    run_on_dedicated_stack(move || convert_html_with_options(&html, options))
-}
-
 fn convert_inline_images_with_options(
     html: &str,
     options: ConversionOptions,
@@ -145,6 +144,13 @@ fn convert_inline_images_with_options(
         .map_err(|e| KreuzbergError::parsing(format!("Failed to convert HTML to Markdown with images: {}", e)))
 }
 
+// Native (non-WASM) implementations use dedicated thread stack for large HTML documents
+#[cfg(not(target_arch = "wasm32"))]
+fn convert_html_with_options_large_stack(html: String, options: ConversionOptions) -> Result<String> {
+    run_on_dedicated_stack(move || convert_html_with_options(&html, options))
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 fn convert_inline_images_with_large_stack(
     html: String,
     options: ConversionOptions,
@@ -153,6 +159,7 @@ fn convert_inline_images_with_large_stack(
     run_on_dedicated_stack(move || convert_inline_images_with_options(&html, options, image_config))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn run_on_dedicated_stack<T, F>(job: F) -> Result<T>
 where
     T: Send + 'static,
@@ -173,6 +180,7 @@ where
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn extract_panic_reason(panic: &Box<dyn Any + Send + 'static>) -> String {
     if let Some(msg) = panic.downcast_ref::<&str>() {
         (*msg).to_string()
@@ -181,6 +189,21 @@ fn extract_panic_reason(panic: &Box<dyn Any + Send + 'static>) -> String {
     } else {
         "unknown panic".to_string()
     }
+}
+
+// WASM implementations skip dedicated stack (not supported) and process inline
+#[cfg(target_arch = "wasm32")]
+fn convert_html_with_options_large_stack(html: String, options: ConversionOptions) -> Result<String> {
+    convert_html_with_options(&html, options)
+}
+
+#[cfg(target_arch = "wasm32")]
+fn convert_inline_images_with_large_stack(
+    html: String,
+    options: ConversionOptions,
+    image_config: LibInlineImageConfig,
+) -> Result<HtmlExtraction> {
+    convert_inline_images_with_options(&html, options, image_config)
 }
 
 /// Convert HTML to markdown with optional configuration.

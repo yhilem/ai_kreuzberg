@@ -476,7 +476,7 @@ mod build_tesseract {
             if windows_target {
                 if mingw_target {
                     leptonica_config.generator("MinGW Makefiles");
-                    leptonica_config.define("MSYS2_ARG_CONV_EXCL", "/MD;/MDd");
+                    leptonica_config.define("MSYS2_ARG_CONV_EXCL", "/MD;/MDd;/D;-D;-I");
                 } else if msvc_target && env::var("VSINSTALLDIR").is_ok() {
                     leptonica_config.generator("NMake Makefiles");
                 }
@@ -486,6 +486,9 @@ mod build_tesseract {
             if env::var("CI").is_err() && env::var("RUSTC_WRAPPER").unwrap_or_default() == "sccache" {
                 leptonica_config.env("CC", "sccache cc").env("CXX", "sccache c++");
             }
+
+            let leptonica_install_dir_cmake = normalize_cmake_path(&leptonica_install_dir);
+
             leptonica_config
                 .define("CMAKE_POLICY_VERSION_MINIMUM", "3.5")
                 .define("CMAKE_BUILD_TYPE", "Release")
@@ -504,7 +507,7 @@ mod build_tesseract {
                 .define("SW_BUILD", "OFF")
                 .define("HAVE_LIBZ", "0")
                 .define("ENABLE_LTO", "OFF")
-                .define("CMAKE_INSTALL_PREFIX", &leptonica_install_dir);
+                .define("CMAKE_INSTALL_PREFIX", &leptonica_install_dir_cmake);
 
             if windows_target {
                 if msvc_target {
@@ -534,6 +537,11 @@ mod build_tesseract {
         let tesseract_install_dir = out_dir.join("tesseract");
         let tesseract_cache_dir = cache_dir.join("tesseract");
         let tessdata_prefix = project_dir.clone();
+
+        let leptonica_install_dir_cmake = normalize_cmake_path(&leptonica_install_dir);
+        let leptonica_include_dir_cmake = normalize_cmake_path(&leptonica_include_dir);
+        let leptonica_lib_dir_cmake = normalize_cmake_path(&leptonica_lib_dir);
+        let tesseract_install_dir_cmake = normalize_cmake_path(&tesseract_install_dir);
         let tessdata_prefix_cmake = normalize_cmake_path(&tessdata_prefix);
 
         build_or_use_cached("tesseract", &tesseract_cache_dir, &tesseract_install_dir, || {
@@ -547,7 +555,7 @@ mod build_tesseract {
             if windows_target {
                 if mingw_target {
                     tesseract_config.generator("MinGW Makefiles");
-                    tesseract_config.define("MSYS2_ARG_CONV_EXCL", "/MD;/MDd");
+                    tesseract_config.define("MSYS2_ARG_CONV_EXCL", "/MD;/MDd;/D;-D;-I");
                 } else if msvc_target && env::var("VSINSTALLDIR").is_ok() {
                     tesseract_config.generator("NMake Makefiles");
                 }
@@ -565,11 +573,11 @@ mod build_tesseract {
                 .define("DISABLE_ARCHIVE", "ON")
                 .define("DISABLE_CURL", "ON")
                 .define("DISABLE_OPENCL", "ON")
-                .define("Leptonica_DIR", &leptonica_install_dir)
-                .define("LEPTONICA_INCLUDE_DIR", &leptonica_include_dir)
-                .define("LEPTONICA_LIBRARY", &leptonica_lib_dir)
-                .define("CMAKE_PREFIX_PATH", &leptonica_install_dir)
-                .define("CMAKE_INSTALL_PREFIX", &tesseract_install_dir)
+                .define("Leptonica_DIR", &leptonica_install_dir_cmake)
+                .define("LEPTONICA_INCLUDE_DIR", &leptonica_include_dir_cmake)
+                .define("LEPTONICA_LIBRARY", &leptonica_lib_dir_cmake)
+                .define("CMAKE_PREFIX_PATH", &leptonica_install_dir_cmake)
+                .define("CMAKE_INSTALL_PREFIX", &tesseract_install_dir_cmake)
                 .define("TESSDATA_PREFIX", &tessdata_prefix_cmake)
                 .define("DISABLE_TIFF", "ON")
                 .define("DISABLE_PNG", "ON")

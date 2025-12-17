@@ -8,11 +8,15 @@ import type { ExtractionResult } from "@kreuzberg/wasm";
 
 describe("pdf", () => {
 	it("pdf_assembly_technical", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture("pdfs/assembly_language_for_beginners_al4_b_en.pdf");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig(undefined);
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture("pdfs/assembly_language_for_beginners_al4_b_en.pdf");
-			const config = buildConfig(undefined);
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (shouldSkipFixture(error, "pdf_assembly_technical", [], undefined)) {
@@ -30,11 +34,15 @@ describe("pdf", () => {
 	});
 
 	it("pdf_bayesian_data_analysis", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture("pdfs/bayesian_data_analysis_third_edition_13th_feb_2020.pdf");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig(undefined);
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture("pdfs/bayesian_data_analysis_third_edition_13th_feb_2020.pdf");
-			const config = buildConfig(undefined);
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (shouldSkipFixture(error, "pdf_bayesian_data_analysis", [], undefined)) {
@@ -52,11 +60,15 @@ describe("pdf", () => {
 	});
 
 	it("pdf_code_and_formula", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture("pdfs/code_and_formula.pdf");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig(undefined);
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture("pdfs/code_and_formula.pdf");
-			const config = buildConfig(undefined);
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (shouldSkipFixture(error, "pdf_code_and_formula", [], undefined)) {
@@ -72,11 +84,15 @@ describe("pdf", () => {
 	});
 
 	it("pdf_deep_learning", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture("pdfs/fundamentals_of_deep_learning_2014.pdf");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig(undefined);
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture("pdfs/fundamentals_of_deep_learning_2014.pdf");
-			const config = buildConfig(undefined);
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (shouldSkipFixture(error, "pdf_deep_learning", [], undefined)) {
@@ -94,11 +110,15 @@ describe("pdf", () => {
 	});
 
 	it("pdf_embedded_images", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture("pdfs/embedded_images_tables.pdf");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig(undefined);
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture("pdfs/embedded_images_tables.pdf");
-			const config = buildConfig(undefined);
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (shouldSkipFixture(error, "pdf_embedded_images", [], undefined)) {
@@ -115,11 +135,15 @@ describe("pdf", () => {
 	});
 
 	it("pdf_google_doc", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture("pdfs/google_doc_document.pdf");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig(undefined);
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture("pdfs/google_doc_document.pdf");
-			const config = buildConfig(undefined);
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (shouldSkipFixture(error, "pdf_google_doc", [], undefined)) {
@@ -136,11 +160,15 @@ describe("pdf", () => {
 	});
 
 	it("pdf_large_ciml", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture("pdfs/a_course_in_machine_learning_ciml_v0_9_all.pdf");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig(undefined);
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture("pdfs/a_course_in_machine_learning_ciml_v0_9_all.pdf");
-			const config = buildConfig(undefined);
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (shouldSkipFixture(error, "pdf_large_ciml", [], undefined)) {
@@ -158,11 +186,15 @@ describe("pdf", () => {
 	});
 
 	it("pdf_non_english_german", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture("pdfs/5_level_paging_and_5_level_ept_intel_revision_1_1_may_2017.pdf");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig(undefined);
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture("pdfs/5_level_paging_and_5_level_ept_intel_revision_1_1_may_2017.pdf");
-			const config = buildConfig(undefined);
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (shouldSkipFixture(error, "pdf_non_english_german", [], undefined)) {
@@ -180,11 +212,15 @@ describe("pdf", () => {
 	});
 
 	it("pdf_right_to_left", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture("pdfs/right_to_left_01.pdf");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig(undefined);
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture("pdfs/right_to_left_01.pdf");
-			const config = buildConfig(undefined);
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (shouldSkipFixture(error, "pdf_right_to_left", [], undefined)) {
@@ -201,11 +237,15 @@ describe("pdf", () => {
 	});
 
 	it("pdf_simple_text", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture("pdfs/fake_memo.pdf");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig(undefined);
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture("pdfs/fake_memo.pdf");
-			const config = buildConfig(undefined);
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (shouldSkipFixture(error, "pdf_simple_text", [], undefined)) {
@@ -222,11 +262,15 @@ describe("pdf", () => {
 	});
 
 	it("pdf_tables_large", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture("pdfs_with_tables/large.pdf");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig(undefined);
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture("pdfs_with_tables/large.pdf");
-			const config = buildConfig(undefined);
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (shouldSkipFixture(error, "pdf_tables_large", [], undefined)) {
@@ -243,11 +287,15 @@ describe("pdf", () => {
 	});
 
 	it("pdf_tables_medium", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture("pdfs_with_tables/medium.pdf");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig(undefined);
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture("pdfs_with_tables/medium.pdf");
-			const config = buildConfig(undefined);
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (shouldSkipFixture(error, "pdf_tables_medium", [], undefined)) {
@@ -264,11 +312,15 @@ describe("pdf", () => {
 	});
 
 	it("pdf_tables_small", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture("pdfs_with_tables/tiny.pdf");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig(undefined);
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture("pdfs_with_tables/tiny.pdf");
-			const config = buildConfig(undefined);
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (shouldSkipFixture(error, "pdf_tables_small", [], undefined)) {
@@ -293,13 +345,17 @@ describe("pdf", () => {
 	});
 
 	it("pdf_technical_stat_learning", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture(
+			"pdfs/an_introduction_to_statistical_learning_with_applications_in_r_islr_sixth_printing.pdf",
+		);
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig(undefined);
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture(
-				"pdfs/an_introduction_to_statistical_learning_with_applications_in_r_islr_sixth_printing.pdf",
-			);
-			const config = buildConfig(undefined);
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (shouldSkipFixture(error, "pdf_technical_stat_learning", [], undefined)) {

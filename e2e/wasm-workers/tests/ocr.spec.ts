@@ -8,11 +8,15 @@ import type { ExtractionResult } from "@kreuzberg/wasm";
 
 describe("ocr", () => {
 	it("ocr_image_hello_world", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture("images/test_hello_world.png");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig({ force_ocr: true, ocr: { backend: "tesseract", language: "eng" } });
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture("images/test_hello_world.png");
-			const config = buildConfig({ force_ocr: true, ocr: { backend: "tesseract", language: "eng" } });
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (
@@ -36,11 +40,15 @@ describe("ocr", () => {
 	});
 
 	it("ocr_image_no_text", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture("images/flower_no_text.jpg");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig({ force_ocr: true, ocr: { backend: "tesseract", language: "eng" } });
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture("images/flower_no_text.jpg");
-			const config = buildConfig({ force_ocr: true, ocr: { backend: "tesseract", language: "eng" } });
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (shouldSkipFixture(error, "ocr_image_no_text", ["tesseract"], "Skip when Tesseract is unavailable.")) {
@@ -56,11 +64,15 @@ describe("ocr", () => {
 	});
 
 	it("ocr_pdf_image_only_german", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture("pdfs/image_only_german_pdf.pdf");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig({ force_ocr: true, ocr: { backend: "tesseract", language: "eng" } });
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture("pdfs/image_only_german_pdf.pdf");
-			const config = buildConfig({ force_ocr: true, ocr: { backend: "tesseract", language: "eng" } });
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (shouldSkipFixture(error, "ocr_pdf_image_only_german", ["tesseract"], "Skip if OCR backend unavailable.")) {
@@ -77,11 +89,15 @@ describe("ocr", () => {
 	});
 
 	it("ocr_pdf_rotated_90", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture("pdfs/ocr_test_rotated_90.pdf");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig({ force_ocr: true, ocr: { backend: "tesseract", language: "eng" } });
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture("pdfs/ocr_test_rotated_90.pdf");
-			const config = buildConfig({ force_ocr: true, ocr: { backend: "tesseract", language: "eng" } });
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (
@@ -99,11 +115,15 @@ describe("ocr", () => {
 	});
 
 	it("ocr_pdf_tesseract", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture("pdfs/ocr_test.pdf");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig({ force_ocr: true, ocr: { backend: "tesseract", language: "eng" } });
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture("pdfs/ocr_test.pdf");
-			const config = buildConfig({ force_ocr: true, ocr: { backend: "tesseract", language: "eng" } });
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (

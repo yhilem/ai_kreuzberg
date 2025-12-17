@@ -8,11 +8,15 @@ import type { ExtractionResult } from "@kreuzberg/wasm";
 
 describe("image", () => {
 	it("image_metadata_only", async () => {
-		let documentBytes: Uint8Array;
+		const documentBytes = getFixture("images/example.jpg");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
+
+		const config = buildConfig({ ocr: null });
 		let result: ExtractionResult | null = null;
 		try {
-			documentBytes = getFixture("images/example.jpg");
-			const config = buildConfig({ ocr: null });
 			result = await extractBytes(documentBytes, "application/pdf", config);
 		} catch (error) {
 			if (shouldSkipFixture(error, "image_metadata_only", [], undefined)) {

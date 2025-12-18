@@ -86,11 +86,9 @@ scripts.kreuzberg = "kreuzberg.__main__:main"
 module-name = "kreuzberg._internal_bindings"
 # Point to the PyO3 bindings crate
 manifest-path = "../../crates/kreuzberg-py/Cargo.toml"
-# Include pdfium native libraries and CLI binary for all platforms
+# PDFium is now bundled directly in _internal_bindings.so via bundled-pdfium feature
+# No separate library files needed - they are embedded during compilation
 include = [
-  { path = "kreuzberg/pdfium.dll", format = "wheel" },
-  { path = "kreuzberg/libpdfium.dylib", format = "wheel" },
-  { path = "kreuzberg/libpdfium.so", format = "wheel" },
   # Ensure IDE/type-checker discoverability for the extension module.
   { path = "kreuzberg/_internal_bindings.pyi", format = "wheel" },
   { path = "kreuzberg/py.typed", format = "wheel" },

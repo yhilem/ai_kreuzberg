@@ -38,8 +38,12 @@ for gem in "${gems[@]}"; do
 	fi
 
 	# Check if it's a valid gzip file (gems are gzipped tar archives)
-	if ! file "$gem" | grep -qE "gzip|data"; then
+	file_output=$(file "$gem")
+	echo "File type check for $gem: $file_output"
+	if ! echo "$file_output" | grep -qE "gzip|data"; then
 		echo "::error::Gem file is not a valid gzip archive: $gem" >&2
+		echo "File command output: $file_output" >&2
+		echo "File size: $(stat -f%z "$gem" 2>/dev/null || stat -c%s "$gem")" >&2
 		exit 1
 	fi
 

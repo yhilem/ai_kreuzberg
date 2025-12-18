@@ -61,34 +61,68 @@ esac
 dest="crates/kreuzberg-node/npm/${platform_dir}/${node_file}"
 src=""
 
+echo ""
+echo "=========================================="
+echo "Package Artifacts for Target: $target"
+echo "=========================================="
+echo "Platform directory: $platform_dir"
+echo "Expected node file: $node_file"
+echo "Destination: $dest"
+echo ""
+
 echo "Looking for NAPI binary: ${node_file} (platform: ${platform_dir}, target: ${target})"
 
 for candidate in "crates/kreuzberg-node/artifacts/${node_file}" "crates/kreuzberg-node/${node_file}"; do
-	echo "Checking: $candidate"
+	echo "  Checking: $candidate"
 	if [ -f "$candidate" ]; then
 		src="$candidate"
-		echo "Found: $src"
+		echo "  ✓ Found: $src"
+		ls -lh "$src"
 		break
+	else
+		echo "  ✗ Not found"
 	fi
 done
 
 if [ -z "$src" ]; then
+	echo ""
 	echo "::error::Missing built NAPI binary: expected ${node_file}" >&2
+	echo ""
 	echo "Expected locations:" >&2
 	echo "  - crates/kreuzberg-node/artifacts/${node_file}" >&2
 	echo "  - crates/kreuzberg-node/${node_file}" >&2
+	echo ""
 	echo "Available .node files:" >&2
 	find crates/kreuzberg-node -maxdepth 3 -type f -name "*.node" -print 2>/dev/null || echo "  (none found)"
+	echo ""
 	echo "npm directory structure:" >&2
 	find crates/kreuzberg-node/npm -type d 2>/dev/null | head -20 || echo "  (npm directory not created)"
+	echo ""
+	echo "Full crates/kreuzberg-node directory:" >&2
+	find crates/kreuzberg-node -type f \( -name "*.node" -o -name "package.json" \) | head -30
 	exit 1
 fi
 
-mkdir -p "$(dirname "$dest")"
-echo "Copying $src -> $dest"
+# Ensure platform directory exists
+platform_npm_dir="crates/kreuzberg-node/npm/${platform_dir}"
+echo ""
+echo "Ensuring platform directory exists: $platform_npm_dir"
+mkdir -p "$platform_npm_dir"
+echo "✓ Directory created/verified"
+
+echo ""
+echo "Copying NAPI binary:"
+echo "  Source: $src"
+echo "  Dest:   $dest"
 cp -f "$src" "$dest"
+
+echo "✓ Copy completed"
+echo ""
 echo "Result:"
-ls -la "$(dirname "$dest")"
+ls -lh "$platform_npm_dir"
+echo ""
+echo "npm/$platform_dir directory contents:"
+find "$platform_npm_dir" -type f
 
 if [ "${INCLUDE_PDFIUM_RUNTIME:-0}" = "1" ]; then
 	pdfium_src=""

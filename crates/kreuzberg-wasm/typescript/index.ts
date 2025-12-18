@@ -284,6 +284,40 @@ let initializationPromise: Promise<void> | null = null;
  * }
  * ```
  */
+
+/**
+ * Initialize PDFium WASM module asynchronously (internal use)
+ * Loads and binds the PDFium WASM module for PDF extraction
+ */
+async function initializePdfiumAsync(wasmModule: WasmModule): Promise<void> {
+	if (!wasmModule || typeof wasmModule.initialize_pdfium_render !== "function") {
+		return;
+	}
+
+	// Skip PDFium initialization for non-browser environments (Deno, Node.js)
+	// Browser environments will load pdfium.js from the package
+	if (!isBrowser()) {
+		console.debug("PDFium initialization skipped (non-browser environment)");
+		return;
+	}
+
+	try {
+		// For browser environments, load PDFium from the package distribution
+		// @ts-expect-error - Dynamic module loading
+		const pdfiumModule = await import("./pdfium.js");
+		const pdfium = typeof pdfiumModule.default === "function" ? await pdfiumModule.default() : pdfiumModule;
+
+		// Bind PDFium to the Rust module
+		const success = wasmModule.initialize_pdfium_render(pdfium, wasmModule, false);
+		if (!success) {
+			console.warn("PDFium initialization returned false");
+		}
+	} catch (error) {
+		// Don't throw - PDF extraction will fail gracefully if PDFium isn't available
+		console.debug("PDFium initialization error:", error);
+	}
+}
+
 export async function initWasm(): Promise<void> {
 	if (initialized) {
 		return;
@@ -316,6 +350,14 @@ export async function initWasm(): Promise<void> {
 			// Call default initialization if available (for some wasm-pack targets)
 			if (wasm && typeof wasm.default === "function") {
 				await wasm.default();
+			}
+
+			// Auto-initialize PDFium for browser environments
+			// PDFium is required for PDF extraction in WASM
+			if (isBrowser() && wasm && typeof wasm.initialize_pdfium_render === "function") {
+				initializePdfiumAsync(wasm).catch((error) => {
+					console.warn("PDFium auto-initialization failed (PDF extraction disabled):", error);
+				});
 			}
 
 			initialized = true;

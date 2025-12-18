@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kreuzberg WASM - PDF Extraction Example</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+            line-height: 1.6;
+        }
+        .container {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Kreuzberg WASM - PDF Extraction</h1>
+
+    <div class="container">
+        <h2>Step 1: Initialize Kreuzberg</h2>
+        <button id="initBtn" onclick="initializeKreuzberg()">Initialize WASM Module</button>
+        <div id="initStatus" class="status" style="display: none;"></div>
+    </div>
+
+    <div class="container" style="margin-top: 20px;">
+        <h2>Step 2: Initialize PDFium</h2>
+        <p><em>Required before PDF extraction</em></p>
+        <button id="pdfiumBtn" onclick="initializePdfium()" disabled>Initialize PDFium</button>
+        <div id="pdfiumStatus" class="status" style="display: none;"></div>
+    </div>
+
+    <div class="container" style="margin-top: 20px;">
+        <h2>Step 3: Extract PDF</h2>
+        <input type="file" id="fileInput" accept=".pdf" disabled>
+        <button id="extractBtn" onclick="extractPDF()" disabled>Extract Text</button>
+        <div id="extractStatus" class="status" style="display: none;"></div>
+        <div id="result" style="display: none;"></div>
+    </div>
+
+    <script type="module">
+        import init, { initialize_pdfium_render, extract_from_bytes } from '../pkg/kreuzberg_wasm.js';
+
+        let wasmModule;
+        let pdfiumInitialized = false;
+
+        // Make functions available globally
+        window.initializeKreuzberg = async function() {
+            const statusEl = document.getElementById('initStatus');
+            const btn = document.getElementById('initBtn');
+
+            try {
+                btn.disabled = true;
+                statusEl.className = 'status info';
+                statusEl.style.display = 'block';
+                statusEl.textContent = 'Loading WASM module...';
+
+                wasmModule = await init();
+
+                statusEl.className = 'status success';
+                statusEl.textContent = '✓ Kreuzberg WASM initialized successfully';
+
+                document.getElementById('pdfiumBtn').disabled = false;
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = '✗ Error initializing: ' + error.message;
+                btn.disabled = false;
+            }
+        };
+
+        window.initializePdfium = async function() {
+            const statusEl = document.getElementById('pdfiumStatus');
+            const btn = document.getElementById('pdfiumBtn');
+
+            try {
+                btn.disabled = true;
+                statusEl.className = 'status info';
+                statusEl.style.display = 'block';
+                statusEl.textContent = 'Loading PDFium WASM module...';
+
+                // In a real application, you would load pdfium.js from your server
+                // For this example, we assume it's in the same directory
+                const pdfiumModule = await import('./pdfium.js').then(m => m.default());
+
+                statusEl.textContent = 'Binding kreuzberg to PDFium...';
+                const success = initialize_pdfium_render(pdfiumModule, wasmModule, false);
+
+                if (!success) {
+                    throw new Error('initialize_pdfium_render returned false');
+                }
+
+                pdfiumInitialized = true;
+                statusEl.className = 'status success';
+                statusEl.textContent = '✓ PDFium initialized successfully';
+
+                document.getElementById('fileInput').disabled = false;
+                document.getElementById('extractBtn').disabled = false;
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = '✗ Error initializing PDFium: ' + error.message;
+                statusEl.textContent += '\n\nNote: Make sure pdfium.js and pdfium.wasm are in the same directory as this HTML file.';
+                btn.disabled = false;
+            }
+        };
+
+        window.extractPDF = async function() {
+            const fileInput = document.getElementById('fileInput');
+            const statusEl = document.getElementById('extractStatus');
+            const resultEl = document.getElementById('result');
+            const btn = document.getElementById('extractBtn');
+
+            if (!fileInput.files.length) {
+                alert('Please select a PDF file first');
+                return;
+            }
+
+            if (!pdfiumInitialized) {
+                alert('Please initialize PDFium first');
+                return;
+            }
+
+            try {
+                btn.disabled = true;
+                statusEl.className = 'status info';
+                statusEl.style.display = 'block';
+                statusEl.textContent = 'Reading PDF file...';
+                resultEl.style.display = 'none';
+
+                const file = fileInput.files[0];
+                const arrayBuffer = await file.arrayBuffer();
+                const bytes = new Uint8Array(arrayBuffer);
+
+                statusEl.textContent = 'Extracting text...';
+
+                const config = {
+                    extract_metadata: true,
+                    extract_images: false
+                };
+
+                const result = await extract_from_bytes(bytes, config);
+
+                statusEl.className = 'status success';
+                statusEl.textContent = '✓ Extraction completed';
+
+                resultEl.style.display = 'block';
+                resultEl.textContent = `Extracted Text:\n\n${result.text}\n\n`;
+
+                if (result.metadata) {
+                    resultEl.textContent += `Metadata:\n${JSON.stringify(result.metadata, null, 2)}`;
+                }
+
+                btn.disabled = false;
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = '✗ Error extracting PDF: ' + error.message;
+
+                if (error.message.includes('PdfiumWASMModuleNotConfigured')) {
+                    statusEl.textContent += '\n\nThis error means PDFium was not properly initialized. Please try initializing PDFium again.';
+                }
+
+                btn.disabled = false;
+            }
+        };
+    </script>
+</body>
+</html>

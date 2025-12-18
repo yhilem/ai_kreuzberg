@@ -10,6 +10,57 @@
 //! - Compatible with browser and Node.js WASM runtimes
 //! - Optimized binary size and performance
 //! - Type-safe interface via wasm-bindgen
+//!
+//! ## PDF Support in WASM
+//!
+//! **IMPORTANT**: PDF extraction requires initializing PDFium before use.
+//!
+//! The PDFium library must be loaded and initialized from JavaScript before calling
+//! any PDF extraction functions. This is a two-step process:
+//!
+//! 1. Load both kreuzberg WASM and PDFium WASM modules
+//! 2. Call `initialize_pdfium_render()` to bind them together
+//!
+//! ### Example (JavaScript/TypeScript)
+//!
+//! ```javascript
+//! import init, { initialize_pdfium_render, extract_from_bytes } from './kreuzberg_wasm.js';
+//! import pdfiumModule from './pdfium.js';
+//!
+//! // Step 1: Initialize kreuzberg WASM
+//! const wasm = await init();
+//!
+//! // Step 2: Load PDFium WASM module
+//! const pdfium = await pdfiumModule();
+//!
+//! // Step 3: Bind kreuzberg to PDFium (REQUIRED for PDF extraction)
+//! const success = initialize_pdfium_render(pdfium, wasm, false);
+//! if (!success) {
+//!     throw new Error('Failed to initialize PDFium');
+//! }
+//!
+//! // Step 4: Now PDF extraction works
+//! const pdfBytes = new Uint8Array([...]); // Your PDF file bytes
+//! const config = { /* extraction config */ };
+//! const result = await extract_from_bytes(pdfBytes, config);
+//! ```
+//!
+//! ### Where to get pdfium.js
+//!
+//! The PDFium WASM files (pdfium.js, pdfium.wasm) are automatically downloaded during
+//! the build process and placed in your build output directory. You need to:
+//!
+//! 1. Copy `pdfium.js` and `pdfium.wasm` from the build artifacts
+//! 2. Serve them alongside your kreuzberg WASM files
+//! 3. Import and initialize as shown above
+//!
+//! The files are typically found at:
+//! - `target/wasm32-unknown-unknown/release/build/kreuzberg-*/out/pdfium/release/node/`
+//!
+//! ### Error: "PdfiumWASMModuleNotConfigured"
+//!
+//! If you see this error, it means `initialize_pdfium_render()` was not called before
+//! attempting PDF extraction. Make sure to follow the initialization sequence above.
 
 use wasm_bindgen::prelude::*;
 
@@ -63,6 +114,7 @@ pub fn init() {
     #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
 }
+
 
 /// Get information about the WASM module
 #[wasm_bindgen]

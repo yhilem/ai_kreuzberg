@@ -88,6 +88,55 @@ yarn add @kreuzberg/wasm
 import { extractBytes } from "npm:@kreuzberg/wasm@^4.0.0";
 ```
 
+## PDF Support and PDFium Initialization
+
+**IMPORTANT**: PDF extraction requires a one-time initialization step to load the PDFium WASM module.
+
+### Why PDFium Initialization is Needed
+
+Kreuzberg uses the high-performance PDFium library (from Google Chrome) for PDF processing. In WASM environments, PDFium runs as a separate WASM module that must be loaded and bound to the main kreuzberg module before PDF extraction can work.
+
+### How to Initialize PDFium
+
+```javascript
+import init, { initialize_pdfium_render, extractBytes } from '@kreuzberg/wasm';
+import pdfiumModule from '@kreuzberg/wasm/pdfium.js';
+
+// Step 1: Initialize kreuzberg WASM
+await init();
+
+// Step 2: Load PDFium WASM module
+const pdfium = await pdfiumModule();
+
+// Step 3: Bind kreuzberg to PDFium (required before any PDF operations)
+const success = initialize_pdfium_render(pdfium, wasm, false);
+if (!success) {
+    throw new Error('Failed to initialize PDFium');
+}
+
+// Step 4: Now PDF extraction works
+const pdfBytes = new Uint8Array(await pdfFile.arrayBuffer());
+const result = await extractBytes(pdfBytes);
+console.log(result.text);
+```
+
+### Error: "PdfiumWASMModuleNotConfigured"
+
+If you see this error, it means `initialize_pdfium_render()` was not called before attempting PDF extraction. Make sure to follow the initialization sequence above.
+
+### PDFium Files Location
+
+The PDFium WASM files (`pdfium.js`, `pdfium.wasm`) should be included in the `@kreuzberg/wasm` package. If they're missing:
+
+1. Check your `node_modules/@kreuzberg/wasm/` directory
+2. Ensure both `pdfium.js` and `pdfium.wasm` are present
+3. If missing, reinstall the package
+
+For self-hosted builds, copy the files from:
+```bash
+target/wasm32-unknown-unknown/release/build/kreuzberg-*/out/pdfium/release/node/
+```
+
 ## Quick Start
 
 ### Browser (ESM)

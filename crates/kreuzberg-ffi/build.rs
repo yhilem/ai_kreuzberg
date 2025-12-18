@@ -1,4 +1,5 @@
 use std::env;
+use std::fs;
 use std::path::{Path, PathBuf};
 
 fn main() {
@@ -54,6 +55,10 @@ fn run() -> Result<(), String> {
         .nth(3)
         .ok_or_else(|| "OUT_DIR did not have expected depth (expected target/{debug,release}/build/...)".to_string())?;
 
+    // Copy PDFium library from kreuzberg build output to profile_dir (target/release or target/debug)
+    // This is necessary for Java and other language bindings that need bundled-pdfium
+    copy_pdfium_to_profile_dir(&profile_dir)?;
+
     // Development version (for monorepo use) - use actual monorepo paths
     // Normalize path separators for pkg-config compatibility across all platforms
     let dev_libdir = profile_dir.to_string_lossy().replace('\\', "/");
@@ -98,4 +103,71 @@ Cflags: -I${{includedir}}
     println!("cargo:rerun-if-changed=kreuzberg-ffi.pc.in");
 
     Ok(())
+}
+
+/// Copy bundled PDFium library from kreuzberg build output to profile directory.
+/// This enables Java/other language bindings to find libpdfium.dylib/so/dll at runtime.
+fn copy_pdfium_to_profile_dir(profile_dir: &Path) -> Result<(), String> {
+    let build_dir = profile_dir.join("build");
+
+    // Search for PDFium in kreuzberg build output directory
+    // Pattern: target/{debug,release}/build/kreuzberg-{hash}/out/libpdfium.*
+    if let Ok(entries) = fs::read_dir(&build_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() && path.file_name().map_or(false, |n| n.to_string_lossy().starts_with("kreuzberg-")) {
+                let out_dir = path.join("out");
+                if out_dir.exists() {
+                    // Try to copy PDFium from this build directory
+                    if let Err(_) = copy_pdfium_from_dir(&out_dir, profile_dir) {
+                        continue; // Try next directory if this one fails
+                    } else {
+                        return Ok(()); // Success!
+                    }
+                }
+            }
+        }
+    }
+
+    // If we get here, PDFium was not found - this is a warning, not an error
+    // because PDFium might be system-installed or the bundled-pdfium feature might not be enabled
+    eprintln!("Warning: bundled PDFium library not found in build output. Some features may not work.");
+    eprintln!("If PDFium is needed, ensure the 'bundled-pdfium' feature is enabled.");
+
+    Ok(())
+}
+
+/// Copy PDFium library files from source directory to destination.
+fn copy_pdfium_from_dir(src_dir: &Path, dest_dir: &Path) -> Result<(), String> {
+    // Read all files in the source directory
+    let entries = fs::read_dir(src_dir)
+        .map_err(|e| format!("Failed to read {}: {}", src_dir.display(), e))?;
+
+    // Look for libpdfium.* files
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let file_name = path.file_name().ok_or("No file name")?;
+        let file_name_str = file_name.to_string_lossy();
+
+        if file_name_str.starts_with("libpdfium") || file_name_str.starts_with("pdfium") {
+            let dest_file = dest_dir.join(&file_name);
+            match fs::copy(&path, &dest_file) {
+                Ok(bytes_copied) => {
+                    eprintln!(
+                        "Copied {} ({} bytes) to {}",
+                        path.display(),
+                        bytes_copied,
+                        dest_file.display()
+                    );
+                    return Ok(());
+                }
+                Err(e) => {
+                    eprintln!("Failed to copy {} to {}: {}", path.display(), dest_file.display(), e);
+                    return Err(format!("Failed to copy PDFium: {}", e));
+                }
+            }
+        }
+    }
+
+    Err(format!("PDFium library not found in {}", src_dir.display()))
 }

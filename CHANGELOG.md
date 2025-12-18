@@ -22,6 +22,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Ruby bindings**: Complete YARD documentation for all API methods
 - **C# bindings**: Complete XML documentation for all public methods
 
+## [4.0.0-rc.11] - Unreleased
+
+### Fixed
+
+- **PDFium bundling**: FFI library now correctly copies `libpdfium.dylib/.so/.dll` from Rust build output to `target/release/` for language binding packaging (Java, Python, etc.)
+- **Java FFI**: Added system library path fallback for ONNX Runtime when not bundled in JAR
+  - Enables users with system-installed ONNX Runtime (e.g., `brew install onnxruntime`) to use the library
+  - Gracefully handles missing ONNX Runtime for operations that don't require embeddings
+- **Java smoke tests**: All 7 tests now passing (PDF, DOCX, XLSX, JPG, PNG extraction + OCR)
+- **Python**: Ready for wheel building with bundled PDFium support
+
 ## [Unreleased]
 
 ### Breaking Changes

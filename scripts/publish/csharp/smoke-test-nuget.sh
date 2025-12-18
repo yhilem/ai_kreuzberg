@@ -12,6 +12,10 @@ fi
 tmp="$(mktemp -d)"
 dotnet new console -n KreuzbergSmoke -o "$tmp/KreuzbergSmoke"
 
+# Copy test document to temp directory
+mkdir -p "$tmp/test_documents/pdf"
+cp "test_documents/pdf/simple.pdf" "$tmp/test_documents/pdf/"
+
 cat >"$tmp/KreuzbergSmoke/KreuzbergSmoke.csproj" <<EOF
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
@@ -31,7 +35,7 @@ using Kreuzberg;
 using System;
 using System.IO;
 
-var pdfPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "test_documents", "pdf", "simple.pdf"));
+var pdfPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "test_documents", "pdf", "simple.pdf"));
 if (!File.Exists(pdfPath))
 {
     throw new FileNotFoundException($"Missing test document: {pdfPath}");
@@ -42,4 +46,5 @@ Console.WriteLine($"mime={result.MimeType} len={result.Content.Length}");
 EOF
 
 dotnet restore "$tmp/KreuzbergSmoke" --source "$pkg_dir" --source "https://api.nuget.org/v3/index.json"
+cd "$tmp"
 dotnet run --project "$tmp/KreuzbergSmoke" -c Release

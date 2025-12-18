@@ -938,18 +938,26 @@ jobs:
             file "$gem"
             echo "File size: $(stat -f%z "$gem" 2>/dev/null || stat -c%s "$gem") bytes"
             echo ""
-            echo "Running gem spec check..."
+            echo "Primary validation: gem spec check..."
             if ! gem spec "$gem" >/dev/null 2>&1; then
               echo "WARNING: gem spec check failed, attempting tar validation..."
-              echo "Running tar -tzf check..."
-              if ! tar -tzf "$gem" >/dev/null 2>&1; then
-                echo "ERROR: Corrupted gem file: $gem" >&2
-                echo "First 100 bytes (hex):"
-                xxd -l 100 "$gem" || od -t x1 -N 100 "$gem"
-                exit 1
+              echo "Trying tar -tzf (gzipped)..."
+              if tar -tzf "$gem" >/dev/null 2>&1; then
+                echo "✓ Gzipped tar verified"
+              else
+                echo "Trying tar -tf (uncompressed)..."
+                if tar -tf "$gem" >/dev/null 2>&1; then
+                  echo "✓ Uncompressed tar verified"
+                else
+                  echo "ERROR: Corrupted gem file: $gem" >&2
+                  echo "First 100 bytes (hex):"
+                  xxd -l 100 "$gem" || od -t x1 -N 100 "$gem"
+                  exit 1
+                fi
               fi
+            else
+              echo "✓ gem spec validation passed"
             fi
-            echo "✓ Gem file validated successfully"
             echo ""
           done
 

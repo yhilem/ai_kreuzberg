@@ -37,25 +37,26 @@ for gem in "${gems[@]}"; do
 		exit 1
 	fi
 
-	# Check if it's a valid gzip file (gems are gzipped tar archives)
-	file_output=$(file "$gem")
-	echo "File type check for $gem: $file_output"
-	if ! echo "$file_output" | grep -qE "gzip|data"; then
-		echo "::error::Gem file is not a valid gzip archive: $gem" >&2
-		echo "File command output: $file_output" >&2
-		echo "File size: $(stat -f%z "$gem" 2>/dev/null || stat -c%s "$gem")" >&2
-		exit 1
-	fi
-
-	# Try to list gem contents to verify integrity
+	# Verify gem is valid using gem spec (most reliable check)
+	# Ruby gems can be either gzipped or uncompressed tar archives
+	echo "Validating gem with gem spec..."
 	if ! gem spec "$gem" >/dev/null 2>&1; then
-		echo "::warning::Gem file may be corrupted (spec check failed): $gem" >&2
+		# gem spec failed, try tar to get more details
+		echo "::warning::Gem spec check failed: $gem" >&2
+		echo "File type: $(file "$gem")" >&2
+		echo "File size: $(stat -f%z "$gem" 2>/dev/null || stat -c%s "$gem") bytes" >&2
+
 		echo "Attempting tar inspection..."
-		if ! tar -tzf "$gem" >/dev/null 2>&1; then
-			echo "::error::Gem file is corrupted (tar verification failed): $gem" >&2
+		if tar -tzf "$gem" >/dev/null 2>&1; then
+			echo "::warning::Tar inspection succeeded, but gem spec failed - gem may be malformed" >&2
+		elif tar -tf "$gem" >/dev/null 2>&1; then
+			echo "::warning::Uncompressed tar inspection succeeded, but gem spec failed" >&2
+		else
+			echo "::error::Gem file is corrupted (both tar and gem spec checks failed): $gem" >&2
 			exit 1
 		fi
 	fi
+	echo "✓ Gem file validation passed"
 done
 
 echo "All gem files validated successfully"

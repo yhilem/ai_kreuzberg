@@ -22,10 +22,7 @@ if (fs.existsSync(pkg)) {
 }
 
 // Fix import paths in dist/index.js and dist/index.cjs
-const files = [
-	path.join(dist, "index.js"),
-	path.join(dist, "index.cjs"),
-];
+const files = [path.join(dist, "index.js"), path.join(dist, "index.cjs")];
 
 for (const file of files) {
 	if (fs.existsSync(file)) {

@@ -7,28 +7,27 @@ import { assertions, buildConfig, getFixture, shouldSkipFixture } from "./helper
 import type { ExtractionResult } from "@kreuzberg/wasm";
 
 describe("email", () => {
-    it("email_sample_eml", async () => {
-        const documentBytes = getFixture("email/sample_email.eml");
-        if (documentBytes === null) {
-            console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
-            return;
-        }
+	it("email_sample_eml", async () => {
+		const documentBytes = getFixture("email/sample_email.eml");
+		if (documentBytes === null) {
+			console.warn("[SKIP] Test skipped: fixture not available in Cloudflare Workers environment");
+			return;
+		}
 
-        const config = buildConfig(undefined);
-        let result: ExtractionResult | null = null;
-        try {
-            result = await extractBytes(documentBytes, "message/rfc822", config);
-        } catch (error) {
-            if (shouldSkipFixture(error, "email_sample_eml", [], undefined)) {
-                return;
-            }
-            throw error;
-        }
-        if (result === null) {
-            return;
-        }
-        assertions.assertExpectedMime(result, ["message/rfc822"]);
-        assertions.assertMinContentLength(result, 20);
-    });
-
+		const config = buildConfig(undefined);
+		let result: ExtractionResult | null = null;
+		try {
+			result = await extractBytes(documentBytes, "message/rfc822", config);
+		} catch (error) {
+			if (shouldSkipFixture(error, "email_sample_eml", [], undefined)) {
+				return;
+			}
+			throw error;
+		}
+		if (result === null) {
+			return;
+		}
+		assertions.assertExpectedMime(result, ["message/rfc822"]);
+		assertions.assertMinContentLength(result, 20);
+	});
 });

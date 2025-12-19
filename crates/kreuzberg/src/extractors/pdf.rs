@@ -5,6 +5,7 @@ use crate::core::config::ExtractionConfig;
 use crate::plugins::{DocumentExtractor, Plugin};
 use crate::types::{ExtractionResult, Metadata, PageContent};
 use async_trait::async_trait;
+#[cfg(feature = "tokio-runtime")]
 use std::path::Path;
 
 #[cfg(feature = "pdf")]

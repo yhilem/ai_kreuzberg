@@ -32,6 +32,9 @@
 //! assert_eq!(KNOWN_FORMATS.len(), 58);
 //! ```
 
+use ahash::AHashSet;
+use once_cell::sync::Lazy;
+
 /// All known format field names across all extractors.
 ///
 /// This is a compile-time constant array of standardized field names used by document
@@ -121,9 +124,16 @@ pub const KNOWN_FORMATS: &[&str] = &[
     "table_cols",
 ];
 
+/// Cached format field set for fast O(1) lookups.
+///
+/// Uses AHashSet for its excellent cache locality and performance characteristics
+/// with string keys. Built lazily on first use with minimal overhead.
+static FORMAT_FIELD_SET: Lazy<AHashSet<&'static str>> = Lazy::new(|| KNOWN_FORMATS.iter().copied().collect());
+
 /// Validates whether a field name is in the known formats registry.
 ///
-/// This is a simple wrapper around slice contains for convenient validation.
+/// This uses a pre-built hash set for O(1) lookups instead of linear search,
+/// providing significant performance improvements for repeated validations.
 ///
 /// # Arguments
 ///
@@ -144,7 +154,7 @@ pub const KNOWN_FORMATS: &[&str] = &[
 /// ```
 #[inline]
 pub fn is_valid_format_field(field: &str) -> bool {
-    KNOWN_FORMATS.contains(&field)
+    FORMAT_FIELD_SET.contains(field)
 }
 
 #[cfg(test)]

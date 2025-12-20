@@ -1066,7 +1066,8 @@ fn extract_notes_text(notes_xml: &[u8]) -> Result<String> {
     let doc =
         Document::parse(xml_str).map_err(|e| KreuzbergError::parsing(format!("Failed to parse notes XML: {}", e)))?;
 
-    let mut text_parts = Vec::new();
+    // Pre-allocate Vec; typical notes have 5-20 text elements
+    let mut text_parts = Vec::with_capacity(16);
     const DRAWINGML_NS: &str = "http://schemas.openxmlformats.org/drawingml/2006/main";
 
     for node in doc.descendants() {

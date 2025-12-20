@@ -223,7 +223,7 @@ module Kreuzberg
     end
 
     def parse_chunks(chunks_data)
-      return nil if chunks_data.nil?
+      return [] if chunks_data.nil? || chunks_data.empty?
 
       chunks_data.map do |chunk_hash|
         Chunk.new(

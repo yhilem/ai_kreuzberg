@@ -5,6 +5,16 @@ All notable changes to Kreuzberg will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0-rc.15] - 2025-12-20
+
+### Fixed
+
+- **Node.js Windows package publishing**: Fixed PowerShell packaging script that prevented Windows bindings from being published to npm
+  - Root cause: `package-artifacts.ps1` was creating tarball with entire `npm/` directory instead of platform-specific directory
+  - This caused the Windows platform package (`@kreuzberg/node-win32-x64-msvc`) to be missing from rc.14 npm release
+  - Solution: Updated tar command to package only the specific platform directory, matching Bash script behavior
+  - Impact: Windows x64 users can now install `@kreuzberg/node` successfully from npm
+
 ## [4.0.0-rc.14] - 2025-12-20
 
 ### Added

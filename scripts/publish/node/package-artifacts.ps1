@@ -89,4 +89,4 @@ if ($null -ne $pdfiumFile) {
 
 Get-ChildItem -Path $destDir | Out-Host
 
-tar -czf ("node-bindings-" + $env:TARGET + ".tar.gz") -C crates/kreuzberg-node npm
+tar -czf ("node-bindings-" + $env:TARGET + ".tar.gz") -C "crates/kreuzberg-node/npm" $platformDir

@@ -14,6 +14,7 @@ export default defineConfig({
 		compilerOptions: {
 			skipLibCheck: true,
 			skipDefaultLibCheck: true,
+			verbatimModuleSyntax: true,
 		},
 	},
 	splitting: false,

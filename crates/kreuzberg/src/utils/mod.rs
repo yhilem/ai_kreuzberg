@@ -12,6 +12,7 @@ pub mod quality;
 pub mod string_utils;
 
 pub mod pool;
+pub mod string_pool;
 
 #[cfg(feature = "quality")]
 pub use quality::{calculate_quality_score, clean_extracted_text, normalize_spaces};
@@ -23,3 +24,5 @@ pub use pool::{
     ByteBufferPool, Pool, PoolError, PoolGuard, Recyclable, StringBufferPool, create_byte_buffer_pool,
     create_string_buffer_pool,
 };
+
+pub use string_pool::{InternedString, intern_language_code, intern_mime_type};

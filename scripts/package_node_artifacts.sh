@@ -9,7 +9,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ARTIFACT_DIR="$ROOT/crates/kreuzberg-node/artifacts"
 if [[ ! -d "$ARTIFACT_DIR" ]]; then
 	echo "ERROR: Artifacts directory not found at $ARTIFACT_DIR" >&2
-	echo "You must run build_napi_module.sh BEFORE running this script." >&2
+	echo "You must build the NAPI module first (e.g., task typescript:build)" >&2
 	exit 1
 fi
 
@@ -17,7 +17,7 @@ shopt -s nullglob
 NODE_FILES=("$ARTIFACT_DIR"/*.node)
 if [[ ${#NODE_FILES[@]} -eq 0 ]]; then
 	echo "ERROR: No .node files found in $ARTIFACT_DIR" >&2
-	echo "The native module must be built first using build_napi_module.sh" >&2
+	echo "The native module must be built first (e.g., task typescript:build)" >&2
 	exit 1
 fi
 

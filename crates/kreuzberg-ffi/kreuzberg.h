@@ -1084,4 +1084,100 @@ ExtractionConfig *kreuzberg_config_from_file(const char *path);
  */
 char *kreuzberg_config_discover(void);
 
+/**
+ * Parse an ExtractionConfig from a JSON string.
+ *
+ * This is the primary FFI entry point for all language bindings to parse
+ * configuration from JSON. Replaces the need for each binding to implement
+ * its own JSON parsing logic.
+ *
+ * # Arguments
+ *
+ * * `json_config` - Null-terminated C string containing JSON configuration
+ *
+ * # Returns
+ *
+ * A pointer to an ExtractionConfig struct that MUST be freed with
+ * `kreuzberg_config_free`, or NULL on error (check kreuzberg_last_error).
+ *
+ * # Safety
+ *
+ * - `json_config` must be a valid null-terminated C string
+ * - The returned pointer must be freed with `kreuzberg_config_free`
+ * - Returns NULL if parsing fails (error available via `kreuzberg_last_error`)
+ *
+ * # Example (C)
+ *
+ * ```c
+ * const char* config_json = "{\"use_cache\": true, \"ocr\": {\"backend\": \"tesseract\"}}";
+ * ExtractionConfig* config = kreuzberg_config_from_json(config_json);
+ * if (config == NULL) {
+ *     printf("Error: %s\n", kreuzberg_last_error());
+ *     return 1;
+ * }
+ *
+ * // Use config...
+ * // char* result = kreuzberg_extract_file_with_config("doc.pdf", config);
+ *
+ * kreuzberg_config_free(config);
+ * ```
+ */
+ExtractionConfig *kreuzberg_config_from_json(const char *json_config);
+
+/**
+ * Free an ExtractionConfig allocated by kreuzberg_config_from_json or similar.
+ *
+ * # Safety
+ *
+ * - `config` must be a pointer previously returned by a config creation function
+ * - `config` can be NULL (no-op)
+ * - `config` must not be used after this call
+ *
+ * # Example (C)
+ *
+ * ```c
+ * ExtractionConfig* config = kreuzberg_config_from_json("{...}");
+ * if (config != NULL) {
+ *     // Use config...
+ *     kreuzberg_config_free(config);
+ * }
+ * ```
+ */
+void kreuzberg_config_free(ExtractionConfig *config);
+
+/**
+ * Validate a JSON config string without parsing it.
+ *
+ * This function checks if a JSON config string is valid and would parse correctly,
+ * without allocating the full ExtractionConfig structure. Useful for validation
+ * before committing to parsing.
+ *
+ * # Arguments
+ *
+ * * `json_config` - Null-terminated C string containing JSON configuration
+ *
+ * # Returns
+ *
+ * - 1 if valid (would parse successfully)
+ * - 0 if invalid (check `kreuzberg_last_error` for details)
+ *
+ * # Safety
+ *
+ * - `json_config` must be a valid null-terminated C string
+ *
+ * # Example (C)
+ *
+ * ```c
+ * const char* config_json = "{\"use_cache\": true}";
+ * if (kreuzberg_config_is_valid(config_json)) {
+ *     ExtractionConfig* config = kreuzberg_config_from_json(config_json);
+ *     // Use config...
+ *     kreuzberg_config_free(config);
+ * } else {
+ *     printf("Invalid config: %s\n", kreuzberg_last_error());
+ * }
+ * ```
+ */
+int32_t kreuzberg_config_is_valid(const char *json_config);
+
 #endif  /* KREUZBERG_FFI_H */

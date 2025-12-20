@@ -105,6 +105,8 @@ pub use core::mime::{
     detect_or_validate, get_extensions_for_mime, validate_mime_type,
 };
 
+pub use core::formats::{KNOWN_FORMATS, is_valid_format_field};
+
 pub use plugins::registry::{
     get_document_extractor_registry, get_ocr_backend_registry, get_post_processor_registry, get_validator_registry,
 };

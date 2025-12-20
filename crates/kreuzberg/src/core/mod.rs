@@ -32,6 +32,7 @@
 pub(crate) mod batch_mode;
 pub mod config;
 pub mod extractor;
+pub mod formats;
 pub mod io;
 pub mod mime;
 pub mod pipeline;
@@ -39,6 +40,7 @@ pub mod pipeline;
 pub use config::{
     ChunkingConfig, ExtractionConfig, ImageExtractionConfig, LanguageDetectionConfig, OcrConfig, TokenReductionConfig,
 };
+pub use formats::{KNOWN_FORMATS, is_valid_format_field};
 
 #[cfg(feature = "pdf")]
 pub use config::PdfConfig;

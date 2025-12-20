@@ -13,7 +13,7 @@ use kreuzberg::plugins::registry::{get_post_processor_registry, get_validator_re
 use kreuzberg::{
     Chunk as RustChunk, ChunkMetadata as RustChunkMetadata, ChunkingConfig as RustChunkingConfig,
     EmbeddingConfig as RustEmbeddingConfig, EmbeddingModelType as RustEmbeddingModelType, ExtractionConfig,
-    ExtractionResult as RustExtractionResult, ImageExtractionConfig as RustImageExtractionConfig,
+    ExtractionResult as RustExtractionResult, ImageExtractionConfig as RustImageExtractionConfig, KNOWN_FORMATS,
     LanguageDetectionConfig as RustLanguageDetectionConfig, OcrConfig as RustOcrConfig, PdfConfig as RustPdfConfig,
     PostProcessorConfig as RustPostProcessorConfig, TesseractConfig as RustTesseractConfig,
     TokenReductionConfig as RustTokenReductionConfig,
@@ -25,71 +25,10 @@ use once_cell::sync::Lazy;
 use std::collections::HashSet;
 use std::ffi::{CStr, c_char};
 
-static KNOWN_FORMAT_FIELDS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
-    [
-        "format_type",
-        "title",
-        "author",
-        "keywords",
-        "creator",
-        "producer",
-        "creation_date",
-        "modification_date",
-        "page_count",
-        "sheet_count",
-        "sheet_names",
-        "from_email",
-        "from_name",
-        "to_emails",
-        "cc_emails",
-        "bcc_emails",
-        "message_id",
-        "attachments",
-        "description",
-        "summary",
-        "fonts",
-        "format",
-        "file_count",
-        "file_list",
-        "total_size",
-        "compressed_size",
-        "width",
-        "height",
-        "element_count",
-        "unique_elements",
-        "line_count",
-        "word_count",
-        "character_count",
-        "headers",
-        "links",
-        "code_blocks",
-        "canonical",
-        "base_href",
-        "og_title",
-        "og_description",
-        "og_image",
-        "og_url",
-        "og_type",
-        "og_site_name",
-        "twitter_card",
-        "twitter_title",
-        "twitter_description",
-        "twitter_image",
-        "twitter_site",
-        "twitter_creator",
-        "link_author",
-        "link_license",
-        "link_alternate",
-        "psm",
-        "output_format",
-        "table_count",
-        "table_rows",
-        "table_cols",
-    ]
-    .iter()
-    .copied()
-    .collect()
-});
+// KNOWN_FORMAT_FIELDS is imported from kreuzberg::core::formats::KNOWN_FORMATS
+// This is the single source of truth for format field names across all language bindings.
+// See crates/kreuzberg/src/core/formats.rs for the canonical list of 58 known format fields.
+static KNOWN_FORMAT_FIELDS: Lazy<HashSet<&'static str>> = Lazy::new(|| KNOWN_FORMATS.iter().copied().collect());
 
 #[allow(unused_extern_crates)]
 extern crate kreuzberg_ffi;

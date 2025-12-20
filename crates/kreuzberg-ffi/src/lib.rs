@@ -3,6 +3,7 @@
 //! Provides a C-compatible API that can be consumed by Java (Panama FFI),
 //! Go (cgo), C# (P/Invoke), Zig, and other languages with C FFI support.
 
+mod config;
 mod panic_shield;
 
 pub use panic_shield::{

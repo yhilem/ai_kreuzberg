@@ -162,7 +162,7 @@ curl http://localhost:8000/cache/stats
 
 ```json title="Response"
 {
-  "directory": "/home/user/.cache/kreuzberg",
+  "directory": ".kreuzberg",
   "total_files": 42,
   "total_size_mb": 156.8,
   "available_space_mb": 45123.5,
@@ -186,7 +186,7 @@ curl -X DELETE http://localhost:8000/cache/clear
 
 ```json title="Response"
 {
-  "directory": "/home/user/.cache/kreuzberg",
+  "directory": ".kreuzberg",
   "removed_files": 42,
   "freed_mb": 156.8
 }
@@ -225,14 +225,6 @@ See [Configuration Guide](configuration.md) for all options.
 
 #### Environment Variables
 
-**Server Binding:**
-
-```bash title="Terminal"
-# Configure server listen address and port
-KREUZBERG_HOST=0.0.0.0          # Listen address (default: 127.0.0.1)
-KREUZBERG_PORT=8000              # Port number (default: 8000)
-```
-
 **Upload Limits:**
 
 ```bash title="Terminal"
@@ -248,6 +240,8 @@ KREUZBERG_CORS_ORIGINS="https://app.example.com,https://api.example.com"
 ```
 
 **Security Warning:** The default CORS configuration allows all origins for development convenience. This permits CSRF attacks. Always set `KREUZBERG_CORS_ORIGINS` in production.
+
+**Note:** Server host and port are configured via CLI flags (`-H` / `--host` and `-p` / `--port`), not environment variables.
 
 ### Client Examples
 
@@ -570,8 +564,8 @@ services:
     volumes:
       # Mount configuration and cache directories
       - ./config:/config
-      - ./cache:/root/.cache/kreuzberg
-    command: serve -H 0.0.0.0 -p 8000 --config /config/kreuzberg.toml
+      - ./cache:/app/.kreuzberg
+    command: ["kreuzberg", "serve", "-H", "0.0.0.0", "-p", "8000", "--config", "/config/kreuzberg.toml"]
     restart: unless-stopped
     healthcheck:
       # Health check for container orchestration

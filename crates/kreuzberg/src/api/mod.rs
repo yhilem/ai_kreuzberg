@@ -8,6 +8,8 @@
 //! - `POST /extract` - Extract text from uploaded files (multipart form data)
 //! - `GET /health` - Health check endpoint
 //! - `GET /info` - Server information
+//! - `GET /cache/stats` - Get cache statistics
+//! - `DELETE /cache/clear` - Clear all cached files
 //!
 //! # Examples
 //!
@@ -62,6 +64,12 @@
 //!
 //! # Server info
 //! curl http://localhost:8000/info
+//!
+//! # Cache statistics
+//! curl http://localhost:8000/cache/stats
+//!
+//! # Clear cache
+//! curl -X DELETE http://localhost:8000/cache/clear
 //! ```
 
 mod error;

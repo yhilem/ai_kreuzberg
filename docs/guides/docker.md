@@ -363,12 +363,6 @@ kubectl apply -f kreuzberg-deployment.yaml
 
 Configure Docker containers via environment variables:
 
-**Server Binding:**
-```bash title="Terminal"
-KREUZBERG_HOST=0.0.0.0          # Listen address (default: 127.0.0.1)
-KREUZBERG_PORT=8000              # Port number (default: 8000)
-```
-
 **Upload Limits:**
 ```bash title="Terminal"
 KREUZBERG_MAX_UPLOAD_SIZE_MB=200  # Max upload size in MB (default: 100)
@@ -385,10 +379,7 @@ KREUZBERG_CORS_ORIGINS="https://app.example.com,https://api.example.com"
 RUST_LOG=info                    # Logging level (error, warn, info, debug, trace)
 ```
 
-**Cache Configuration:**
-```bash title="Terminal"
-KREUZBERG_CACHE_DIR=/app/.kreuzberg  # Cache directory (default)
-```
+**Note:** Server host and port are configured via CLI arguments (`serve --host 0.0.0.0 --port 8000`), not environment variables.
 
 ### Volume Mounts
 

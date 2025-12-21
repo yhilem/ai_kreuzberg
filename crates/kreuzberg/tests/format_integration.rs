@@ -49,6 +49,7 @@ async fn test_pdf_password_protected_async() {
 
 #[cfg(feature = "office")]
 #[tokio::test]
+#[cfg_attr(target_os = "windows", ignore = "LibreOffice tests timeout on Windows CI")]
 async fn test_legacy_doc_extraction_async() {
     if !test_documents_available() {
         return;

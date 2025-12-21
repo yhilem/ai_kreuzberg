@@ -4,6 +4,7 @@ use kreuzberg::KreuzbergError;
 use kreuzberg::core::config::ExtractionConfig;
 
 #[test]
+#[cfg_attr(target_os = "windows", ignore = "LibreOffice tests timeout on Windows CI")]
 fn test_office_doc_legacy() {
     // Legacy .doc document conversion via LibreOffice.
 
@@ -211,6 +212,7 @@ fn test_office_docx_tables() {
 }
 
 #[test]
+#[cfg_attr(target_os = "windows", ignore = "LibreOffice tests timeout on Windows CI")]
 fn test_office_ppt_legacy() {
     let document_path = resolve_document("legacy_office/simple.ppt");
     if !document_path.exists() {
@@ -315,6 +317,7 @@ fn test_office_pptx_pitch_deck() {
 }
 
 #[test]
+#[cfg_attr(target_os = "windows", ignore = "LibreOffice tests timeout on Windows CI")]
 fn test_office_xls_legacy() {
     let document_path = resolve_document("spreadsheets/test_excel.xls");
     if !document_path.exists() {

@@ -283,6 +283,98 @@ typedef struct CMetadataField {
 } CMetadataField;
 
 /**
+ * Zero-copy view into an ExtractionResult.
+ *
+ * Provides direct pointers to string data without allocation or copying.
+ * All pointers are valid UTF-8 byte slices (not null-terminated).
+ *
+ * # Lifetime Safety
+ *
+ * This structure contains borrowed pointers. The caller MUST ensure:
+ * - The source `ExtractionResult` outlives this view
+ * - No use after the source result is freed with `kreuzberg_result_free()`
+ *
+ * # Memory Layout
+ *
+ * Field order: 6 ptr+len pairs (96 bytes) + 5 counts (40 bytes) = 136 bytes on 64-bit systems
+ * All pointers are either valid UTF-8 data or NULL (with corresponding len=0).
+ *
+ * # Thread Safety
+ *
+ * Views are NOT thread-safe. External synchronization required for concurrent access.
+ */
+typedef struct CExtractionResultView {
+  /**
+   * Direct pointer to content bytes (UTF-8, not null-terminated)
+   */
+  const uint8_t *content_ptr;
+  /**
+   * Length of content in bytes
+   */
+  uintptr_t content_len;
+  /**
+   * Direct pointer to MIME type bytes (UTF-8, not null-terminated)
+   */
+  const uint8_t *mime_type_ptr;
+  /**
+   * Length of MIME type in bytes
+   */
+  uintptr_t mime_type_len;
+  /**
+   * Direct pointer to language bytes (UTF-8, not null-terminated), or NULL
+   */
+  const uint8_t *language_ptr;
+  /**
+   * Length of language in bytes (0 if NULL)
+   */
+  uintptr_t language_len;
+  /**
+   * Direct pointer to date bytes (UTF-8, not null-terminated), or NULL
+   */
+  const uint8_t *date_ptr;
+  /**
+   * Length of date in bytes (0 if NULL)
+   */
+  uintptr_t date_len;
+  /**
+   * Direct pointer to subject bytes (UTF-8, not null-terminated), or NULL
+   */
+  const uint8_t *subject_ptr;
+  /**
+   * Length of subject in bytes (0 if NULL)
+   */
+  uintptr_t subject_len;
+  /**
+   * Direct pointer to title bytes (UTF-8, not null-terminated), or NULL
+   */
+  const uint8_t *title_ptr;
+  /**
+   * Length of title in bytes (0 if NULL)
+   */
+  uintptr_t title_len;
+  /**
+   * Number of tables extracted
+   */
+  uintptr_t table_count;
+  /**
+   * Number of chunks (0 if chunking not enabled)
+   */
+  uintptr_t chunk_count;
+  /**
+   * Number of detected languages (0 if language detection not enabled)
+   */
+  uintptr_t detected_language_count;
+  /**
+   * Number of extracted images (0 if no images)
+   */
+  uintptr_t image_count;
+  /**
+   * Total page count (0 if not applicable)
+   */
+  uintptr_t page_count;
+} CExtractionResultView;
+
+/**
  * Extract text and metadata from a file (synchronous).
  *
  * # Safety
@@ -1868,6 +1960,128 @@ char *kreuzberg_result_get_detected_language(const ExtractionResult *result);
  */
 struct CMetadataField kreuzberg_result_get_metadata_field(const ExtractionResult *result,
                                                           const char *field_name);
+
+/**
+ * Get a zero-copy view of an extraction result.
+ *
+ * Creates a view structure with direct pointers to result data without allocation.
+ * The view is valid only while the source `result` remains valid.
+ *
+ * # Arguments
+ *
+ * * `result` - Pointer to an ExtractionResult structure
+ * * `out_view` - Pointer to a CExtractionResultView structure to populate
+ *
+ * # Returns
+ *
+ * 0 on success, -1 on error (check `kreuzberg_last_error`).
+ *
+ * # Safety
+ *
+ * - `result` must be a valid pointer to an ExtractionResult
+ * - `out_view` must be a valid pointer to writable memory
+ * - Neither parameter can be NULL
+ * - The returned view is valid ONLY while `result` is not freed
+ * - Caller MUST NOT use the view after calling `kreuzberg_result_free(result)`
+ *
+ * # Lifetime Safety
+ *
+ * ```text
+ * ExtractionResult lifetime: |-------------------------------------|
+ * View lifetime:              |----------------------|
+ *                                   SAFE             FREE → INVALID
+ * ```
+ *
+ * # Example (C)
+ *
+ * ```c
+ * ExtractionResult* result = kreuzberg_extract_file("document.pdf", NULL);
+ * if (result != NULL) {
+ *     CExtractionResultView view;
+ *     if (kreuzberg_get_result_view(result, &view) == 0) {
+ *         // Direct access to content without copying
+ *         printf("Content length: %zu bytes\n", view.content_len);
+ *         printf("MIME type: %.*s\n", (int)view.mime_type_len, view.mime_type_ptr);
+ *         printf("Tables: %zu, Chunks: %zu\n", view.table_count, view.chunk_count);
+ *
+ *         // No need to free the view (no allocations)
+ *     }
+ *
+ *     kreuzberg_result_free(result); // After this, view is INVALID
+ * }
+ * ```
+ */
+int32_t kreuzberg_get_result_view(const ExtractionResult *result,
+                                  struct CExtractionResultView *out_view);
+
+/**
+ * Get direct access to content from a result view.
+ *
+ * Helper function to retrieve content as a slice without copying.
+ *
+ * # Arguments
+ *
+ * * `view` - Pointer to a CExtractionResultView structure
+ * * `out_ptr` - Pointer to receive the content pointer
+ * * `out_len` - Pointer to receive the content length
+ *
+ * # Returns
+ *
+ * 0 on success, -1 on error (check `kreuzberg_last_error`).
+ *
+ * # Safety
+ *
+ * - `view` must be a valid pointer to a CExtractionResultView
+ * - `out_ptr` and `out_len` must be valid writable pointers
+ * - The returned content pointer is valid only while the source ExtractionResult is valid
+ *
+ * # Example (C)
+ *
+ * ```c
+ * const uint8_t* content;
+ * size_t content_len;
+ * if (kreuzberg_view_get_content(&view, &content, &content_len) == 0) {
+ *     // Process content directly without copying
+ *     fwrite(content, 1, content_len, stdout);
+ * }
+ * ```
+ */
+int32_t kreuzberg_view_get_content(const struct CExtractionResultView *view,
+                                   const uint8_t **out_ptr,
+                                   uintptr_t *out_len);
+
+/**
+ * Get direct access to MIME type from a result view.
+ *
+ * # Arguments
+ *
+ * * `view` - Pointer to a CExtractionResultView structure
+ * * `out_ptr` - Pointer to receive the MIME type pointer
+ * * `out_len` - Pointer to receive the MIME type length
+ *
+ * # Returns
+ *
+ * 0 on success, -1 on error (check `kreuzberg_last_error`).
+ *
+ * # Safety
+ *
+ * - `view` must be a valid pointer to a CExtractionResultView
+ * - `out_ptr` and `out_len` must be valid writable pointers
+ * - The returned MIME type pointer is valid only while the source ExtractionResult is valid
+ *
+ * # Example (C)
+ *
+ * ```c
+ * const uint8_t* mime_type;
+ * size_t mime_len;
+ * if (kreuzberg_view_get_mime_type(&view, &mime_type, &mime_len) == 0) {
+ *     printf("MIME: %.*s\n", (int)mime_len, mime_type);
+ * }
+ * ```
+ */
+int32_t kreuzberg_view_get_mime_type(const struct CExtractionResultView *view,
+                                     const uint8_t **out_ptr,
+                                     uintptr_t *out_len);
 
 /**
  * Validates a binarization method string.

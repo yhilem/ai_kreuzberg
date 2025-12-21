@@ -56,6 +56,19 @@ impl Drop for GcGuardedValue {
 
 use std::ffi::c_char;
 
+/// C struct for error details from FFI (Phase 2)
+#[repr(C)]
+pub struct CErrorDetails {
+    pub message: *mut c_char,
+    pub error_code: u32,
+    pub error_type: *mut c_char,
+    pub source_file: *mut c_char,
+    pub source_function: *mut c_char,
+    pub source_line: u32,
+    pub context_info: *mut c_char,
+    pub is_panic: i32,
+}
+
 /// C struct for metadata field results from FFI
 #[repr(C)]
 pub struct CMetadataField {
@@ -107,6 +120,12 @@ unsafe extern "C" {
         result: *const std::ffi::c_void,
         field_name: *const c_char,
     ) -> CMetadataField;
+
+    // Phase 2 FFI: Error classification and details
+    pub fn kreuzberg_get_error_details() -> CErrorDetails;
+    pub fn kreuzberg_classify_error(error_message: *const c_char) -> u32;
+    pub fn kreuzberg_error_code_name(code: u32) -> *const c_char;
+    pub fn kreuzberg_error_code_description(code: u32) -> *const c_char;
 }
 
 /// Retrieve panic context from FFI if available
@@ -3370,6 +3389,145 @@ fn result_metadata_field(ruby: &Ruby, result_ptr: i64, field_name: String) -> Re
     json_value_to_ruby(ruby, &json_value)
 }
 
+/// Get structured error details from FFI
+/// @return [Hash] Error details with keys: :message, :error_code, :error_type, :source_file, :source_function, :source_line, :context_info, :is_panic
+fn get_error_details_native(ruby: &Ruby) -> Result<Value, Error> {
+    // SAFETY: FFI function is thread-safe and returns a struct with allocated C strings
+    let details = unsafe { kreuzberg_get_error_details() };
+
+    let hash = RHash::new();
+
+    // Convert C strings to Ruby strings, handling nulls safely
+    // SAFETY: All non-null pointers from FFI must be valid C strings
+    unsafe {
+        let message = if !details.message.is_null() {
+            let c_str = std::ffi::CStr::from_ptr(details.message);
+            let msg = c_str.to_str().unwrap_or("").to_string();
+            kreuzberg_free_string(details.message);
+            msg
+        } else {
+            String::new()
+        };
+
+        let error_type = if !details.error_type.is_null() {
+            let c_str = std::ffi::CStr::from_ptr(details.error_type);
+            let ty = c_str.to_str().unwrap_or("unknown").to_string();
+            kreuzberg_free_string(details.error_type);
+            ty
+        } else {
+            "unknown".to_string()
+        };
+
+        let source_file = if !details.source_file.is_null() {
+            let c_str = std::ffi::CStr::from_ptr(details.source_file);
+            let file = c_str.to_str().ok().map(|s| s.to_string());
+            kreuzberg_free_string(details.source_file);
+            file
+        } else {
+            None
+        };
+
+        let source_function = if !details.source_function.is_null() {
+            let c_str = std::ffi::CStr::from_ptr(details.source_function);
+            let func = c_str.to_str().ok().map(|s| s.to_string());
+            kreuzberg_free_string(details.source_function);
+            func
+        } else {
+            None
+        };
+
+        let context_info = if !details.context_info.is_null() {
+            let c_str = std::ffi::CStr::from_ptr(details.context_info);
+            let ctx = c_str.to_str().ok().map(|s| s.to_string());
+            kreuzberg_free_string(details.context_info);
+            ctx
+        } else {
+            None
+        };
+
+        // Populate the hash with symbol keys
+        hash.aset(ruby.to_symbol("message"), ruby.str_new(&message).as_value())?;
+        hash.aset(ruby.to_symbol("error_code"), details.error_code.into_value_with(ruby))?;
+        hash.aset(ruby.to_symbol("error_type"), ruby.str_new(&error_type).as_value())?;
+
+        if let Some(file) = source_file {
+            hash.aset(ruby.to_symbol("source_file"), ruby.str_new(&file).as_value())?;
+        } else {
+            hash.aset(ruby.to_symbol("source_file"), ruby.qnil().as_value())?;
+        }
+
+        if let Some(func) = source_function {
+            hash.aset(ruby.to_symbol("source_function"), ruby.str_new(&func).as_value())?;
+        } else {
+            hash.aset(ruby.to_symbol("source_function"), ruby.qnil().as_value())?;
+        }
+
+        hash.aset(ruby.to_symbol("source_line"), details.source_line.into_value_with(ruby))?;
+
+        if let Some(ctx) = context_info {
+            hash.aset(ruby.to_symbol("context_info"), ruby.str_new(&ctx).as_value())?;
+        } else {
+            hash.aset(ruby.to_symbol("context_info"), ruby.qnil().as_value())?;
+        }
+
+        hash.aset(
+            ruby.to_symbol("is_panic"),
+            (details.is_panic != 0).into_value_with(ruby),
+        )?;
+    }
+
+    Ok(hash.into_value_with(ruby))
+}
+
+/// Classify an error based on an error message string
+/// @param message [String] The error message to classify
+/// @return [Integer] Error code (0-7)
+fn classify_error_native(ruby: &Ruby, message: String) -> Result<Value, Error> {
+    let c_message =
+        std::ffi::CString::new(message).map_err(|e| runtime_error(format!("Invalid error message: {}", e)))?;
+
+    // SAFETY: classify_error handles null pointers and validates the C string
+    let code = unsafe { kreuzberg_classify_error(c_message.as_ptr()) };
+
+    Ok(code.into_value_with(ruby))
+}
+
+/// Get the human-readable name of an error code
+/// @param code [Integer] Numeric error code (0-7)
+/// @return [String] Human-readable error code name
+fn error_code_name_native(ruby: &Ruby, code: u32) -> Result<Value, Error> {
+    // SAFETY: error_code_name handles invalid codes and returns a static C string
+    let name_ptr = unsafe { kreuzberg_error_code_name(code) };
+
+    if name_ptr.is_null() {
+        return Ok(ruby.str_new("unknown").as_value());
+    }
+
+    // SAFETY: error_code_name always returns a valid C string pointer that doesn't need freeing
+    let c_str = unsafe { std::ffi::CStr::from_ptr(name_ptr) };
+    let name = c_str.to_str().unwrap_or("unknown").to_string();
+
+    Ok(ruby.str_new(&name).as_value())
+}
+
+/// Get the description of an error code
+/// @param code [Integer] Numeric error code (0-7)
+/// @return [String] Description of the error code
+fn error_code_description_native(ruby: &Ruby, code: u32) -> Result<Value, Error> {
+    // SAFETY: error_code_description handles invalid codes and returns a static C string
+    let desc_ptr = unsafe { kreuzberg_error_code_description(code) };
+
+    if desc_ptr.is_null() {
+        return Ok(ruby.str_new("Unknown error code").as_value());
+    }
+
+    // SAFETY: error_code_description always returns a valid C string pointer that doesn't need freeing
+    let c_str = unsafe { std::ffi::CStr::from_ptr(desc_ptr) };
+    let desc = c_str.to_str().unwrap_or("Unknown error code").to_string();
+
+    Ok(ruby.str_new(&desc).as_value())
+}
+
 /// Initialize the Kreuzberg Ruby module
 #[magnus::init]
 fn init(ruby: &Ruby) -> Result<(), Error> {
@@ -3469,6 +3627,15 @@ fn init(ruby: &Ruby) -> Result<(), Error> {
         function!(result_detected_language, 1),
     )?;
     module.define_module_function("_result_metadata_field_native", function!(result_metadata_field, 2))?;
+
+    // Phase 2 FFI: Error classification and details
+    module.define_module_function("_get_error_details_native", function!(get_error_details_native, 0))?;
+    module.define_module_function("_classify_error_native", function!(classify_error_native, 1))?;
+    module.define_module_function("_error_code_name_native", function!(error_code_name_native, 1))?;
+    module.define_module_function(
+        "_error_code_description_native",
+        function!(error_code_description_native, 1),
+    )?;
 
     Ok(())
 }

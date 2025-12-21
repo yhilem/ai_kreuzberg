@@ -7,6 +7,7 @@ mod config;
 mod error;
 mod panic_shield;
 mod result;
+mod result_view;
 mod validation;
 
 pub use error::ErrorCode as KreuzbergErrorCode;
@@ -23,6 +24,9 @@ pub use panic_shield::{
 pub use result::{
     CMetadataField, kreuzberg_result_get_chunk_count, kreuzberg_result_get_detected_language,
     kreuzberg_result_get_metadata_field, kreuzberg_result_get_page_count,
+};
+pub use result_view::{
+    CExtractionResultView, kreuzberg_get_result_view, kreuzberg_view_get_content, kreuzberg_view_get_mime_type,
 };
 
 use std::cell::RefCell;

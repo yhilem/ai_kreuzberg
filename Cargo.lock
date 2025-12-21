@@ -2912,6 +2912,7 @@ version = "4.0.0-rc.15"
 dependencies = [
  "async-trait",
  "cbindgen",
+ "criterion 0.5.1",
  "html-to-markdown-rs",
  "kreuzberg",
  "serde",

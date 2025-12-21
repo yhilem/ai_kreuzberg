@@ -230,7 +230,8 @@ impl BenchmarkRunner {
         };
 
         // Calculate adaptive sampling frequency based on task duration
-        let _sampling_frequency =
+        #[cfg(feature = "profiling")]
+        let sampling_frequency =
             crate::config::ProfilingConfig::calculate_optimal_frequency(estimated_task_duration_ms);
 
         // Initialize profiler with adaptive frequency if profiling is enabled

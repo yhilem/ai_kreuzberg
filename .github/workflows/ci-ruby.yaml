@@ -103,6 +103,20 @@ jobs:
       - name: Setup OpenSSL
         uses: ./.github/actions/setup-openssl
 
+      - name: Verify OpenSSL setup
+        shell: bash
+        run: |
+          echo "=== OpenSSL Verification ==="
+          echo "Platform: $(uname -m)"
+          echo "OPENSSL_DIR: ${OPENSSL_DIR:-<not set>}"
+          echo "OPENSSL_LIB_DIR: ${OPENSSL_LIB_DIR:-<not set>}"
+          echo "OPENSSL_INCLUDE_DIR: ${OPENSSL_INCLUDE_DIR:-<not set>}"
+          if [ -n "${OPENSSL_DIR:-}" ]; then
+            echo ""
+            echo "Checking for libssl:"
+            find "$OPENSSL_DIR" -name "libssl*" 2>/dev/null | head -5 || echo "No libssl found"
+          fi
+
       - name: Setup Rust
         uses: ./.github/actions/setup-rust
         with:

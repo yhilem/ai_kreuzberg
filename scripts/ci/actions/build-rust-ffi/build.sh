@@ -68,6 +68,21 @@ export RUSTC_WRAPPER=""
 export CARGO_BUILD_RUSTC_WRAPPER=""
 export SCCACHE_GHA_ENABLED="false"
 
+# Ensure OpenSSL environment variables are available to build scripts
+# (required for transitive dependencies like openssl-probe via rustls-native-certs)
+if [ -n "${OPENSSL_DIR:-}" ]; then
+	export OPENSSL_DIR
+	echo "OPENSSL_DIR: $OPENSSL_DIR"
+fi
+if [ -n "${OPENSSL_LIB_DIR:-}" ]; then
+	export OPENSSL_LIB_DIR
+	echo "OPENSSL_LIB_DIR: $OPENSSL_LIB_DIR"
+fi
+if [ -n "${OPENSSL_INCLUDE_DIR:-}" ]; then
+	export OPENSSL_INCLUDE_DIR
+	echo "OPENSSL_INCLUDE_DIR: $OPENSSL_INCLUDE_DIR"
+fi
+
 BUILD_LOG="$(mktemp)"
 trap 'rm -f "$BUILD_LOG"' EXIT
 

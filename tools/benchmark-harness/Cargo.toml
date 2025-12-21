@@ -42,7 +42,7 @@ minijinja = { version = "2.14", features = ["json"] }
 pathdiff = "0.2"
 
 # Profiling
-pprof = { version = "0.13", features = ["flamegraph", "criterion"], optional = true }
+pprof = { version = "0.15", features = ["flamegraph", "criterion"], optional = true }
 tikv-jemallocator = { version = "0.6", optional = true }
 tikv-jemalloc-ctl = { version = "0.6", features = ["stats"], optional = true }
 

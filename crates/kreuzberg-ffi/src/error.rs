@@ -335,29 +335,17 @@ pub extern "C" fn kreuzberg_error_code_count() -> u32 {
 #[unsafe(no_mangle)]
 pub extern "C" fn kreuzberg_error_code_name(code: u32) -> *const c_char {
     match ErrorCode::from_code(code) {
-        Some(err_code) => {
-            match err_code {
-                ErrorCode::Validation => {
-                    // SAFETY: byte string literal is guaranteed to be null-terminated
-                    unsafe { std::ffi::CStr::from_bytes_with_nul_unchecked(b"validation\0").as_ptr() }
-                }
-                ErrorCode::Parsing => unsafe { std::ffi::CStr::from_bytes_with_nul_unchecked(b"parsing\0").as_ptr() },
-                ErrorCode::Ocr => unsafe { std::ffi::CStr::from_bytes_with_nul_unchecked(b"ocr\0").as_ptr() },
-                ErrorCode::MissingDependency => unsafe {
-                    std::ffi::CStr::from_bytes_with_nul_unchecked(b"missing_dependency\0").as_ptr()
-                },
-                ErrorCode::Io => unsafe { std::ffi::CStr::from_bytes_with_nul_unchecked(b"io\0").as_ptr() },
-                ErrorCode::Plugin => unsafe { std::ffi::CStr::from_bytes_with_nul_unchecked(b"plugin\0").as_ptr() },
-                ErrorCode::UnsupportedFormat => unsafe {
-                    std::ffi::CStr::from_bytes_with_nul_unchecked(b"unsupported_format\0").as_ptr()
-                },
-                ErrorCode::Internal => unsafe { std::ffi::CStr::from_bytes_with_nul_unchecked(b"internal\0").as_ptr() },
-            }
-        }
-        None => {
-            // SAFETY: "unknown\0" is a null-terminated byte string literal
-            unsafe { std::ffi::CStr::from_bytes_with_nul_unchecked(b"unknown\0").as_ptr() }
-        }
+        Some(err_code) => match err_code {
+            ErrorCode::Validation => c"validation".as_ptr(),
+            ErrorCode::Parsing => c"parsing".as_ptr(),
+            ErrorCode::Ocr => c"ocr".as_ptr(),
+            ErrorCode::MissingDependency => c"missing_dependency".as_ptr(),
+            ErrorCode::Io => c"io".as_ptr(),
+            ErrorCode::Plugin => c"plugin".as_ptr(),
+            ErrorCode::UnsupportedFormat => c"unsupported_format".as_ptr(),
+            ErrorCode::Internal => c"internal".as_ptr(),
+        },
+        None => c"unknown".as_ptr(),
     }
 }
 
@@ -382,39 +370,17 @@ pub extern "C" fn kreuzberg_error_code_name(code: u32) -> *const c_char {
 #[unsafe(no_mangle)]
 pub extern "C" fn kreuzberg_error_code_description(code: u32) -> *const c_char {
     match ErrorCode::from_code(code) {
-        Some(err_code) => {
-            match err_code {
-                ErrorCode::Validation => {
-                    // SAFETY: byte string literal is guaranteed to be null-terminated
-                    unsafe { std::ffi::CStr::from_bytes_with_nul_unchecked(b"Input validation error\0").as_ptr() }
-                }
-                ErrorCode::Parsing => unsafe {
-                    std::ffi::CStr::from_bytes_with_nul_unchecked(b"Document parsing error\0").as_ptr()
-                },
-                ErrorCode::Ocr => unsafe {
-                    std::ffi::CStr::from_bytes_with_nul_unchecked(b"OCR processing error\0").as_ptr()
-                },
-                ErrorCode::MissingDependency => unsafe {
-                    std::ffi::CStr::from_bytes_with_nul_unchecked(b"Missing system dependency\0").as_ptr()
-                },
-                ErrorCode::Io => unsafe {
-                    std::ffi::CStr::from_bytes_with_nul_unchecked(b"File system I/O error\0").as_ptr()
-                },
-                ErrorCode::Plugin => unsafe {
-                    std::ffi::CStr::from_bytes_with_nul_unchecked(b"Plugin error\0").as_ptr()
-                },
-                ErrorCode::UnsupportedFormat => unsafe {
-                    std::ffi::CStr::from_bytes_with_nul_unchecked(b"Unsupported format\0").as_ptr()
-                },
-                ErrorCode::Internal => unsafe {
-                    std::ffi::CStr::from_bytes_with_nul_unchecked(b"Internal library error\0").as_ptr()
-                },
-            }
-        }
-        None => {
-            // SAFETY: byte string literal, valid for program lifetime
-            unsafe { std::ffi::CStr::from_bytes_with_nul_unchecked(b"Unknown error code\0").as_ptr() }
-        }
+        Some(err_code) => match err_code {
+            ErrorCode::Validation => c"Input validation error".as_ptr(),
+            ErrorCode::Parsing => c"Document parsing error".as_ptr(),
+            ErrorCode::Ocr => c"OCR processing error".as_ptr(),
+            ErrorCode::MissingDependency => c"Missing system dependency".as_ptr(),
+            ErrorCode::Io => c"File system I/O error".as_ptr(),
+            ErrorCode::Plugin => c"Plugin error".as_ptr(),
+            ErrorCode::UnsupportedFormat => c"Unsupported format".as_ptr(),
+            ErrorCode::Internal => c"Internal library error".as_ptr(),
+        },
+        None => c"Unknown error code".as_ptr(),
     }
 }
 

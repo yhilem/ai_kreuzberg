@@ -11,10 +11,10 @@
 #![allow(unsafe_code)]
 
 use pyo3::prelude::*;
-use std::ffi::{CStr, CString, c_char};
+use std::ffi::{CStr, CString};
 
 // Import FFI types and functions directly from kreuzberg-ffi crate
-use kreuzberg_ffi::{CErrorDetails, kreuzberg_classify_error, kreuzberg_error_code_name, kreuzberg_get_error_details};
+use kreuzberg_ffi::{kreuzberg_classify_error, kreuzberg_error_code_name, kreuzberg_get_error_details};
 
 /// Error details from kreuzberg-ffi.
 ///
@@ -32,10 +32,10 @@ use kreuzberg_ffi::{CErrorDetails, kreuzberg_classify_error, kreuzberg_error_cod
 /// Returns:
 ///     dict: Structured error details
 #[pyfunction]
-pub fn get_error_details(py: Python) -> PyResult<pyo3::Bound<'_, pyo3::types::PyDict>> {
+pub fn get_error_details(py: Python<'_>) -> PyResult<pyo3::Bound<'_, pyo3::types::PyDict>> {
     // SAFETY: This FFI function is thread-safe and returns a struct with
     // allocated C strings. We immediately convert them to owned Rust strings.
-    let details = unsafe { kreuzberg_get_error_details() };
+    let details = kreuzberg_get_error_details();
 
     let result = pyo3::types::PyDict::new(py);
 
@@ -128,7 +128,7 @@ pub fn classify_error(message: &str) -> PyResult<u32> {
 #[pyfunction]
 pub fn error_code_name(code: u32) -> PyResult<String> {
     // SAFETY: error_code_name handles invalid codes and returns a static C string
-    let name_ptr = unsafe { kreuzberg_error_code_name(code) };
+    let name_ptr = kreuzberg_error_code_name(code);
 
     if name_ptr.is_null() {
         return Ok("unknown".to_string());

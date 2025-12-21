@@ -36,12 +36,13 @@ extern crate kreuzberg_ffi;
 /// Metadata field structure returned from FFI
 /// Mirrors CMetadataField from kreuzberg-ffi/src/result.rs
 #[repr(C)]
-struct CMetadataField {
+pub struct CMetadataField {
     name: *const c_char,
     json_value: *mut c_char,
     is_null: i32,
 }
 
+#[allow(improper_ctypes)]
 unsafe extern "C" {
     /// Get the last error code from FFI.
     ///

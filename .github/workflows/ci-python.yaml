@@ -5,6 +5,7 @@ on:
     branches-ignore:
       - 'benchmarking-*'
       - 'profiling-*'
+      - 'feat/profiling-flamegraphs'
     paths:
       - '.github/actions/**'
       - 'crates/kreuzberg/**'

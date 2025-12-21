@@ -354,10 +354,10 @@ pub unsafe extern "C" fn kreuzberg_free_interned_string(s: *const c_char) {
     let table_mutex = ensure_intern_table();
     let mut table = table_mutex.lock().expect("Mutex poisoned");
 
-    if let Some(ref mut t) = *table {
-        if !t.free_string(s) {
-            set_last_error("String not found in intern table".to_string());
-        }
+    if let Some(ref mut t) = *table
+        && !t.free_string(s)
+    {
+        set_last_error("String not found in intern table".to_string());
     }
 }
 

@@ -187,10 +187,10 @@ pub unsafe extern "C" fn kreuzberg_extract_batch_streaming(
         let file_ptr = unsafe { *files.add(i) };
 
         if file_ptr.is_null() {
-            if let Some(err_cb) = error_callback {
-                if let Ok(err_msg) = CString::new("File path is NULL") {
-                    unsafe { err_cb(i, err_msg.as_ptr(), user_data) };
-                }
+            if let Some(err_cb) = error_callback
+                && let Ok(err_msg) = CString::new("File path is NULL")
+            {
+                unsafe { err_cb(i, err_msg.as_ptr(), user_data) };
             }
             continue;
         }
@@ -199,10 +199,10 @@ pub unsafe extern "C" fn kreuzberg_extract_batch_streaming(
         let file_path = match unsafe { CStr::from_ptr(file_ptr) }.to_str() {
             Ok(s) => s,
             Err(e) => {
-                if let Some(err_cb) = error_callback {
-                    if let Ok(err_msg) = CString::new(format!("Invalid UTF-8 in file path: {}", e)) {
-                        unsafe { err_cb(i, err_msg.as_ptr(), user_data) };
-                    }
+                if let Some(err_cb) = error_callback
+                    && let Ok(err_msg) = CString::new(format!("Invalid UTF-8 in file path: {}", e))
+                {
+                    unsafe { err_cb(i, err_msg.as_ptr(), user_data) };
                 }
                 continue;
             }
@@ -226,10 +226,10 @@ pub unsafe extern "C" fn kreuzberg_extract_batch_streaming(
                 }
             }
             Err(e) => {
-                if let Some(err_cb) = error_callback {
-                    if let Ok(err_msg) = CString::new(e) {
-                        unsafe { err_cb(i, err_msg.as_ptr(), user_data) };
-                    }
+                if let Some(err_cb) = error_callback
+                    && let Ok(err_msg) = CString::new(e)
+                {
+                    unsafe { err_cb(i, err_msg.as_ptr(), user_data) };
                 }
                 // Continue with next file
             }
@@ -336,10 +336,10 @@ pub unsafe extern "C" fn kreuzberg_extract_batch_parallel(
         let file_ptr = unsafe { *files.add(i) };
 
         if file_ptr.is_null() {
-            if let Some(err_cb) = error_callback {
-                if let Ok(err_msg) = CString::new("File path is NULL") {
-                    unsafe { err_cb(i, err_msg.as_ptr(), user_data) };
-                }
+            if let Some(err_cb) = error_callback
+                && let Ok(err_msg) = CString::new("File path is NULL")
+            {
+                unsafe { err_cb(i, err_msg.as_ptr(), user_data) };
             }
             continue;
         }
@@ -348,10 +348,10 @@ pub unsafe extern "C" fn kreuzberg_extract_batch_parallel(
         match unsafe { CStr::from_ptr(file_ptr) }.to_str() {
             Ok(s) => file_paths.push((i, s.to_string())),
             Err(e) => {
-                if let Some(err_cb) = error_callback {
-                    if let Ok(err_msg) = CString::new(format!("Invalid UTF-8: {}", e)) {
-                        unsafe { err_cb(i, err_msg.as_ptr(), user_data) };
-                    }
+                if let Some(err_cb) = error_callback
+                    && let Ok(err_msg) = CString::new(format!("Invalid UTF-8: {}", e))
+                {
+                    unsafe { err_cb(i, err_msg.as_ptr(), user_data) };
                 }
             }
         }

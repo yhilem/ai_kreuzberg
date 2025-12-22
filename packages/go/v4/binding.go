@@ -60,14 +60,6 @@ char *kreuzberg_result_get_detected_language(const CExtractionResult *result);
 CMetadataField kreuzberg_result_get_metadata_field(const CExtractionResult *result, const char *field_name);
 
 // Phase 2 Error Classification FFI functions
-uint32_t kreuzberg_error_code_validation(void);
-uint32_t kreuzberg_error_code_parsing(void);
-uint32_t kreuzberg_error_code_ocr(void);
-uint32_t kreuzberg_error_code_missing_dependency(void);
-uint32_t kreuzberg_error_code_io(void);
-uint32_t kreuzberg_error_code_plugin(void);
-uint32_t kreuzberg_error_code_unsupported_format(void);
-uint32_t kreuzberg_error_code_internal(void);
 uint32_t kreuzberg_error_code_count(void);
 const char *kreuzberg_error_code_name(uint32_t code);
 const char *kreuzberg_error_code_description(uint32_t code);

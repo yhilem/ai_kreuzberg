@@ -3071,7 +3071,7 @@ fn validate_chunking_params(max_chars: usize, max_overlap: usize) -> Result<i32,
 /// Gets valid binarization methods as a JSON string
 ///
 /// @return [String] JSON array of valid binarization methods
-fn get_valid_binarization_methods(ruby: &Ruby) -> Result<String, Error> {
+fn get_valid_binarization_methods(_ruby: &Ruby) -> Result<String, Error> {
     let ptr = unsafe { kreuzberg_get_valid_binarization_methods() };
     if ptr.is_null() {
         return Err(runtime_error("Failed to get valid binarization methods"));
@@ -3095,7 +3095,7 @@ fn get_valid_binarization_methods(ruby: &Ruby) -> Result<String, Error> {
 /// Gets valid language codes as a JSON string
 ///
 /// @return [String] JSON array of valid language codes
-fn get_valid_language_codes(ruby: &Ruby) -> Result<String, Error> {
+fn get_valid_language_codes(_ruby: &Ruby) -> Result<String, Error> {
     let ptr = unsafe { kreuzberg_get_valid_language_codes() };
     if ptr.is_null() {
         return Err(runtime_error("Failed to get valid language codes"));
@@ -3119,7 +3119,7 @@ fn get_valid_language_codes(ruby: &Ruby) -> Result<String, Error> {
 /// Gets valid OCR backends as a JSON string
 ///
 /// @return [String] JSON array of valid OCR backends
-fn get_valid_ocr_backends(ruby: &Ruby) -> Result<String, Error> {
+fn get_valid_ocr_backends(_ruby: &Ruby) -> Result<String, Error> {
     let ptr = unsafe { kreuzberg_get_valid_ocr_backends() };
     if ptr.is_null() {
         return Err(runtime_error("Failed to get valid OCR backends"));
@@ -3143,7 +3143,7 @@ fn get_valid_ocr_backends(ruby: &Ruby) -> Result<String, Error> {
 /// Gets valid token reduction levels as a JSON string
 ///
 /// @return [String] JSON array of valid token reduction levels
-fn get_valid_token_reduction_levels(ruby: &Ruby) -> Result<String, Error> {
+fn get_valid_token_reduction_levels(_ruby: &Ruby) -> Result<String, Error> {
     let ptr = unsafe { kreuzberg_get_valid_token_reduction_levels() };
     if ptr.is_null() {
         return Err(runtime_error("Failed to get valid token reduction levels"));
@@ -3395,7 +3395,7 @@ fn get_error_details_native(ruby: &Ruby) -> Result<Value, Error> {
     // SAFETY: FFI function is thread-safe and returns a struct with allocated C strings
     let details = unsafe { kreuzberg_get_error_details() };
 
-    let hash = RHash::new();
+    let hash = ruby.hash_new();
 
     // Convert C strings to Ruby strings, handling nulls safely
     // SAFETY: All non-null pointers from FFI must be valid C strings

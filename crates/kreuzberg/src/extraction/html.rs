@@ -163,6 +163,7 @@ fn convert_html_with_options_large_stack(html: String, options: ConversionOption
 }
 
 #[cfg(not(target_arch = "wasm32"))]
+#[allow(dead_code)]
 fn convert_inline_images_with_large_stack(
     html: String,
     options: ConversionOptions,

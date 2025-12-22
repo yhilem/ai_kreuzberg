@@ -2,6 +2,21 @@
 build-backend = "maturin"
 requires = [ "maturin>=1.10.2" ]
 
+[project]
+name = "kreuzberg-workspace"
+version = "4.0.0-rc.16"
+description = "Kreuzberg - Rust document intelligence library with polyglot bindings"
+requires-python = ">=3.10"
+
+classifiers = [
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+]
+
 [dependency-groups]
 dev = [
   "covdefaults>=2.3.0",

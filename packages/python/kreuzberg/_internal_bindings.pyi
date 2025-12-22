@@ -52,6 +52,10 @@ __all__ = [
     "get_extensions_for_mime",
     "get_last_error_code",
     "get_last_panic_context",
+    "get_valid_binarization_methods",
+    "get_valid_language_codes",
+    "get_valid_ocr_backends",
+    "get_valid_token_reduction_levels",
     "list_document_extractors",
     "list_embedding_presets",
     "list_ocr_backends",
@@ -64,7 +68,17 @@ __all__ = [
     "unregister_ocr_backend",
     "unregister_post_processor",
     "unregister_validator",
+    "validate_binarization_method",
+    "validate_chunking_params",
+    "validate_confidence",
+    "validate_dpi",
+    "validate_language_code",
     "validate_mime_type",
+    "validate_ocr_backend",
+    "validate_output_format",
+    "validate_tesseract_oem",
+    "validate_tesseract_psm",
+    "validate_token_reduction_level",
 ]
 
 # OCR Result Types

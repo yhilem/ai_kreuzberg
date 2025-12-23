@@ -920,6 +920,14 @@ jobs:
         shell: pwsh
         run: $workspace = ridk exec bash -lc "cygpath -au '$env:GITHUB_WORKSPACE'"; ridk exec bash -lc "cd $workspace && bash scripts/ci/ruby/install-ruby-deps.sh packages/ruby"
 
+      - name: Build kreuzberg-ffi (Unix)
+        if: runner.os != 'Windows'
+        run: cargo build -p kreuzberg-ffi --release
+
+      - name: Build kreuzberg-ffi (Windows)
+        if: runner.os == 'Windows'
+        run: cargo build -p kreuzberg-ffi --release
+
       - name: Vendor kreuzberg core crate
         shell: bash
         run: scripts/ci/ruby/vendor-kreuzberg-core.sh

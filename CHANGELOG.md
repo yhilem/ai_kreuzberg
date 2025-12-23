@@ -5,6 +5,13 @@ All notable changes to Kreuzberg will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0-rc.18] - 2025-12-23
+
+### Fixed
+
+- **Ruby gem packaging**: Fixed missing kreuzberg-ffi crate in vendored dependencies causing linker failures during gem installation
+- **Ruby publish workflow**: Added kreuzberg-ffi build step before gem packaging to ensure static library is available
+
 ## [4.0.0-rc.17] - 2025-12-22
 
 ### Fixed

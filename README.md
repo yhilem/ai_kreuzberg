@@ -85,7 +85,7 @@ To use embeddings functionality:
    - macOS: `brew install onnxruntime`
    - Windows: `scoop install onnxruntime` or `winget install onnxruntime`
 
-2. Use embeddings in your code - see [Embeddings Guide](https://kreuzberg.dev/guides/embeddings/)
+2. Use embeddings in your code - see [Embeddings Guide](https://kreuzberg.dev/features/#embeddings)
 
 Note: All other Kreuzberg features work without ONNX Runtime.
 
@@ -119,8 +119,6 @@ kreuzberg = { version = "4.0", features = ["pdf-bundled"] }
 [dependencies]
 kreuzberg = { version = "4.0", features = ["pdf-system"] }
 ```
-
-**[Complete PDFium Linking Guide →](docs/guides/pdfium-linking.md)** for detailed configuration, trade-offs, and troubleshooting.
 
 ## Supported Formats
 
@@ -192,7 +190,7 @@ Automatic language detection in extracted text using fast-langdetect. Configure 
 
 Extract comprehensive metadata from all supported formats: authors, titles, creation dates, page counts, EXIF data, and format-specific properties.
 
-**[Metadata Guide →](https://kreuzberg.dev/snippets/go/pdf_metadata_extractor/)**
+**[Metadata Guide →](https://kreuzberg.dev/reference/types/#metadata)**
 
 ## Performance: Native vs WASM Bindings
 

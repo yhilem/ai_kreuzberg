@@ -21,9 +21,10 @@ use crate::types::ExtractionResult;
 use crate::utils::pool::{ByteBufferPool, StringBufferPool, create_byte_buffer_pool, create_string_buffer_pool};
 use crate::utils::pool_sizing::PoolSizeHint;
 use crate::{KreuzbergError, Result};
+use parking_lot::Mutex;
 use std::path::Path;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
 
 /// Configuration for batch processing with pooling optimizations.
 #[derive(Debug, Clone)]
@@ -165,11 +166,11 @@ impl BatchProcessor {
     pub fn string_pool(&self) -> Arc<StringBufferPool> {
         // Fast path: already initialized
         if self.string_pool_initialized.load(Ordering::Acquire) {
-            return Arc::clone(self.string_pool.lock().unwrap().as_ref().unwrap());
+            return Arc::clone(self.string_pool.lock().as_ref().unwrap());
         }
 
         // Create pool if not already created
-        let mut pool_opt = self.string_pool.lock().unwrap();
+        let mut pool_opt = self.string_pool.lock();
         if pool_opt.is_none() {
             let pool = Arc::new(create_string_buffer_pool(
                 self.config.string_pool_size,
@@ -190,11 +191,11 @@ impl BatchProcessor {
     pub fn byte_pool(&self) -> Arc<ByteBufferPool> {
         // Fast path: already initialized
         if self.byte_pool_initialized.load(Ordering::Acquire) {
-            return Arc::clone(self.byte_pool.lock().unwrap().as_ref().unwrap());
+            return Arc::clone(self.byte_pool.lock().as_ref().unwrap());
         }
 
         // Create pool if not already created
-        let mut pool_opt = self.byte_pool.lock().unwrap();
+        let mut pool_opt = self.byte_pool.lock();
         if pool_opt.is_none() {
             let pool = Arc::new(create_byte_buffer_pool(
                 self.config.byte_pool_size,
@@ -271,20 +272,12 @@ impl BatchProcessor {
 
     /// Get the number of pooled string buffers currently available.
     pub fn string_pool_size(&self) -> usize {
-        self.string_pool
-            .lock()
-            .ok()
-            .and_then(|pool_opt| pool_opt.as_ref().map(|p| p.size()))
-            .unwrap_or(0)
+        self.string_pool.lock().as_ref().map(|p| p.size()).unwrap_or(0)
     }
 
     /// Get the number of pooled byte buffers currently available.
     pub fn byte_pool_size(&self) -> usize {
-        self.byte_pool
-            .lock()
-            .ok()
-            .and_then(|pool_opt| pool_opt.as_ref().map(|p| p.size()))
-            .unwrap_or(0)
+        self.byte_pool.lock().as_ref().map(|p| p.size()).unwrap_or(0)
     }
 
     /// Clear all pooled objects, forcing new allocations on next acquire.
@@ -292,22 +285,16 @@ impl BatchProcessor {
     /// Useful for memory-constrained environments or to reclaim memory
     /// after processing large batches.
     pub fn clear_pools(&self) -> Result<()> {
-        if let Ok(pool_opt) = self.string_pool.lock() {
-            if let Some(pool) = pool_opt.as_ref() {
-                pool.clear()
-                    .map_err(|e| KreuzbergError::Other(format!("string pool error: {}", e)))?;
-            }
-        } else {
-            return Err(KreuzbergError::Other("string pool mutex poisoned".to_string()));
+        let pool_opt = self.string_pool.lock();
+        if let Some(pool) = pool_opt.as_ref() {
+            pool.clear()
+                .map_err(|e| KreuzbergError::Other(format!("string pool error: {}", e)))?;
         }
 
-        if let Ok(pool_opt) = self.byte_pool.lock() {
-            if let Some(pool) = pool_opt.as_ref() {
-                pool.clear()
-                    .map_err(|e| KreuzbergError::Other(format!("byte pool error: {}", e)))?;
-            }
-        } else {
-            return Err(KreuzbergError::Other("byte pool mutex poisoned".to_string()));
+        let pool_opt = self.byte_pool.lock();
+        if let Some(pool) = pool_opt.as_ref() {
+            pool.clear()
+                .map_err(|e| KreuzbergError::Other(format!("byte pool error: {}", e)))?;
         }
 
         Ok(())

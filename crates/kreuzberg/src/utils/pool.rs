@@ -28,7 +28,8 @@
 //! // buffer is returned to pool when dropped
 //! ```
 
-use std::sync::{Arc, Mutex};
+use parking_lot::Mutex;
+use std::sync::Arc;
 
 #[cfg(feature = "pool-metrics")]
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -169,14 +170,15 @@ impl<T: Recyclable> Pool<T> {
     ///
     /// A `PoolGuard<T>` that will return the object to the pool when dropped.
     ///
-    /// # Errors
+    /// # Panics
     ///
-    /// Returns `PoolError` if the mutex is poisoned.
+    /// Panics if the mutex is already locked by the current thread (deadlock).
+    /// This is a safety mechanism provided by parking_lot to prevent subtle bugs.
     pub fn acquire(&self) -> Result<PoolGuard<T>, PoolError> {
         #[cfg(feature = "pool-metrics")]
         self.metrics.total_acquires.fetch_add(1, Ordering::Relaxed);
 
-        let mut objects = self.objects.lock().map_err(|_| PoolError::LockPoisoned)?;
+        let mut objects = self.objects.lock();
 
         let object = if let Some(mut obj) = objects.pop() {
             #[cfg(feature = "pool-metrics")]
@@ -205,12 +207,12 @@ impl<T: Recyclable> Pool<T> {
 
     /// Get the current number of objects in the pool.
     pub fn size(&self) -> usize {
-        self.objects.lock().map(|objs| objs.len()).unwrap_or(0)
+        self.objects.lock().len()
     }
 
     /// Clear the pool, discarding all pooled objects.
     pub fn clear(&self) -> Result<(), PoolError> {
-        self.objects.lock().map_err(|_| PoolError::LockPoisoned)?.clear();
+        self.objects.lock().clear();
         Ok(())
     }
 
@@ -243,12 +245,14 @@ impl<T: Recyclable> std::ops::DerefMut for PoolGuard<T> {
 
 impl<T: Recyclable> Drop for PoolGuard<T> {
     fn drop(&mut self) {
-        if let Some(mut object) = self.object.take() {
-            object.reset();
+        if let Some(object) = self.object.take() {
+            // Note: DO NOT reset here - reset happens only on acquire() when object is reused.
+            // This optimization saves one reset() call per reuse, improving pool efficiency.
+            // The object is either returned to the pool for reuse (reset on acquire),
+            // or dropped entirely when the pool is full.
 
-            if let Ok(mut objects) = self.pool.objects.lock()
-                && objects.len() < self.pool.max_size
-            {
+            let mut objects = self.pool.objects.lock();
+            if objects.len() < self.pool.max_size {
                 objects.push(object);
 
                 #[cfg(feature = "pool-metrics")]
@@ -264,7 +268,6 @@ impl<T: Recyclable> Drop for PoolGuard<T> {
                 }
                 // If pool is full, object is dropped and deallocated
             }
-            // If lock is poisoned, object is dropped and deallocated
         }
     }
 }

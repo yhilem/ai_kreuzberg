@@ -1,3 +1,4 @@
+#![cfg(feature = "ocr")]
 //! Integration tests for OCR language registry
 //!
 //! Tests the language registry functionality across all OCR backends.

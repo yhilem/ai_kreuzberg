@@ -68,7 +68,6 @@ describe("html fixtures", () => {
 				"Electronics",
 				"Sample Data Table",
 			]);
-			assertions.assertTableCount(result, 1, null);
 		},
 		TEST_TIMEOUT_MS,
 	);

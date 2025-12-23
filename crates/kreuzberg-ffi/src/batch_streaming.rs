@@ -42,8 +42,6 @@ use kreuzberg::types::ExtractionResult;
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_int, c_void};
 use std::path::Path;
-
-#[cfg(feature = "rayon")]
 use std::ptr;
 #[cfg(feature = "rayon")]
 use std::sync::Arc;

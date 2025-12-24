@@ -33,5 +33,21 @@ fi
 
 echo "=== Building Java bindings ==="
 cd "$REPO_ROOT/packages/java"
-mvn -e clean package -DskipTests
+
+# Enable verbose Maven output with debugging
+# -X: debug mode (detailed logging)
+# -e: errors mode (display full stack traces on errors)
+# -DtrimStackTrace=false: preserve full stack traces
+export MAVEN_OPTS="${MAVEN_OPTS:-} -XX:+UnlockDiagnosticVMOptions -XX:+LogVMOutput -XX:LogFile=maven-jvm.log"
+
+echo "Maven invocation: mvn -X -e clean package -DskipTests -DtrimStackTrace=false"
+mvn -X -e clean package -DskipTests -DtrimStackTrace=false || {
+	echo "=== Maven build failed ==="
+	if [ -f maven-jvm.log ]; then
+		echo "=== Maven JVM Log ==="
+		tail -100 maven-jvm.log || true
+	fi
+	exit 1
+}
+
 echo "Java build complete"

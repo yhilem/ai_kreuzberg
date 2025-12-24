@@ -158,12 +158,6 @@ fn convert_inline_images_with_options(
 
 // Native (non-WASM) implementations use dedicated thread stack for large HTML documents
 #[cfg(not(target_arch = "wasm32"))]
-fn convert_html_with_options_large_stack(html: String, options: ConversionOptions) -> Result<String> {
-    run_on_dedicated_stack(move || convert_html_with_options(&html, options))
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-#[allow(dead_code)]
 fn convert_inline_images_with_large_stack(
     html: String,
     options: ConversionOptions,
@@ -233,7 +227,8 @@ pub fn convert_html_to_markdown(html: &str, options: Option<ConversionOptions>) 
 
     #[cfg(not(target_arch = "wasm32"))]
     if html_requires_large_stack(html.len()) {
-        return convert_html_with_options_large_stack(html.to_string(), options);
+        let html = html.to_string();
+        return run_on_dedicated_stack(move || convert_html_with_options(&html, options));
     }
 
     convert_html_with_options(html, options)

@@ -20,9 +20,9 @@
 //! # Example
 //!
 //! ```rust,no_run
-//! use kreuzberg::utils::pool::StringBuffer;
+//! use kreuzberg::utils::pool::StringBufferPool;
 //!
-//! let pool = StringBuffer::new(4096, 10); // 10 buffers of 4KB each
+//! let pool = StringBufferPool::new(|| String::with_capacity(4096), 10); // 10 buffers of 4KB each
 //! let mut buffer = pool.acquire().unwrap();
 //! buffer.push_str("some content");
 //! // buffer is returned to pool when dropped

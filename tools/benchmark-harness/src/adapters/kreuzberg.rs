@@ -66,6 +66,38 @@ fn find_ruby() -> Result<(PathBuf, Vec<String>)> {
     }
 }
 
+/// Helper to find Ruby gem installation directory
+///
+/// Attempts to locate the kreuzberg gem's lib directory by:
+/// 1. Checking workspace packages/ruby/lib directory
+/// 2. Checking installed gem location via `gem which kreuzberg`
+fn get_ruby_gem_lib_path() -> Result<PathBuf> {
+    // Try workspace first
+    let workspace_root = workspace_root()?;
+    let workspace_gem_lib = workspace_root.join("packages/ruby/lib");
+    if workspace_gem_lib.exists() {
+        return Ok(workspace_gem_lib);
+    }
+
+    // Try to find installed gem via `ruby -e` call
+    use std::process::Command;
+    if let Ok(output) = Command::new("ruby")
+        .arg("-e")
+        .arg("puts Gem.loaded_specs['kreuzberg_rb']&.lib_dirs&.first || ''")
+        .output()
+        && output.status.success()
+    {
+        let gem_path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !gem_path.is_empty() {
+            return Ok(PathBuf::from(gem_path));
+        }
+    }
+
+    Err(crate::Error::Config(
+        "Could not find kreuzberg gem lib directory. Install the gem or use workspace build.".to_string(),
+    ))
+}
+
 /// Helper to find Go toolchain
 fn find_go() -> Result<PathBuf> {
     which::which("go").map_err(|_| crate::Error::Config("Go toolchain not found".to_string()))
@@ -265,6 +297,12 @@ pub fn create_ruby_sync_adapter() -> Result<SubprocessAdapter> {
     let script_path = get_script_path("kreuzberg_extract.rb")?;
     let (command, mut args) = find_ruby()?;
 
+    // Add -I flag for gem lib directory so Ruby can find the kreuzberg gem
+    if let Ok(gem_lib_path) = get_ruby_gem_lib_path() {
+        args.push("-I".to_string());
+        args.push(gem_lib_path.to_string_lossy().to_string());
+    }
+
     args.push(script_path.to_string_lossy().to_string());
     args.push("sync".to_string());
 
@@ -276,6 +314,12 @@ pub fn create_ruby_sync_adapter() -> Result<SubprocessAdapter> {
 pub fn create_ruby_batch_adapter() -> Result<SubprocessAdapter> {
     let script_path = get_script_path("kreuzberg_extract.rb")?;
     let (command, mut args) = find_ruby()?;
+
+    // Add -I flag for gem lib directory so Ruby can find the kreuzberg gem
+    if let Ok(gem_lib_path) = get_ruby_gem_lib_path() {
+        args.push("-I".to_string());
+        args.push(gem_lib_path.to_string_lossy().to_string());
+    }
 
     args.push(script_path.to_string_lossy().to_string());
     args.push("batch".to_string());

@@ -112,9 +112,14 @@ impl SubprocessAdapter {
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
 
-        let child = cmd
-            .spawn()
-            .map_err(|e| Error::Benchmark(format!("Failed to spawn subprocess: {}", e)))?;
+        let child = cmd.spawn().map_err(|e| {
+            Error::Benchmark(format!(
+                "Failed to spawn subprocess '{}' with args {:?}: {}",
+                self.command.display(),
+                self.args,
+                e
+            ))
+        })?;
 
         let output = match tokio::time::timeout(timeout, child.wait_with_output()).await {
             Ok(Ok(output)) => output,
@@ -132,11 +137,15 @@ impl SubprocessAdapter {
         let stderr = String::from_utf8_lossy(&output.stderr).to_string();
 
         if !output.status.success() {
-            return Err(Error::Benchmark(format!(
-                "Subprocess failed with exit code {:?}\nstderr: {}",
-                output.status.code(),
-                stderr
-            )));
+            // Include more diagnostic information in the error message
+            let mut error_msg = format!("Subprocess failed with exit code {:?}", output.status.code());
+            if !stderr.is_empty() {
+                error_msg.push_str(&format!("\nstderr: {}", stderr));
+            }
+            if !stdout.is_empty() && stdout.len() < 500 {
+                error_msg.push_str(&format!("\nstdout: {}", stdout));
+            }
+            return Err(Error::Benchmark(error_msg));
         }
 
         Ok((stdout, stderr, duration))

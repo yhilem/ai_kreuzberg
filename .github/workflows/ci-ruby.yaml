@@ -197,6 +197,26 @@ jobs:
         shell: bash
         run: scripts/ci/ruby/install-bundler.sh
 
+      - name: Print Ruby environment (pre-setup)
+        shell: bash
+        run: |
+          echo "=== Ruby Environment ==="
+          echo "Ruby version: $(ruby --version)"
+          echo "Ruby platform: $(ruby -e 'puts RUBY_PLATFORM')"
+          echo "Gem home: $(gem home)"
+          echo "Gem paths: $(gem env | grep -A 10 'EXECUTABLE')"
+          echo ""
+          echo "=== Rust Environment ==="
+          echo "Rustc version: $(rustc -vV)"
+          echo "Cargo version: $(cargo --version)"
+          echo ""
+          echo "=== System Info ==="
+          echo "OS: $(uname -s)"
+          echo "Arch: $(uname -m)"
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            echo "Windows build: x86_64-pc-windows-gnu"
+          fi
+
       - name: Configure short paths for Windows MAX_PATH mitigation
         if: runner.os == 'Windows'
         shell: pwsh
@@ -211,6 +231,16 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: scripts/ci/ruby/install-ruby-deps.ps1
+
+      - name: Print Bundler and Ruby deps info
+        shell: bash
+        run: |
+          echo "=== Bundler Info ==="
+          bundle --version
+          bundle config list || true
+          echo ""
+          echo "=== Installed gems (top 20) ==="
+          gem list | head -20
 
       - name: Cache PDFium
         uses: ./.github/actions/cache-pdfium
@@ -246,6 +276,23 @@ jobs:
         shell: pwsh
         run: scripts/ci/ruby/configure-tesseract-windows.ps1
 
+      - name: Print Rust toolchain info (pre-build)
+        shell: bash
+        run: |
+          echo "=== Rust Toolchain ==="
+          rustup toolchain list
+          echo ""
+          echo "=== Rust Targets ==="
+          rustup target list | grep installed
+          echo ""
+          echo "=== Rust compiler details ==="
+          rustc -vV
+          echo ""
+          echo "=== Cargo config ==="
+          if [ -f .cargo/config.toml ]; then
+            cat .cargo/config.toml
+          fi
+
       - name: Build Rust FFI for Ruby (Magnus)
         uses: ./.github/actions/build-rust-ffi
         with:
@@ -258,12 +305,55 @@ jobs:
           RB_SYS_VERBOSE: "1"
           CARGO_BUILD_JOBS: "1"
 
+      - name: Print post-FFI build status (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Write-Host "=== Windows Rust Build Status ==="
+          Write-Host "Checking for compiled FFI libraries..."
+          $libPath = "target\release"
+          if (Test-Path $libPath) {
+            Write-Host "Target directory exists: $libPath"
+            Get-ChildItem -Path $libPath -Filter "*.dll" | ForEach-Object { Write-Host "  DLL: $($_.Name)" }
+            Get-ChildItem -Path $libPath -Filter "*.lib" | ForEach-Object { Write-Host "  LIB: $($_.Name)" }
+            Get-ChildItem -Path $libPath -Filter "*.a" | ForEach-Object { Write-Host "  Archive: $($_.Name)" }
+          } else {
+            Write-Host "ERROR: Target directory not found: $libPath"
+          }
+          Write-Host ""
+          Write-Host "=== Rust linker info ==="
+          $rustupHome = $env:RUSTUP_HOME
+          Write-Host "RUSTUP_HOME: $rustupHome"
+          $cargoHome = $env:CARGO_HOME
+          Write-Host "CARGO_HOME: $cargoHome"
+
       - name: Build Ruby gem
         shell: bash
         run: scripts/ci/ruby/build-gem.sh
         env:
           RB_SYS_VERBOSE: "1"
           CARGO_BUILD_JOBS: "1"
+
+      - name: Print gem build artifacts
+        if: always()
+        shell: bash
+        run: |
+          echo "=== Gem build artifacts ==="
+          cd packages/ruby
+          if [ -d "pkg" ]; then
+            echo "Gems built:"
+            ls -lh pkg/*.gem 2>/dev/null || echo "No gem files found"
+          else
+            echo "ERROR: pkg directory not found"
+          fi
+          echo ""
+          echo "=== Ruby native extension artifacts ==="
+          find lib -name "*.so" -o -name "*.dll" -o -name "*.dylib" 2>/dev/null | head -10
+          echo ""
+          echo "=== Compilation log (if exists) ==="
+          if [ -f "mkmf.log" ]; then
+            tail -50 mkmf.log
+          fi
 
       - name: Upload gem
         uses: actions/upload-artifact@v6
@@ -342,6 +432,20 @@ jobs:
         shell: pwsh
         run: scripts/ci/ruby/configure-bindgen-windows.ps1
 
+      - name: Print test Ruby environment
+        shell: bash
+        run: |
+          echo "=== Pre-test Ruby environment ==="
+          echo "Ruby version: $(ruby --version)"
+          echo "Ruby platform: $(ruby -e 'puts RUBY_PLATFORM')"
+          echo ""
+          echo "=== Installed gems ==="
+          gem list
+          echo ""
+          echo "=== LD_LIBRARY_PATH / DYLD_LIBRARY_PATH ==="
+          echo "LD_LIBRARY_PATH: ${LD_LIBRARY_PATH:-<not set>}"
+          echo "DYLD_LIBRARY_PATH: ${DYLD_LIBRARY_PATH:-<not set>}"
+
       - name: Download PDFium
         uses: ./.github/actions/download-pdfium
         with:
@@ -365,9 +469,45 @@ jobs:
         shell: bash
         run: python3 scripts/ci/ruby/vendor-kreuzberg-core.py
 
+      - name: Print pre-extension compilation status
+        shell: bash
+        run: |
+          echo "=== Pre-extension compilation status ==="
+          echo "packages/ruby directory contents:"
+          cd packages/ruby && find . -maxdepth 1 -type d \( -name ext -o -name lib -o -name tmp \)
+          echo ""
+          echo "Native extension directory:"
+          if [ -d "ext/kreuzberg_rb" ]; then
+            find ext/kreuzberg_rb -maxdepth 1 -type f -o -maxdepth 1 -type d | head -20
+          fi
+          echo ""
+          echo "=== Ruby gem environment ==="
+          ruby -e "require 'rbconfig'; puts RbConfig::CONFIG"
+
       - name: Build local native extension
         shell: bash
         run: scripts/ci/ruby/compile-extension.sh
+
+      - name: Print post-extension compilation status
+        if: always()
+        shell: bash
+        run: |
+          echo "=== Post-extension compilation status ==="
+          cd packages/ruby
+          echo "lib directory contents:"
+          if [ -d "lib" ]; then
+            find lib -type f | head -20
+          else
+            echo "ERROR: lib directory not found"
+          fi
+          echo ""
+          echo "=== Looking for compiled extension ==="
+          find . -name "*.so" -o -name "*.dll" -o -name "*.dylib" 2>/dev/null | head -20
+          echo ""
+          if [ -f "mkmf.log" ]; then
+            echo "=== mkmf.log (last 100 lines) ==="
+            tail -100 mkmf.log
+          fi
 
       - name: Build kreuzberg CLI binary
         shell: bash

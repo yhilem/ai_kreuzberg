@@ -57,6 +57,7 @@ env:
   PDFIUM_STATIC_VERSION: "7442b"
   ORT_VERSION: "1.23.2"
   MACOSX_DEPLOYMENT_TARGET: "14.0"
+  VERBOSE_DEBUG: "true"
 
 jobs:
   changes:
@@ -143,13 +144,35 @@ jobs:
     name: Node Build + Smoke (${{ matrix.target }})
     if: ${{ github.actor != 'dependabot[bot]' && needs.changes.outputs.node_matrix_has_entries == 'true' }}
     needs: changes
-    timeout-minutes: 180
+    timeout-minutes: ${{ matrix.os == 'windows-latest' && 360 || 180 }}
     strategy:
       fail-fast: true
       matrix: ${{ fromJSON(needs.changes.outputs.node_matrix) }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Dump system information
+        shell: bash
+        run: |
+          echo "=== System Information ==="
+          uname -a
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            wmic os get version
+            wmic cpu get name
+            wmic os get totalvisiblememorybytes
+          fi
+          echo "=== Disk Space ==="
+          df -h
+
+      - name: Dump environment variables (debug)
+        shell: bash
+        run: |
+          echo "=== Environment Variables ==="
+          env | sort
+          echo "=== GitHub Context ==="
+          echo "Runner OS: $RUNNER_OS"
+          echo "Runner Arch: $RUNNER_ARCH"
 
       - name: Install system dependencies
         uses: ./.github/actions/install-system-deps
@@ -201,9 +224,33 @@ jobs:
           build-profile: release
           verbose: true
 
+      - name: Report Rust build artifacts size
+        shell: bash
+        run: |
+          echo "=== Rust Build Artifacts ==="
+          if [ -d "target/release" ]; then
+            du -sh target/release
+            find target/release -maxdepth 1 -type f -exec ls -lh {} \; | awk '{print $9, $5}'
+          fi
+
       - name: Build Node bindings
         shell: bash
-        run: scripts/ci/node/build-napi.sh ${{ matrix.target }}
+        env:
+          VERBOSE: "1"
+          CARGO_BUILD_VERBOSE: "true"
+        run: |
+          set -x
+          scripts/ci/node/build-napi.sh ${{ matrix.target }}
+          set +x
+
+      - name: Report Node binding artifacts size
+        shell: bash
+        run: |
+          echo "=== Node Binding Artifacts ==="
+          if [ -d "crates/kreuzberg-node" ]; then
+            du -sh crates/kreuzberg-node
+            find crates/kreuzberg-node -maxdepth 1 \( -name "*.node" -o -name "*.tgz" -o -name "index.js" \) -exec ls -lh {} \;
+          fi
 
       - name: Verify TypeScript build artifacts
         shell: bash
@@ -233,7 +280,7 @@ jobs:
     name: TypeScript Tests (Node ${{ matrix.node-version }}, ${{ matrix.os }})
     if: ${{ github.actor != 'dependabot[bot]' }}
     needs: build-and-smoke-node
-    timeout-minutes: 180
+    timeout-minutes: ${{ matrix.os == 'windows-latest' && 360 || 180 }}
     strategy:
       fail-fast: true
       matrix:
@@ -265,6 +312,29 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Dump system information (test job)
+        shell: bash
+        run: |
+          echo "=== System Information ==="
+          uname -a
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            wmic os get version
+            wmic cpu get name
+            wmic os get totalvisiblememorybytes
+          fi
+          echo "=== Disk Space ==="
+          df -h
+
+      - name: Dump environment variables (test job debug)
+        shell: bash
+        run: |
+          echo "=== Environment Variables ==="
+          env | sort
+          echo "=== Node/npm versions ==="
+          node --version
+          npm --version
+          pnpm --version 2>/dev/null || echo "pnpm not yet installed"
 
       - name: Install system dependencies
         uses: ./.github/actions/install-system-deps
@@ -303,15 +373,38 @@ jobs:
 
       - name: Unpack and install Node bindings
         shell: bash
-        run: scripts/ci/node/unpack-bindings.sh
+        run: |
+          set -x
+          time scripts/ci/node/unpack-bindings.sh
+          set +x
 
       - name: Build TypeScript wrapper
         shell: bash
-        run: scripts/ci/node/build-ts-wrapper.sh
+        env:
+          VERBOSE: "1"
+        run: |
+          set -x
+          time scripts/ci/node/build-ts-wrapper.sh
+          set +x
+
+      - name: Report TypeScript build artifacts size
+        shell: bash
+        run: |
+          echo "=== TypeScript Build Artifacts ==="
+          if [ -d "packages/typescript/dist" ]; then
+            du -sh packages/typescript/dist
+            du -sh packages/typescript/node_modules 2>/dev/null || echo "node_modules size: N/A"
+          fi
 
       - name: Run TypeScript tests
         shell: bash
-        run: scripts/ci/node/run-typescript-tests.sh "${{ matrix.coverage }}"
+        env:
+          VERBOSE: "1"
+          DEBUG: "kreuzberg*"
+        run: |
+          set -x
+          time scripts/ci/node/run-typescript-tests.sh "${{ matrix.coverage }}"
+          set +x
 
       - name: Upload coverage
         if: matrix.coverage
@@ -326,4 +419,20 @@ jobs:
 
       - name: Run E2E tests
         shell: bash
-        run: scripts/ci/node/run-e2e.sh
+        env:
+          VERBOSE: "1"
+          DEBUG: "kreuzberg*"
+        run: |
+          set -x
+          time scripts/ci/node/run-e2e.sh
+          set +x
+
+      - name: Report E2E artifacts size (if Windows)
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: |
+          echo "=== E2E Test Artifacts ==="
+          if [ -d "e2e/typescript" ]; then
+            du -sh e2e/typescript
+            find e2e/typescript -name "*.log" -o -name "*.json" | head -10 | xargs ls -lh 2>/dev/null || echo "No logs found"
+          fi

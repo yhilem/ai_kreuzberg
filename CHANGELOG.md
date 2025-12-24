@@ -82,6 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Docker**: Pin ONNX Runtime to version 1.23 to match ort crate compatibility (fixes incompatibility with libonnxruntime1.21)
 - Lock poisoning in font provider now handled gracefully (no panics)
 - Path traversal vulnerability in custom font directories (security hardening)
 - Race condition in font provider registration (thread-safety)

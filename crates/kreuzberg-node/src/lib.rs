@@ -704,10 +704,21 @@ pub struct JsPostProcessorConfig {
 
 impl From<JsPostProcessorConfig> for RustPostProcessorConfig {
     fn from(val: JsPostProcessorConfig) -> Self {
+        let enabled_set = val
+            .enabled_processors
+            .as_ref()
+            .map(|procs| procs.iter().cloned().collect());
+        let disabled_set = val
+            .disabled_processors
+            .as_ref()
+            .map(|procs| procs.iter().cloned().collect());
+
         RustPostProcessorConfig {
             enabled: val.enabled.unwrap_or(true),
             enabled_processors: val.enabled_processors,
             disabled_processors: val.disabled_processors,
+            enabled_set,
+            disabled_set,
         }
     }
 }
@@ -1622,7 +1633,6 @@ impl TryFrom<JsExtractionResult> for RustExtractionResult {
             let language = metadata_map
                 .remove("language")
                 .and_then(|v| serde_json::from_value(v).ok());
-            let date = metadata_map.remove("date").and_then(|v| serde_json::from_value(v).ok());
             let subject = metadata_map
                 .remove("subject")
                 .and_then(|v| serde_json::from_value(v).ok());
@@ -1651,7 +1661,6 @@ impl TryFrom<JsExtractionResult> for RustExtractionResult {
 
             kreuzberg::Metadata {
                 language,
-                date,
                 subject,
                 format,
                 image_preprocessing,

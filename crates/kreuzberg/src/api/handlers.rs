@@ -26,8 +26,8 @@ use super::{
 ///
 /// Request body size limits are enforced at the router layer via `DefaultBodyLimit` and `RequestBodyLimitLayer`.
 /// Default limits:
-/// - Total request body: 10 GB (all files + form data combined)
-/// - Individual multipart fields: 10 GB (controlled by Axum's `DefaultBodyLimit`)
+/// - Total request body: 100 MB (all files + form data combined)
+/// - Individual multipart fields: 100 MB (controlled by Axum's `DefaultBodyLimit`)
 ///
 /// Limits can be configured via environment variables or programmatically when creating the router.
 /// If a request exceeds the size limit, it will be rejected with HTTP 413 (Payload Too Large).

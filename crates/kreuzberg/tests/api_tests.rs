@@ -1018,16 +1018,16 @@ async fn test_size_limits_asymmetric() {
     assert_eq!(limits.max_multipart_field_bytes, 50 * 1024 * 1024);
 }
 
-/// Test default size limits are 10 GB.
+/// Test default size limits are 100 MB.
 #[test]
-fn test_default_size_limits_10gb() {
+fn test_default_size_limits_100mb() {
     use kreuzberg::api::ApiSizeLimits;
 
     let limits = ApiSizeLimits::default();
 
-    // Default should be 10 GB
-    assert_eq!(limits.max_request_body_bytes, 10 * 1024 * 1024 * 1024);
-    assert_eq!(limits.max_multipart_field_bytes, 10 * 1024 * 1024 * 1024);
+    // Default should be 100 MB
+    assert_eq!(limits.max_request_body_bytes, 100 * 1024 * 1024);
+    assert_eq!(limits.max_multipart_field_bytes, 100 * 1024 * 1024);
 }
 
 /// Test ApiSizeLimits from_mb convenience method.
@@ -1102,4 +1102,379 @@ async fn test_extract_file_larger_than_2mb() {
     assert_eq!(results[0]["mime_type"], "text/plain");
     // Content should be extracted successfully
     assert!(results[0]["content"].as_str().unwrap().contains("A"));
+}
+
+/// Test extracting a 2MB file (just above the old Axum limit).
+///
+/// This tests the boundary case at exactly 2MB, which was the old Axum default limit.
+/// Files at this size should now be accepted with the DefaultBodyLimit::max() fix.
+#[tokio::test]
+async fn test_extract_2mb_file() {
+    let app = create_router(ExtractionConfig::default());
+
+    let boundary = "----boundary";
+    let file_content = "X".repeat(2 * 1024 * 1024); // 2 MB
+
+    let body_content = format!(
+        "--{}\r\n\
+         Content-Disposition: form-data; name=\"files\"; filename=\"boundary.txt\"\r\n\
+         Content-Type: text/plain\r\n\
+         \r\n\
+         {}\r\n\
+         --{}--\r\n",
+        boundary, file_content, boundary
+    );
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/extract")
+                .header("content-type", format!("multipart/form-data; boundary={}", boundary))
+                .body(Body::from(body_content))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        response.status(),
+        StatusCode::OK,
+        "2MB file should be accepted (boundary case)"
+    );
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let results: Vec<serde_json::Value> = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(results.len(), 1);
+    assert_eq!(results[0]["mime_type"], "text/plain");
+    assert!(results[0]["content"].as_str().unwrap().contains("X"));
+}
+
+/// Test extracting a 5MB file.
+///
+/// Verifies that files significantly larger than the old 2MB limit work correctly.
+#[tokio::test]
+async fn test_extract_5mb_file() {
+    let app = create_router(ExtractionConfig::default());
+
+    let boundary = "----boundary";
+    let file_content = "B".repeat(5 * 1024 * 1024); // 5 MB
+
+    let body_content = format!(
+        "--{}\r\n\
+         Content-Disposition: form-data; name=\"files\"; filename=\"medium.txt\"\r\n\
+         Content-Type: text/plain\r\n\
+         \r\n\
+         {}\r\n\
+         --{}--\r\n",
+        boundary, file_content, boundary
+    );
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/extract")
+                .header("content-type", format!("multipart/form-data; boundary={}", boundary))
+                .body(Body::from(body_content))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK, "5MB file should be accepted");
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let results: Vec<serde_json::Value> = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(results.len(), 1);
+    assert_eq!(results[0]["mime_type"], "text/plain");
+    assert!(results[0]["content"].as_str().unwrap().contains("B"));
+}
+
+/// Test extracting a 10MB file.
+///
+/// Verifies that moderately large files (10MB) are handled correctly.
+#[tokio::test]
+async fn test_extract_10mb_file() {
+    let app = create_router(ExtractionConfig::default());
+
+    let boundary = "----boundary";
+    let file_content = "C".repeat(10 * 1024 * 1024); // 10 MB
+
+    let body_content = format!(
+        "--{}\r\n\
+         Content-Disposition: form-data; name=\"files\"; filename=\"large.txt\"\r\n\
+         Content-Type: text/plain\r\n\
+         \r\n\
+         {}\r\n\
+         --{}--\r\n",
+        boundary, file_content, boundary
+    );
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/extract")
+                .header("content-type", format!("multipart/form-data; boundary={}", boundary))
+                .body(Body::from(body_content))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK, "10MB file should be accepted");
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let results: Vec<serde_json::Value> = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(results.len(), 1);
+    assert_eq!(results[0]["mime_type"], "text/plain");
+    assert!(results[0]["content"].as_str().unwrap().contains("C"));
+}
+
+/// Test extracting a 50MB file (half the default limit).
+///
+/// Verifies that very large files (50MB) are handled correctly,
+/// well within the 100MB default limit.
+#[tokio::test]
+async fn test_extract_50mb_file() {
+    let app = create_router(ExtractionConfig::default());
+
+    let boundary = "----boundary";
+    let file_content = "D".repeat(50 * 1024 * 1024); // 50 MB
+
+    let body_content = format!(
+        "--{}\r\n\
+         Content-Disposition: form-data; name=\"files\"; filename=\"very_large.txt\"\r\n\
+         Content-Type: text/plain\r\n\
+         \r\n\
+         {}\r\n\
+         --{}--\r\n",
+        boundary, file_content, boundary
+    );
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/extract")
+                .header("content-type", format!("multipart/form-data; boundary={}", boundary))
+                .body(Body::from(body_content))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK, "50MB file should be accepted");
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let results: Vec<serde_json::Value> = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(results.len(), 1);
+    assert_eq!(results[0]["mime_type"], "text/plain");
+    assert!(results[0]["content"].as_str().unwrap().contains("D"));
+}
+
+/// Test extracting a 90MB file (near the 100MB default limit).
+///
+/// Verifies that very large files close to the default limit (90MB out of 100MB)
+/// are handled correctly. This tests the upper boundary of the default configuration.
+#[tokio::test]
+async fn test_extract_90mb_file() {
+    let app = create_router(ExtractionConfig::default());
+
+    let boundary = "----boundary";
+    let file_content = "E".repeat(90 * 1024 * 1024); // 90 MB
+
+    let body_content = format!(
+        "--{}\r\n\
+         Content-Disposition: form-data; name=\"files\"; filename=\"huge.txt\"\r\n\
+         Content-Type: text/plain\r\n\
+         \r\n\
+         {}\r\n\
+         --{}--\r\n",
+        boundary, file_content, boundary
+    );
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/extract")
+                .header("content-type", format!("multipart/form-data; boundary={}", boundary))
+                .body(Body::from(body_content))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        response.status(),
+        StatusCode::OK,
+        "90MB file should be accepted (within default 100MB limit)"
+    );
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let results: Vec<serde_json::Value> = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(results.len(), 1);
+    assert_eq!(results[0]["mime_type"], "text/plain");
+    assert!(results[0]["content"].as_str().unwrap().contains("E"));
+}
+
+/// Test extracting a file over the 100MB default limit (HTTP 400/413).
+///
+/// Verifies that files exceeding the 100MB default limit are rejected
+/// with a 4xx error (typically HTTP 400 from tower-http RequestBodyLimitLayer or 413)
+/// rather than silently failing or accepting the request.
+#[tokio::test]
+async fn test_extract_file_over_default_limit() {
+    let app = create_router(ExtractionConfig::default());
+
+    let boundary = "----boundary";
+    // Create a 101MB file (exceeds 100MB default limit)
+    let file_content = "F".repeat(101 * 1024 * 1024); // 101 MB
+
+    let body_content = format!(
+        "--{}\r\n\
+         Content-Disposition: form-data; name=\"files\"; filename=\"over_limit.txt\"\r\n\
+         Content-Type: text/plain\r\n\
+         \r\n\
+         {}\r\n\
+         --{}--\r\n",
+        boundary, file_content, boundary
+    );
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/extract")
+                .header("content-type", format!("multipart/form-data; boundary={}", boundary))
+                .body(Body::from(body_content))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert!(
+        response.status() == StatusCode::BAD_REQUEST || response.status() == StatusCode::PAYLOAD_TOO_LARGE,
+        "101MB file should be rejected with HTTP 400 or 413 (over 100MB default limit), got {}",
+        response.status()
+    );
+}
+
+/// Test extracting multiple large files within limit.
+///
+/// Verifies that multiple large files can be uploaded together as long as
+/// the total size is within the default 100MB limit.
+#[tokio::test]
+async fn test_extract_multiple_large_files_within_limit() {
+    let app = create_router(ExtractionConfig::default());
+
+    let boundary = "----boundary";
+    let file1_content = "G".repeat(25 * 1024 * 1024); // 25 MB
+    let file2_content = "H".repeat(25 * 1024 * 1024); // 25 MB
+    let file3_content = "I".repeat(25 * 1024 * 1024); // 25 MB
+    // Total: 75 MB (within 100 MB limit)
+
+    let body_content = format!(
+        "--{}\r\n\
+         Content-Disposition: form-data; name=\"files\"; filename=\"file1.txt\"\r\n\
+         Content-Type: text/plain\r\n\
+         \r\n\
+         {}\r\n\
+         --{}\r\n\
+         Content-Disposition: form-data; name=\"files\"; filename=\"file2.txt\"\r\n\
+         Content-Type: text/plain\r\n\
+         \r\n\
+         {}\r\n\
+         --{}\r\n\
+         Content-Disposition: form-data; name=\"files\"; filename=\"file3.txt\"\r\n\
+         Content-Type: text/plain\r\n\
+         \r\n\
+         {}\r\n\
+         --{}--\r\n",
+        boundary, file1_content, boundary, file2_content, boundary, file3_content, boundary
+    );
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/extract")
+                .header("content-type", format!("multipart/form-data; boundary={}", boundary))
+                .body(Body::from(body_content))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        response.status(),
+        StatusCode::OK,
+        "Multiple files totaling 75MB should be accepted"
+    );
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let results: Vec<serde_json::Value> = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(results.len(), 3, "Should have 3 results");
+    for result in &results {
+        assert_eq!(result["mime_type"], "text/plain");
+    }
+    // Verify each file was processed
+    assert!(results[0]["content"].as_str().unwrap().contains("G"));
+    assert!(results[1]["content"].as_str().unwrap().contains("H"));
+    assert!(results[2]["content"].as_str().unwrap().contains("I"));
+}
+
+/// Test extracting multiple large files exceeding limit (HTTP 400/413).
+///
+/// Verifies that when multiple files together exceed the 100MB default limit,
+/// the request is rejected with a 4xx error (typically HTTP 400 or 413).
+#[tokio::test]
+async fn test_extract_multiple_large_files_exceeding_limit() {
+    let app = create_router(ExtractionConfig::default());
+
+    let boundary = "----boundary";
+    let file1_content = "J".repeat(50 * 1024 * 1024); // 50 MB
+    let file2_content = "K".repeat(55 * 1024 * 1024); // 55 MB
+    // Total: 105 MB (exceeds 100 MB limit)
+
+    let body_content = format!(
+        "--{}\r\n\
+         Content-Disposition: form-data; name=\"files\"; filename=\"file1.txt\"\r\n\
+         Content-Type: text/plain\r\n\
+         \r\n\
+         {}\r\n\
+         --{}\r\n\
+         Content-Disposition: form-data; name=\"files\"; filename=\"file2.txt\"\r\n\
+         Content-Type: text/plain\r\n\
+         \r\n\
+         {}\r\n\
+         --{}--\r\n",
+        boundary, file1_content, boundary, file2_content, boundary
+    );
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/extract")
+                .header("content-type", format!("multipart/form-data; boundary={}", boundary))
+                .body(Body::from(body_content))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert!(
+        response.status() == StatusCode::BAD_REQUEST || response.status() == StatusCode::PAYLOAD_TOO_LARGE,
+        "Multiple files totaling 105MB should be rejected with HTTP 400 or 413, got {}",
+        response.status()
+    );
 }

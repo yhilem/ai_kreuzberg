@@ -895,12 +895,12 @@ Configuration for API server request and file upload size limits.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `max_request_body_bytes` | `int` | `104857600` | Maximum size of entire request body in bytes (100 MB) |
-| `max_multipart_field_bytes` | `int` | `104857600` | Maximum size of individual file in multipart upload in bytes (100 MB) |
+| `max_request_body_bytes` | `int` | `104857600` | Maximum size of entire request body in bytes (100 MB default) |
+| `max_multipart_field_bytes` | `int` | `104857600` | Maximum size of individual file in multipart upload in bytes (100 MB default) |
 
 ### About Size Limits
 
-Size limits protect your server from resource exhaustion and memory spikes. Both limits default to 100 MB, suitable for typical document processing workloads.
+Size limits protect your server from resource exhaustion and memory spikes. Both limits default to 100 MB, suitable for typical document processing workloads. Users can configure higher limits via environment variables for processing larger files.
 
 **Default Configuration:**
 - Total request body: 100 MB (104,857,600 bytes)
@@ -922,10 +922,10 @@ kreuzberg serve -H 0.0.0.0 -p 8000
     using Kreuzberg;
     using Kreuzberg.Api;
 
-    // Default limits (100 MB)
+    // Default limits: 100 MB for both request body and individual files
     var limits = new ApiSizeLimits();
 
-    // Custom limits (200 MB for both)
+    // Custom limits: 200 MB for both request body and individual files
     var customLimits = ApiSizeLimits.FromMB(200, 200);
 
     // Or specify byte values directly
@@ -941,13 +941,13 @@ kreuzberg serve -H 0.0.0.0 -p 8000
     ```go
     import "kreuzberg"
 
-    // Default limits (100 MB)
+    // Default limits: 100 MB for both request body and individual files
     limits := kreuzberg.NewApiSizeLimits(
         100 * 1024 * 1024,
         100 * 1024 * 1024,
     )
 
-    // Or use convenience method
+    // Or use convenience method for custom limits
     limits := kreuzberg.ApiSizeLimitsFromMB(200, 200)
     ```
 
@@ -956,7 +956,7 @@ kreuzberg serve -H 0.0.0.0 -p 8000
     ```java
     import com.kreuzberg.api.ApiSizeLimits;
 
-    // Default limits (100 MB)
+    // Default limits: 100 MB for both request body and individual files
     ApiSizeLimits limits = new ApiSizeLimits();
 
     // Custom limits via convenience method
@@ -974,7 +974,7 @@ kreuzberg serve -H 0.0.0.0 -p 8000
     ```python
     from kreuzberg.api import ApiSizeLimits
 
-    # Default limits (100 MB)
+    # Default limits: 100 MB for both request body and individual files
     limits = ApiSizeLimits()
 
     # Custom limits via convenience method
@@ -992,7 +992,7 @@ kreuzberg serve -H 0.0.0.0 -p 8000
     ```ruby
     require 'kreuzberg'
 
-    # Default limits (100 MB)
+    # Default limits: 100 MB for both request body and individual files
     limits = Kreuzberg::Api::ApiSizeLimits.new
 
     # Custom limits via convenience method
@@ -1010,7 +1010,7 @@ kreuzberg serve -H 0.0.0.0 -p 8000
     ```rust
     use kreuzberg::api::ApiSizeLimits;
 
-    // Default limits (100 MB)
+    // Default limits: 100 MB for both request body and individual files
     let limits = ApiSizeLimits::default();
 
     // Custom limits via convenience method
@@ -1028,7 +1028,7 @@ kreuzberg serve -H 0.0.0.0 -p 8000
     ```typescript
     import { ApiSizeLimits } from 'kreuzberg';
 
-    // Default limits (100 MB)
+    // Default limits: 100 MB for both request body and individual files
     const limits = new ApiSizeLimits();
 
     // Custom limits via convenience method

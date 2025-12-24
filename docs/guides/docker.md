@@ -365,7 +365,7 @@ Configure Docker containers via environment variables:
 
 **Upload Limits:**
 ```bash title="Terminal"
-KREUZBERG_MAX_UPLOAD_SIZE_MB=200  # Max upload size in MB (default: 100)
+KREUZBERG_MAX_UPLOAD_SIZE_MB=200  # Max upload size in MB (default: 100 MB)
 ```
 
 **CORS Configuration:**

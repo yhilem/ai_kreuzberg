@@ -82,6 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Large file upload limit** (issue #248) - Files larger than 2MB were being rejected due to Axum's internal multipart field limit. Added `DefaultBodyLimit::max()` configuration to allow files up to the configured size limit (default 100MB, configurable via `KREUZBERG_MAX_UPLOAD_SIZE_MB` environment variable).
 - **Docker**: Pin ONNX Runtime to version 1.23 to match ort crate compatibility (fixes incompatibility with libonnxruntime1.21)
 - Lock poisoning in font provider now handled gracefully (no panics)
 - Path traversal vulnerability in custom font directories (security hardening)

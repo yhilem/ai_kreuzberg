@@ -30,20 +30,20 @@ use super::{
 /// 2. `KREUZBERG_MAX_MULTIPART_FIELD_BYTES` - Maximum individual multipart field size (in bytes)
 /// 3. `KREUZBERG_MAX_UPLOAD_SIZE_MB` - (Legacy) Maximum upload size in MB (applies to both limits)
 ///
-/// Falls back to default (10 GB) if not set or invalid.
+/// Falls back to default (100 MB) if not set or invalid.
 ///
 /// # Examples
 ///
 /// ```bash
-/// # Method 1: Set limits in bytes
-/// export KREUZBERG_MAX_REQUEST_BODY_BYTES=10737418240  # 10 GB
-/// export KREUZBERG_MAX_MULTIPART_FIELD_BYTES=5368709120  # 5 GB
+/// # Method 1: Set limits in bytes (e.g., 500 MB)
+/// export KREUZBERG_MAX_REQUEST_BODY_BYTES=524288000  # 500 MB
+/// export KREUZBERG_MAX_MULTIPART_FIELD_BYTES=524288000  # 500 MB
 ///
 /// # Method 2: Set limits in MB (legacy, backward compatible)
-/// export KREUZBERG_MAX_UPLOAD_SIZE_MB=10000
+/// export KREUZBERG_MAX_UPLOAD_SIZE_MB=500
 /// ```
 fn parse_size_limits_from_env() -> ApiSizeLimits {
-    const DEFAULT_10GB_MB: usize = 10 * 1024; // 10000 MB
+    const DEFAULT_100MB_MB: usize = 100;
 
     // Try the modern byte-based environment variables first
     if let Ok(value) = std::env::var("KREUZBERG_MAX_REQUEST_BODY_BYTES") {
@@ -93,10 +93,10 @@ fn parse_size_limits_from_env() -> ApiSizeLimits {
         }
     }
 
-    // Use default 10 GB limits
-    let limits = ApiSizeLimits::from_mb(DEFAULT_10GB_MB, DEFAULT_10GB_MB);
+    // Use default 100 MB limits
+    let limits = ApiSizeLimits::from_mb(DEFAULT_100MB_MB, DEFAULT_100MB_MB);
     tracing::info!(
-        "Upload size limit: 10 GB (default, {} bytes) - Configure with KREUZBERG_MAX_REQUEST_BODY_BYTES or KREUZBERG_MAX_UPLOAD_SIZE_MB",
+        "Upload size limit: 100 MB (default, {} bytes) - Configure with KREUZBERG_MAX_REQUEST_BODY_BYTES or KREUZBERG_MAX_UPLOAD_SIZE_MB",
         limits.max_request_body_bytes
     );
     limits
@@ -255,13 +255,13 @@ pub fn create_router_with_limits(config: ExtractionConfig, limits: ApiSizeLimits
 /// # Production: set to comma-separated list of allowed origins
 /// export KREUZBERG_CORS_ORIGINS="https://app.example.com,https://api.example.com"
 ///
-/// # Upload size limits (default: 10 GB)
+/// # Upload size limits (default: 100 MB)
 /// # Modern approach (in bytes):
-/// export KREUZBERG_MAX_REQUEST_BODY_BYTES=10737418240     # 10 GB
-/// export KREUZBERG_MAX_MULTIPART_FIELD_BYTES=5368709120   # 5 GB per file
+/// export KREUZBERG_MAX_REQUEST_BODY_BYTES=104857600       # 100 MB
+/// export KREUZBERG_MAX_MULTIPART_FIELD_BYTES=104857600    # 100 MB per file
 ///
 /// # Legacy approach (in MB, applies to both limits):
-/// export KREUZBERG_MAX_UPLOAD_SIZE_MB=10000  # 10 GB
+/// export KREUZBERG_MAX_UPLOAD_SIZE_MB=100  # 100 MB
 ///
 /// python -m kreuzberg.api
 /// ```
@@ -284,7 +284,7 @@ pub async fn serve(host: impl AsRef<str>, port: u16) -> Result<()> {
 
 /// Start the API server with explicit config.
 ///
-/// Uses default size limits (10 GB). For custom limits, use `serve_with_config_and_limits`.
+/// Uses default size limits (100 MB). For custom limits, use `serve_with_config_and_limits`.
 ///
 /// # Arguments
 ///
@@ -307,7 +307,7 @@ pub async fn serve(host: impl AsRef<str>, port: u16) -> Result<()> {
 pub async fn serve_with_config(host: impl AsRef<str>, port: u16, config: ExtractionConfig) -> Result<()> {
     let limits = ApiSizeLimits::default();
     tracing::info!(
-        "Upload size limit: 10 GB (default, {} bytes)",
+        "Upload size limit: 100 MB (default, {} bytes)",
         limits.max_request_body_bytes
     );
     serve_with_config_and_limits(host, port, config, limits).await
@@ -390,8 +390,9 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_size_limits_default_10gb() {
-        // When no environment variables are set, should default to 10 GB
+    #[serial_test::serial]
+    fn test_parse_size_limits_default_100mb() {
+        // When no environment variables are set, should default to 100 MB
         unsafe {
             std::env::remove_var("KREUZBERG_MAX_REQUEST_BODY_BYTES");
             std::env::remove_var("KREUZBERG_MAX_MULTIPART_FIELD_BYTES");
@@ -399,11 +400,12 @@ mod tests {
         }
 
         let limits = parse_size_limits_from_env();
-        assert_eq!(limits.max_request_body_bytes, 10 * 1024 * 1024 * 1024);
-        assert_eq!(limits.max_multipart_field_bytes, 10 * 1024 * 1024 * 1024);
+        assert_eq!(limits.max_request_body_bytes, 100 * 1024 * 1024);
+        assert_eq!(limits.max_multipart_field_bytes, 100 * 1024 * 1024);
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_parse_size_limits_from_bytes_env_vars() {
         // When modern byte-based env vars are set, should use those
         unsafe {
@@ -424,6 +426,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_parse_size_limits_bytes_env_var_only() {
         // When only request body is set, multipart should use same value
         unsafe {
@@ -443,6 +446,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_parse_size_limits_from_legacy_mb_env_var() {
         // When legacy MB env var is set, should use that (backward compatibility)
         unsafe {
@@ -462,6 +466,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_parse_size_limits_invalid_bytes_env_var() {
         // When invalid byte value is provided, should fallback to legacy then default
         unsafe {
@@ -471,8 +476,8 @@ mod tests {
         }
 
         let limits = parse_size_limits_from_env();
-        // Should use default 10 GB since both modern and legacy env vars are missing/invalid
-        assert_eq!(limits.max_request_body_bytes, 10 * 1024 * 1024 * 1024);
+        // Should use default 100 MB since both modern and legacy env vars are missing/invalid
+        assert_eq!(limits.max_request_body_bytes, 100 * 1024 * 1024);
 
         // Cleanup
         unsafe {
@@ -481,6 +486,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_parse_size_limits_zero_bytes_env_var() {
         // When zero is provided, should be treated as invalid and use default
         unsafe {
@@ -490,8 +496,8 @@ mod tests {
         }
 
         let limits = parse_size_limits_from_env();
-        // Should use default 10 GB since 0 is invalid
-        assert_eq!(limits.max_request_body_bytes, 10 * 1024 * 1024 * 1024);
+        // Should use default 100 MB since 0 is invalid
+        assert_eq!(limits.max_request_body_bytes, 100 * 1024 * 1024);
 
         // Cleanup
         unsafe {
@@ -500,6 +506,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_parse_size_limits_bytes_env_var_precedence() {
         // Modern byte-based vars should take precedence over legacy MB var
         unsafe {

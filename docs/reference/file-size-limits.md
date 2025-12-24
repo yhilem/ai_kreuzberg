@@ -11,7 +11,7 @@ File size limits protect your server from resource exhaustion and unexpected mem
 | **Request Body Limit** | Total size of all files in a single request | 100 MB |
 | **Multipart Field Limit** | Maximum size of an individual file | 100 MB |
 
-Both limits are configurable via the `KREUZBERG_MAX_UPLOAD_SIZE_MB` environment variable or programmatically via the `ApiSizeLimits` type.
+Both limits are configurable via environment variables (`KREUZBERG_MAX_REQUEST_BODY_BYTES`, `KREUZBERG_MAX_MULTIPART_FIELD_BYTES`, or legacy `KREUZBERG_MAX_UPLOAD_SIZE_MB`) or programmatically via the `ApiSizeLimits` type.
 
 ## Default Configuration
 
@@ -23,10 +23,10 @@ The default configuration allows:
 - **Individual file:** 100 MB (104,857,600 bytes)
 
 These defaults are suitable for typical document processing workloads including:
-- Standard PDF documents
+- Standard PDF documents and scanned pages
 - Office documents (Word, Excel, PowerPoint)
-- Images and scans
-- Most business documents
+- High-resolution images
+- Single document uploads and small batches
 
 ### When to Increase
 
@@ -292,13 +292,13 @@ File size limits directly impact memory consumption:
 | Upload Limit | Memory Impact | Recommended RAM |
 |--------------|--------------|-----------------|
 | 50 MB | ~50-100 MB per request | 512 MB |
-| 100 MB | ~100-200 MB per request | 1 GB |
+| 100 MB (default) | ~100-200 MB per request | 1 GB |
 | 500 MB | ~500 MB-1 GB per request | 2-4 GB |
 | 1000 MB | ~1-2 GB per request | 4-8 GB |
 
 ### Handling Large Files
 
-When processing files larger than 100 MB:
+When processing very large files (multi-GB):
 
 1. **Allocate adequate RAM** - Use the memory impact table above as a guideline
 2. **Increase timeouts** - Large files take longer to upload and process
@@ -369,8 +369,8 @@ api.example.com {
 When a request exceeds configured limits, the server returns a 413 Payload Too Large error:
 
 ```bash title="Terminal"
-# Try to upload a 150 MB file with 100 MB limit
-curl -F "files=@large_file_150mb.zip" http://localhost:8000/extract
+# Try to upload a 500 MB file with 100 MB default limit
+curl -F "files=@large_file_500mb.zip" http://localhost:8000/extract
 
 # Response (HTTP 413)
 HTTP/1.1 413 Payload Too Large

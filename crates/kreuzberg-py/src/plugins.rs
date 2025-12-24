@@ -1153,8 +1153,8 @@ fn extraction_result_to_dict(py: Python<'_>, result: &ExtractionResult) -> PyRes
     if let Some(modified_by) = &result.metadata.modified_by {
         metadata_dict.set_item("modified_by", modified_by)?;
     }
-    if let Some(date) = &result.metadata.date {
-        metadata_dict.set_item("date", date)?;
+    if let Some(created_at) = &result.metadata.created_at {
+        metadata_dict.set_item("created_at", created_at)?;
     }
 
     for (key, value) in &result.metadata.additional {

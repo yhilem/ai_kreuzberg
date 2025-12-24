@@ -159,7 +159,7 @@ impl ResultPool {
                         .as_ref()
                         .map_or(0, |v| v.iter().map(|s| s.len()).sum())
                     + r.metadata.subject.as_ref().map_or(0, |s| s.len())
-                    + r.metadata.date.as_ref().map_or(0, |s| s.len())
+                    + r.metadata.created_at.as_ref().map_or(0, |s| s.len())
                     + r.metadata.language.as_ref().map_or(0, |s| s.len())
             })
             .sum();

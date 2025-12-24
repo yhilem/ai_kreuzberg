@@ -269,8 +269,8 @@ impl ExtractionResult {
             })?;
             metadata_dict.set_item("pages", json_value_to_py(py, &pages_json)?)?;
         }
-        if let Some(date) = &result.metadata.date {
-            metadata_dict.set_item("date", date)?;
+        if let Some(created_at) = &result.metadata.created_at {
+            metadata_dict.set_item("created_at", created_at)?;
         }
         if let Some(format) = &result.metadata.format {
             let format_json = serde_json::to_value(format).map_err(|e| {

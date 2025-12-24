@@ -540,10 +540,12 @@ fn to_c_extraction_result(result: ExtractionResult) -> std::result::Result<*mut 
         None => None,
     };
 
-    let date_guard = match &metadata.date {
-        Some(d) => Some(CStringGuard::new(
-            CString::new(d.as_str()).map_err(|e| format!("Failed to convert date to C string: {}", e))?,
-        )),
+    let date_guard = match &metadata.created_at {
+        Some(d) => {
+            Some(CStringGuard::new(CString::new(d.as_str()).map_err(|e| {
+                format!("Failed to convert created_at to C string: {}", e)
+            })?))
+        }
         None => None,
     };
 

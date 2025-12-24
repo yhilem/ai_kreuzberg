@@ -186,10 +186,10 @@ pub unsafe extern "C" fn kreuzberg_get_result_view(
             (*out_view).language_len = 0;
         }
 
-        if let Some(ref date) = result_ref.metadata.date {
-            let date_bytes = date.as_bytes();
-            (*out_view).date_ptr = date_bytes.as_ptr();
-            (*out_view).date_len = date_bytes.len();
+        if let Some(ref created_at) = result_ref.metadata.created_at {
+            let created_at_bytes = created_at.as_bytes();
+            (*out_view).date_ptr = created_at_bytes.as_ptr();
+            (*out_view).date_len = created_at_bytes.len();
         } else {
             (*out_view).date_ptr = ptr::null();
             (*out_view).date_len = 0;
@@ -271,10 +271,10 @@ pub(crate) fn create_result_view(result: &ExtractionResult) -> CExtractionResult
         view.language_len = lang_bytes.len();
     }
 
-    if let Some(ref date) = result.metadata.date {
-        let date_bytes = date.as_bytes();
-        view.date_ptr = date_bytes.as_ptr();
-        view.date_len = date_bytes.len();
+    if let Some(ref created_at) = result.metadata.created_at {
+        let created_at_bytes = created_at.as_bytes();
+        view.date_ptr = created_at_bytes.as_ptr();
+        view.date_len = created_at_bytes.len();
     }
 
     if let Some(ref subject) = result.metadata.subject {
